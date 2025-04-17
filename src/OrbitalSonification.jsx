@@ -4,6 +4,18 @@ import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
 
 const OrbitalSonification = () => {
+/**
+ * Orbital Sonification component.
+ *
+ * This component visualizes the planetary orbits and sonifies their orbital periods.
+ * It also allows for user interaction with the animation speed and enables/disables
+ * the sonification of individual planets.
+ *
+ * The component uses the Tone.js library for audio synthesis and the React library for
+ * rendering the visualization.
+ *
+ * @returns A React component that renders a planetary orbits visualization with sonification.
+ */
   const [orbitData, setOrbitData] = useState([
     { name: "Mercury", distance: 0.39, excentricity: 0.2056, enabled: true },
     { name: "Venus", distance: 0.72, excentricity: 0.0068, enabled: true },

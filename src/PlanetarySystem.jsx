@@ -81,12 +81,17 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     // Semi-minor axis
     const semiMinorAxis = semiMajorAxis * Math.sqrt(1 - Math.pow(eccentricity, 2));
     
-    // Distance from center to focus
+    // Distance focal
     const focalDistance = semiMajorAxis * eccentricity;
     
-    // Coordinates for an ellipse with the Sun at one focus
-    const x = center + (semiMajorAxis * Math.cos(angle) - focalDistance) * orbitScaleFactor;
-    const y = center + semiMinorAxis * Math.sin(angle) * orbitScaleFactor;
+    // CORRECCIÓN: Ecuación paramétrica correcta de la elipse con el Sol en un foco
+    // El Sol está en el origen (0,0) y la elipse está alrededor de él
+    const rawX = semiMajorAxis * Math.cos(angle) - focalDistance;
+    const rawY = semiMinorAxis * Math.sin(angle);
+    
+    // Trasladamos al centro del SVG
+    const x = center + rawX * orbitScaleFactor;
+    const y = center + rawY * orbitScaleFactor;
     
     return { x, y };
   };
@@ -194,6 +199,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             planet.excentricity,
             angle
           );
+          
           const size = getPlanetSize(planet);
           
           // Planet colors
