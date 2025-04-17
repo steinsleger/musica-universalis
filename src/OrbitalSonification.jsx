@@ -1,6 +1,7 @@
 // src/OrbitalSonification.jsx
 import React, { useState, useEffect } from 'react';
 import * as Tone from 'tone';
+import PlanetarySystem from './PlanetarySystem';
 
 const OrbitalSonification = () => {
   const [orbitData, setOrbitData] = useState([
@@ -15,6 +16,7 @@ const OrbitalSonification = () => {
   const [baseFrequency, setBaseFrequency] = useState(440);
   const [synth, setSynth] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [animationSpeed, setAnimationSpeed] = useState(1);
 
   // Initialize synthesizer
   useEffect(() => {
@@ -63,6 +65,27 @@ const OrbitalSonification = () => {
   return (
     <div className="container">
       <h2 className="title">Planetary Orbits Sonification</h2>
+      
+      <div className="visualization-container">
+        <div className="orbital-display">
+          <PlanetarySystem orbitData={orbitData} animationSpeed={animationSpeed} />
+        </div>
+        <div className="controls">
+          <label htmlFor="speed-slider" className="label">
+            Animation Speed: {animationSpeed.toFixed(1)}x
+          </label>
+          <input 
+            id="speed-slider"
+            type="range" 
+            value={animationSpeed}
+            min={0.1}
+            max={5}
+            step={0.1}
+            className="slider"
+            onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+          />
+        </div>
+      </div>
       
       <div className="slider-container">
         <label htmlFor="frequency-slider" className="label">
