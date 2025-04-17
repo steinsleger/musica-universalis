@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import * as Tone from 'tone';
 
 const OrbitalSonification = () => {
-  const [orbitData] = useState([
-    { name: "Mercury", distance: 0.39 },
-    { name: "Venus", distance: 0.72 },
-    { name: "Earth", distance: 1.00 },
-    { name: "Mars", distance: 1.52 },
-    { name: "Ceres", distance: 2.77 },
-    { name: "Jupiter", distance: 5.20 },
-    { name: "Saturn", distance: 9.58 }
+  const [orbitData, setOrbitData] = useState([
+    { name: "Mercury", distance: 0.39, enabled: true },
+    { name: "Venus", distance: 0.72, enabled: true },
+    { name: "Earth", distance: 1.00, enabled: true },
+    { name: "Mars", distance: 1.52, enabled: true },
+    { name: "Ceres", distance: 2.77, enabled: true },
+    { name: "Jupiter", distance: 5.20, enabled: true },
+    { name: "Saturn", distance: 9.58, enabled: true }
   ]);
   const [baseFrequency, setBaseFrequency] = useState(440);
   const [synth, setSynth] = useState(null);
@@ -30,6 +30,15 @@ const OrbitalSonification = () => {
     return (1 + Math.pow(2, n)) * 3 * baseFreq;
   };
 
+  // Toggle planet enabled state
+  const togglePlanet = (index) => {
+    setOrbitData(prevData => 
+      prevData.map((planet, i) => 
+        i === index ? { ...planet, enabled: !planet.enabled } : planet
+      )
+    );
+  };
+
   // Generate chord sequence based on orbits
   const playOrbitalSequence = async () => {
     if (!synth || isPlaying) return;
@@ -38,13 +47,17 @@ const OrbitalSonification = () => {
     await Tone.start();
     const now = Tone.now();
     
-    orbitData.forEach((orbit, index) => {
-      const freq = calculateFrequencies(baseFrequency, index - 2); // Adjust so Earth is index 0
+    const enabledPlanets = orbitData.filter(planet => planet.enabled);
+    
+    enabledPlanets.forEach((orbit, index) => {
+      // Find the original index to calculate the right frequency
+      const originalIndex = orbitData.findIndex(planet => planet.name === orbit.name);
+      const freq = calculateFrequencies(baseFrequency, originalIndex - 2); // Adjust so Earth is index 0
       synth.triggerAttackRelease(freq, "1n", now + index * 0.75);
     });
     
     // Reset play state after the sequence
-    setTimeout(() => setIsPlaying(false), orbitData.length * 750 + 500);
+    setTimeout(() => setIsPlaying(false), enabledPlanets.length * 750 + 500);
   };
 
   return (
@@ -80,6 +93,7 @@ const OrbitalSonification = () => {
         <table className="table">
           <thead>
             <tr>
+              <th>Enable</th>
               <th>Planet</th>
               <th>Distance (AU)</th>
               <th>Frequency (Hz)</th>
@@ -88,6 +102,13 @@ const OrbitalSonification = () => {
           <tbody>
             {orbitData.map((planet, index) => (
               <tr key={planet.name}>
+                <td>
+                  <input 
+                    type="checkbox" 
+                    checked={planet.enabled}
+                    onChange={() => togglePlanet(index)}
+                  />
+                </td>
                 <td>{planet.name}</td>
                 <td>{planet.distance.toFixed(2)}</td>
                 <td>{calculateFrequencies(baseFrequency, index - 2).toFixed(2)}</td>
