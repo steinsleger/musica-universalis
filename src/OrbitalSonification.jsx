@@ -68,11 +68,15 @@ const OrbitalSonification = () => {
       
       <div className="visualization-container">
         <div className="orbital-display">
-          <PlanetarySystem orbitData={orbitData} animationSpeed={animationSpeed} />
+          <PlanetarySystem 
+            orbitData={orbitData} 
+            animationSpeed={animationSpeed} 
+            baseFrequency={baseFrequency}
+          />
         </div>
         <div className="controls">
           <label htmlFor="speed-slider" className="label">
-            Animation Speed: {animationSpeed.toFixed(1)}x
+            Animation Speed Multiplier: {animationSpeed.toFixed(1)}x
           </label>
           <input 
             id="speed-slider"
@@ -84,6 +88,10 @@ const OrbitalSonification = () => {
             className="slider"
             onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
           />
+          <p className="note">
+            Las velocidades orbitales están sincronizadas con la frecuencia base.
+            Ajusta la frecuencia base para modificar ambas simultáneamente.
+          </p>
         </div>
       </div>
       

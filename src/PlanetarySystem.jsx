@@ -1,7 +1,7 @@
 // src/PlanetarySystem.jsx
 import React, { useState, useEffect } from 'react';
 
-const PlanetarySystem = ({ orbitData, animationSpeed = 1 }) => {
+const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 440 }) => {
   const [animationTime, setAnimationTime] = useState(0);
   
   // Constants for visualization
@@ -18,14 +18,20 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1 }) => {
   // Sun properties
   const sunRadius = 10; // Fixed size for better visualization
   
-  // Animation loop
+  // Calculate frequency factor - we use this to tie animation speed to base frequency
+  // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
+  const frequencyFactor = baseFrequency / 220;
+  
+  // Animation loop - use baseFrequency to adjust speed
   useEffect(() => {
     const animationFrame = requestAnimationFrame(() => {
-      setAnimationTime(prev => prev + 0.01 * animationSpeed);
+      // Multiply by frequencyFactor to tie animation to base frequency
+      // The * 0.005 factor is to make it visually trackable
+      setAnimationTime(prev => prev + 0.005 * animationSpeed * frequencyFactor);
     });
     
     return () => cancelAnimationFrame(animationFrame);
-  }, [animationTime, animationSpeed]);
+  }, [animationTime, animationSpeed, frequencyFactor]);
   
   // Calculate planet position based on orbital parameters
   const getPlanetPosition = (distance, time, period) => {
