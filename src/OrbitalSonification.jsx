@@ -25,9 +25,9 @@ const OrbitalSonification = () => {
     };
   }, []);
 
-  // Calculate frequencies based on the modified Bode law
+  // Calculate frequencies based on the modified Bode law (Murch version)
   const calculateFrequencies = (baseFreq, n) => {
-    return (1 + Math.pow(2, n)) * 3 * baseFreq / 10;
+    return (1 + Math.pow(2, n)) * 3 * baseFreq;
   };
 
   // Generate chord sequence based on orbits
@@ -59,8 +59,8 @@ const OrbitalSonification = () => {
           id="frequency-slider"
           type="range" 
           value={baseFrequency}
-          min={220}
-          max={880}
+          min={55}
+          max={330}
           step={1}
           className="slider"
           onChange={(e) => setBaseFrequency(parseInt(e.target.value))}
