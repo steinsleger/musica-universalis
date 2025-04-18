@@ -1,10 +1,14 @@
 // src/PlanetarySystem.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange }) => {
   const [animationTime, setAnimationTime] = useState(0);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const requestRef = useRef();
+  const previousTimeRef = useRef();
+  
+  // Para evitar actualizaciones excesivas, creamos un objeto para almacenar frecuencias
+  const frequenciesRef = useRef({});
   
   // Constants for visualization
   const svgSize = 600;
@@ -24,50 +28,98 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
   const frequencyFactor = baseFrequency / 220;
   
-  // Animation loop with immediate frequency updates
+  // Función para calcular las frecuencias - ahora fuera del bucle de animación
+  const calculateCurrentFrequencies = useCallback((time) => {
+    const newFrequencies = {};
+    
+    orbitData.forEach((planet, index) => {
+      if (planet.enabled) {
+        const period = getOrbitalPeriod(planet.distance);
+        const angle = (time / period) * 2 * Math.PI;
+        
+        // Calculate current distance using the polar equation of an ellipse
+        const currentDistance = getCurrentDistance(planet.distance, planet.excentricity, angle);
+        
+        // Base frequency for this planet (when at average distance)
+        const n = index - 2; // Adjust so Earth is index 0
+        const baseFreq = calculateFrequencies(baseFrequency, n);
+        
+        // Modulate frequency based on current distance
+        const avgDistance = planet.distance;
+        const ratio = avgDistance / currentDistance;
+        const modifiedFreq = baseFreq * Math.sqrt(ratio);
+        
+        newFrequencies[planet.name] = modifiedFreq;
+      }
+    });
+    
+    return newFrequencies;
+  }, [orbitData, baseFrequency]);
+  
+  // Función para notificar cambios de frecuencia al componente padre
+  // Throttled para evitar actualizaciones excesivas
+  const notifyFrequencyChanges = useCallback(() => {
+    if (onFrequencyChange) {
+      onFrequencyChange(frequenciesRef.current);
+    }
+  }, [onFrequencyChange]);
+  
+  // Animation loop with throttled frequency updates
   useEffect(() => {
-    const animate = () => {
-      setAnimationTime(prevTime => {
-        const newTime = prevTime + 0.005 * animationSpeed * frequencyFactor;
-        
-        // Calculate and update frequencies immediately on each frame
-        const newFrequencies = {};
-        orbitData.forEach((planet, index) => {
-          if (planet.enabled) {
-            const period = getOrbitalPeriod(planet.distance);
-            const angle = (newTime / period) * 2 * Math.PI;
-            
-            // Calculate current distance using the polar equation of an ellipse
-            const currentDistance = getCurrentDistance(planet.distance, planet.excentricity, angle);
-            
-            // Base frequency for this planet (when at average distance)
-            const n = index - 2; // Adjust so Earth is index 0
-            const baseFreq = calculateFrequencies(baseFrequency, n);
-            
-            // Modulate frequency based on current distance
-            const avgDistance = planet.distance;
-            const ratio = avgDistance / currentDistance;
-            const modifiedFreq = baseFreq * Math.sqrt(ratio);
-            
-            newFrequencies[planet.name] = modifiedFreq;
-          }
+    if (!orbitData || orbitData.length === 0) return;
+    
+    // Función que maneja la animación
+    const animate = (time) => {
+      if (previousTimeRef.current === undefined) {
+        previousTimeRef.current = time;
+      }
+      
+      // Calculamos el delta de tiempo para hacer la animación independiente del frame rate
+      const deltaTime = time - previousTimeRef.current;
+      previousTimeRef.current = time;
+      
+      // Solo actualizamos el tiempo si tenemos un deltaTime razonable
+      if (deltaTime < 100) { // Ignoramos saltos grandes en el tiempo
+        setAnimationTime(prevTime => {
+          const newTime = prevTime + (deltaTime * 0.001 * animationSpeed * frequencyFactor);
+          
+          // Calculamos nuevas frecuencias y las almacenamos en la ref
+          frequenciesRef.current = calculateCurrentFrequencies(newTime);
+          
+          // Actualizamos el estado local de frecuencias de forma menos frecuente
+          // Solo cuando cambie el fotograma de animación
+          setCurrentFrequencies(frequenciesRef.current);
+          
+          return newTime;
         });
-        
-        // Update frequencies with each animation frame
-        setCurrentFrequencies(newFrequencies);
-        if (onFrequencyChange) {
-          onFrequencyChange(newFrequencies);
-        }
-        
-        return newTime;
-      });
+      }
       
       requestRef.current = requestAnimationFrame(animate);
     };
     
     requestRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(requestRef.current);
-  }, [animationSpeed, frequencyFactor, orbitData, baseFrequency, onFrequencyChange]);
+    
+    // Configuramos un intervalo para notificar cambios de frecuencia
+    // en lugar de hacerlo en cada frame
+    const notifyInterval = setInterval(() => {
+      notifyFrequencyChanges();
+    }, 100); // Notificamos cada 100ms
+    
+    return () => {
+      cancelAnimationFrame(requestRef.current);
+      clearInterval(notifyInterval);
+    };
+  }, [animationSpeed, frequencyFactor, orbitData, calculateCurrentFrequencies, notifyFrequencyChanges]);
+  
+  // Efecto separado para actualizar cuando cambie baseFrequency
+  useEffect(() => {
+    if (orbitData && orbitData.length > 0) {
+      // Recalcular frecuencias cuando cambie la frecuencia base
+      frequenciesRef.current = calculateCurrentFrequencies(animationTime);
+      setCurrentFrequencies(frequenciesRef.current);
+      notifyFrequencyChanges();
+    }
+  }, [baseFrequency, calculateCurrentFrequencies, animationTime, orbitData, notifyFrequencyChanges]);
   
   // Calculate current distance using the polar equation of an ellipse
   // r = a(1-e²)/(1+e·cos(θ))
