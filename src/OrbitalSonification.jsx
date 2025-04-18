@@ -32,6 +32,7 @@ const OrbitalSonification = () => {
   const [activeTones, setActiveTones] = useState({});
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
+  const [isPaused, setIsPaused] = useState(false);
   
   // Referencias para evitar problemas con audio/animación
   const audioContextStarted = useRef(false);
@@ -71,7 +72,7 @@ const OrbitalSonification = () => {
 
   // Función para actualizar sonidos cuando cambia la frecuencia base
   const updateLiveTonesWithNewFrequency = useCallback(() => {
-    if (liveMode && synth && audioContextStarted.current) {
+    if (liveMode && synth && audioContextStarted.current && !isPaused) {
       console.log("Updating active tones with new base frequency:", baseFrequency);
       try {
         // Asegurarse de que las frecuencias estén actualizadas
@@ -89,7 +90,7 @@ const OrbitalSonification = () => {
         console.error("Error updating tones with new frequency:", e);
       }
     }
-  }, [liveMode, synth, baseFrequency, activeTones, updateAllFrequencies]);
+  }, [liveMode, synth, baseFrequency, activeTones, updateAllFrequencies, isPaused]);
 
   // Initialize synthesizer with volume reduction to prevent saturation
   useEffect(() => {
@@ -142,6 +143,35 @@ const OrbitalSonification = () => {
     };
   }, []);
 
+  // Efecto para pausar/reanudar los sonidos cuando se cambia el estado de pausa
+  useEffect(() => {
+    if (liveMode && synth && audioContextStarted.current) {
+      try {
+        const planetNames = Object.keys(activeTones);
+        
+        if (isPaused && planetNames.length > 0) {
+          // Pausar todos los sonidos activos
+          console.log("Pausing sounds for planets:", planetNames);
+          planetNames.forEach(planet => {
+            synth.triggerRelease([planet]);
+          });
+        } else if (!isPaused && planetNames.length > 0) {
+          // Reanudar todos los sonidos
+          console.log("Resuming sounds for planets:", planetNames);
+          
+          planetNames.forEach(planet => {
+            const freq = currentFrequencies[planet];
+            if (freq) {
+              synth.triggerAttack(freq, undefined, 0.3, planet);
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error toggling sound pause/resume:", e);
+      }
+    }
+  }, [isPaused, liveMode, synth, activeTones, currentFrequencies]);
+
   // Toggle planet enabled state
   const togglePlanet = (index) => {
     setOrbitData(prevData => {
@@ -183,7 +213,7 @@ const OrbitalSonification = () => {
       setCurrentFrequencies(updatedFrequencies);
       
       // If in live mode, update the active tones with new frequencies
-      if (liveMode && synth && audioContextStarted.current) {
+      if (liveMode && synth && audioContextStarted.current && !isPaused) {
         try {
           Object.entries(updatedFrequencies).forEach(([planet, freq]) => {
             if (activeTones[planet]) {
@@ -201,7 +231,7 @@ const OrbitalSonification = () => {
       frequencyUpdateTimeoutRef.current = null;
     }, 100); // Actualizar a lo sumo cada 100ms
     
-  }, [liveMode, synth, activeTones, currentFrequencies]);
+  }, [liveMode, synth, activeTones, currentFrequencies, isPaused]);
 
   // Función para iniciar Tone.js de forma segura
   const startAudioContext = async () => {
@@ -293,19 +323,28 @@ const OrbitalSonification = () => {
       // Asegurarse de que las frecuencias están actualizadas
       const frequencies = updateAllFrequencies();
       
-      enabledPlanets.forEach(planet => {
-        // Encontrar la frecuencia del planeta
-        let freq = frequencies[planet.name];
-        
-        if (freq) {
-          console.log(`Starting tone for ${planet.name} at ${freq} Hz`);
-          // Reduced velocity to 0.3 to mitigate saturation
-          synth.triggerAttack(freq, undefined, 0.3, planet.name);
+      // Solo reproducir sonidos si no está pausado
+      if (!isPaused) {
+        enabledPlanets.forEach(planet => {
+          // Encontrar la frecuencia del planeta
+          let freq = frequencies[planet.name];
+          
+          if (freq) {
+            console.log(`Starting tone for ${planet.name} at ${freq} Hz`);
+            // Reduced velocity to 0.3 to mitigate saturation
+            synth.triggerAttack(freq, undefined, 0.3, planet.name);
+            newActiveTones[planet.name] = true;
+          } else {
+            console.error(`No frequency available for ${planet.name}`);
+          }
+        });
+      } else {
+        // Si está pausado, solo registrar los planetas activos sin reproducir sonido
+        enabledPlanets.forEach(planet => {
           newActiveTones[planet.name] = true;
-        } else {
-          console.error(`No frequency available for ${planet.name}`);
-        }
-      });
+        });
+        console.log("Animation is paused, tones will not play until resumed");
+      }
       
       console.log("Active tones:", newActiveTones);
       setActiveTones(newActiveTones);
@@ -318,7 +357,7 @@ const OrbitalSonification = () => {
 
   // Effect to handle changes to orbitData in live mode
   useEffect(() => {
-    if (liveMode && synth && audioContextStarted.current) {
+    if (liveMode && synth && audioContextStarted.current && !isPaused) {
       try {
         // Asegurarse de que las frecuencias están actualizadas
         const frequencies = updateAllFrequencies();
@@ -343,7 +382,7 @@ const OrbitalSonification = () => {
         console.error("Error updating tones based on orbitData:", e);
       }
     }
-  }, [orbitData, liveMode, synth, activeTones, updateAllFrequencies]);
+  }, [orbitData, liveMode, synth, activeTones, updateAllFrequencies, isPaused]);
 
   // Cleanup effect for component unmount
   useEffect(() => {
@@ -413,6 +452,11 @@ const OrbitalSonification = () => {
     }
   };
 
+  // Toggle play/pause state
+  const togglePlayPause = () => {
+    setIsPaused(!isPaused);
+  };
+
   return (
     <div className="container">
       <h2 className="title">Planetary Orbits Sonification</h2>
@@ -424,6 +468,7 @@ const OrbitalSonification = () => {
             animationSpeed={animationSpeed} 
             baseFrequency={baseFrequency}
             onFrequencyChange={handleFrequencyChange}
+            isPaused={isPaused}
           />
         </div>
         <div className="controls">
@@ -441,6 +486,16 @@ const OrbitalSonification = () => {
               className="slider"
               onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
             />
+          </div>
+          
+          <div className="playback-controls">
+            <button 
+              onClick={togglePlayPause}
+              className="button playback-button"
+              disabled={isPlaying}
+            >
+              {isPaused ? '▶️ Play' : '⏸️ Pause'}
+            </button>
           </div>
           
           <div className="live-mode-toggle">

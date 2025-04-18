@@ -1,7 +1,7 @@
 // src/PlanetarySystem.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange }) => {
+const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false }) => {
   const [animationTime, setAnimationTime] = useState(0);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const requestRef = useRef();
@@ -68,6 +68,15 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   useEffect(() => {
     if (!orbitData || orbitData.length === 0) return;
     
+    // Si la animación está pausada, no hacer nada
+    if (isPaused) {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+        requestRef.current = undefined;
+      }
+      return;
+    }
+    
     // Función que maneja la animación
     const animate = (time) => {
       if (previousTimeRef.current === undefined) {
@@ -78,8 +87,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
       const deltaTime = time - previousTimeRef.current;
       previousTimeRef.current = time;
       
-      // Solo actualizamos el tiempo si tenemos un deltaTime razonable
-      if (deltaTime < 100) { // Ignoramos saltos grandes en el tiempo
+      // Solo actualizamos el tiempo si tenemos un deltaTime razonable y la animación no está pausada
+      if (deltaTime < 100 && !isPaused) { // Ignoramos saltos grandes en el tiempo
         setAnimationTime(prevTime => {
           const newTime = prevTime + (deltaTime * 0.001 * animationSpeed * frequencyFactor);
           
@@ -94,32 +103,42 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
         });
       }
       
+      // Solo continuamos la animación si no está pausada
+      if (!isPaused) {
+        requestRef.current = requestAnimationFrame(animate);
+      }
+    };
+    
+    // Iniciar animación solo si no está pausada
+    if (!isPaused) {
       requestRef.current = requestAnimationFrame(animate);
-    };
-    
-    requestRef.current = requestAnimationFrame(animate);
-    
-    // Configuramos un intervalo para notificar cambios de frecuencia
-    // en lugar de hacerlo en cada frame
-    const notifyInterval = setInterval(() => {
-      notifyFrequencyChanges();
-    }, 100); // Notificamos cada 100ms
-    
-    return () => {
-      cancelAnimationFrame(requestRef.current);
-      clearInterval(notifyInterval);
-    };
-  }, [animationSpeed, frequencyFactor, orbitData, calculateCurrentFrequencies, notifyFrequencyChanges]);
+      
+      // Configuramos un intervalo para notificar cambios de frecuencia
+      // en lugar de hacerlo en cada frame
+      const notifyInterval = setInterval(() => {
+        if (!isPaused) {
+          notifyFrequencyChanges();
+        }
+      }, 100); // Notificamos cada 100ms
+      
+      return () => {
+        if (requestRef.current) {
+          cancelAnimationFrame(requestRef.current);
+        }
+        clearInterval(notifyInterval);
+      };
+    }
+  }, [animationSpeed, frequencyFactor, orbitData, calculateCurrentFrequencies, notifyFrequencyChanges, isPaused]);
   
   // Efecto separado para actualizar cuando cambie baseFrequency
   useEffect(() => {
-    if (orbitData && orbitData.length > 0) {
+    if (orbitData && orbitData.length > 0 && !isPaused) {
       // Recalcular frecuencias cuando cambie la frecuencia base
       frequenciesRef.current = calculateCurrentFrequencies(animationTime);
       setCurrentFrequencies(frequenciesRef.current);
       notifyFrequencyChanges();
     }
-  }, [baseFrequency, calculateCurrentFrequencies, animationTime, orbitData, notifyFrequencyChanges]);
+  }, [baseFrequency, calculateCurrentFrequencies, animationTime, orbitData, notifyFrequencyChanges, isPaused]);
   
   // Calculate current distance using the polar equation of an ellipse
   // r = a(1-e²)/(1+e·cos(θ))
@@ -314,6 +333,9 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             <span className="frequency-value">{freq.toFixed(1)} Hz</span>
           </div>
         ))}
+        <div className="animation-status">
+          {isPaused ? "Animación pausada" : "Animación activa"}
+        </div>
       </div>
     </div>
   );

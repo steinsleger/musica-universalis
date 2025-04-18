@@ -227,3 +227,68 @@ input[type="checkbox"] {
   margin-right: 5px;
   cursor: pointer;
 }
+
+/* Estilos para controles de reproducción */
+.playback-controls {
+  display: flex;
+  justify-content: center;
+  margin: 15px 0;
+}
+
+.playback-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: auto;
+  margin: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playback-button:hover {
+  background-color: #45a049;
+}
+
+.playback-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.animation-status {
+  margin-top: 10px;
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 3px;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* Mejoras para el responsive design en la visualización */
+@media (max-width: 768px) {
+  .orbital-display {
+    height: 400px;
+  }
+  
+  .playback-button {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .orbital-display {
+    height: 300px;
+  }
+  
+  .playback-button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
