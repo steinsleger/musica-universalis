@@ -197,6 +197,26 @@ const OrbitalSonification = () => {
     setupAudio();
   }, [liveMode, orbitData, isPaused]); // Dependencias clave para reaccionar a cambios
   
+  // Restaurar el efecto para el control de volumen maestro
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      try {
+        // Convertir el volumen lineal a una escala exponencial más adecuada para el audio
+        // Esto evita los problemas de silenciamiento con valores pequeños
+        const dbValue = masterVolume === 0 ? -Infinity : 20 * Math.log10(masterVolume);
+        
+        // Usar rampTo para evitar clics y transiciones bruscas
+        gainNodeRef.current.gain.rampTo(masterVolume, 0.1);
+        
+        if (debug.current) {
+          console.log(`Volume set to ${masterVolume} (${dbValue.toFixed(1)} dB)`);
+        }
+      } catch (e) {
+        console.error("Error setting volume:", e);
+      }
+    }
+  }, [masterVolume]);
+  
   // Función para activar/desactivar un planeta - SIMPLIFICADA
   const togglePlanet = (index) => {
     // Crear una copia de los datos para modificar
