@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false }) => {
   const [animationTime, setAnimationTime] = useState(0);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
+  const [zoomLevel, setZoomLevel] = useState(1); // Default zoom level
   const requestRef = useRef();
   const previousTimeRef = useRef();
   
@@ -19,8 +20,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // Max distance to calculate scaling
   const maxDistance = Math.max(...orbitData.map(planet => planet.distance * (1 + planet.excentricity)));
   
-  // Scale factors
-  const orbitScaleFactor = (svgSize / 2) * 0.85 / maxDistance; // 85% of available radius
+  // Scale factors - now affected by zoom level
+  const orbitScaleFactor = (svgSize / 2) * 0.85 / (maxDistance / zoomLevel); // Apply zoom to scaling
   const minPlanetSize = 3; // Minimum size for visibility
   
   // Sun properties
@@ -29,6 +30,11 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // Calculate frequency factor - we use this to tie animation speed to base frequency
   // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
   const frequencyFactor = baseFrequency / 220;
+  
+  // Function to handle zoom changes
+  const handleZoomChange = (e) => {
+    setZoomLevel(parseFloat(e.target.value));
+  };
   
   // Función para calcular las frecuencias - ahora fuera del bucle de animación
   const calculateCurrentFrequencies = useCallback((time) => {
@@ -222,6 +228,21 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   
   return (
     <div className="orbital-visualization">
+      <div className="zoom-control">
+        <label htmlFor="zoom-slider" className="zoom-label">
+          Zoom: {zoomLevel.toFixed(1)}x
+        </label>
+        <input 
+          id="zoom-slider"
+          type="range" 
+          min="1"
+          max="20"
+          step="0.1"
+          value={zoomLevel}
+          onChange={handleZoomChange}
+          className="zoom-slider"
+        />
+      </div>
       <svg width="100%" height="100%" viewBox={`0 0 ${svgSize} ${svgSize}`}>
         {/* Orbital paths as ellipses */}
         {orbitData.map((planet) => {
