@@ -48,6 +48,26 @@ const OrbitalSonification = () => {
   // Debug flag
   const debug = useRef(true);
 
+  // Utility function to convert frequency to closest musical note
+  const frequencyToNote = (frequency) => {
+    if (!frequency) return "";
+    
+    // A4 is 440Hz, which is the reference
+    const A4 = 440.0;
+    // C0 is the 0th note in our system (by convention)
+    const C0 = A4 * Math.pow(2, -4.75);
+    
+    // Calculate how many half steps from C0
+    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
+    
+    // Convert to note
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const octave = Math.floor(halfStepsFromC0 / 12);
+    const noteIndex = halfStepsFromC0 % 12;
+    
+    return noteNames[noteIndex] + octave;
+  };
+
   // Calculate frequencies based on the modified Bode law (Murch version)
   const calculateBaseFrequencies = useCallback((baseFreq, n) => {
     return (1 + Math.pow(2, n)) * 3 * baseFreq;
@@ -638,6 +658,7 @@ const OrbitalSonification = () => {
               <th>Distance (AU)</th>
               <th>Eccentricity</th>
               <th>Current Freq (Hz)</th>
+              <th>Note</th>
             </tr>
           </thead>
           <tbody>
@@ -658,6 +679,11 @@ const OrbitalSonification = () => {
                   {currentFrequencies[planet.name] 
                     ? currentFrequencies[planet.name].toFixed(1) 
                     : "Calculating..."}
+                </td>
+                <td>
+                  {currentFrequencies[planet.name] 
+                    ? frequencyToNote(currentFrequencies[planet.name])
+                    : ""}
                 </td>
               </tr>
             ))}

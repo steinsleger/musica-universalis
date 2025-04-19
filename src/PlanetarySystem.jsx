@@ -31,6 +31,26 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
   const frequencyFactor = baseFrequency / 220;
   
+  // Utility function to convert frequency to closest musical note
+  const frequencyToNote = (frequency) => {
+    if (!frequency) return "";
+    
+    // A4 is 440Hz, which is the reference
+    const A4 = 440.0;
+    // C0 is the 0th note in our system (by convention)
+    const C0 = A4 * Math.pow(2, -4.75);
+    
+    // Calculate how many half steps from C0
+    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
+    
+    // Convert to note
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const octave = Math.floor(halfStepsFromC0 / 12);
+    const noteIndex = halfStepsFromC0 % 12;
+    
+    return noteNames[noteIndex] + octave;
+  };
+  
   // Function to handle zoom changes
   const handleZoomChange = (e) => {
     setZoomLevel(parseFloat(e.target.value));
@@ -368,7 +388,9 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
         {Object.entries(currentFrequencies).map(([planet, freq]) => (
           <div key={planet} className="planet-frequency">
             <span className="planet-name">{planet}:</span>
-            <span className="frequency-value">{freq.toFixed(1)} Hz</span>
+            <span className="frequency-value">
+              {freq.toFixed(1)} Hz <small>({frequencyToNote(freq)})</small>
+            </span>
           </div>
         ))}
         <div className="animation-status">

@@ -361,3 +361,32 @@ input[type="checkbox"] {
   transform: scale(1.3);
   margin-right: 10px;
 }
+
+.frequency-value {
+  small {
+    opacity: 0.8;
+    margin-left: 3px;
+    font-size: 0.85em;
+  }
+}
+
+/* Table styles */
+.table td:nth-child(6) {
+  font-family: monospace;
+  font-weight: bold;
+  color: #4CAF50;
+  text-align: center;
+}
+
+tr.enabled td:nth-child(6) {
+  animation: noteHighlight 2s infinite alternate;
+}
+
+@keyframes noteHighlight {
+  from {
+    color: #4CAF50;
+  }
+  to {
+    color: #8BC34A;
+  }
+}
