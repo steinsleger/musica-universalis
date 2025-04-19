@@ -201,7 +201,10 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
       "Mars": 4.5,
       "Ceres": 3,
       "Jupiter": 9,
-      "Saturn": 8
+      "Saturn": 8,
+      "Uranus": 7,
+      "Neptune": 7,
+      "Pluto": 2.5
     };
     
     return planet.enabled ? baseSize[planet.name] || minPlanetSize : 0;
@@ -292,7 +295,10 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             "Mars": "#CD5C5C",
             "Ceres": "#8B8B83",
             "Jupiter": "#E59866",
-            "Saturn": "#F4D03F"
+            "Saturn": "#F4D03F",
+            "Uranus": "#73C6B6",
+            "Neptune": "#5DADE2",
+            "Pluto": "#C39BD3"
           };
           
           return (

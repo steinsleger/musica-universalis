@@ -12,7 +12,10 @@ const OrbitalSonification = () => {
     { name: "Mars", distance: 1.52, excentricity: 0.0934, enabled: true },
     { name: "Ceres", distance: 2.77, excentricity: 0.0758, enabled: true },
     { name: "Jupiter", distance: 5.20, excentricity: 0.0484, enabled: true },
-    { name: "Saturn", distance: 9.58, excentricity: 0.0539, enabled: true }
+    { name: "Saturn", distance: 9.58, excentricity: 0.0539, enabled: true },
+    { name: "Uranus", distance: 19.22, excentricity: 0.0473, enabled: true },
+    { name: "Neptune", distance: 30.05, excentricity: 0.0086, enabled: true },
+    { name: "Pluto", distance: 39.48, excentricity: 0.2488, enabled: true }
   ]);
   const [baseFrequency, setBaseFrequency] = useState(220);
   const [isPlaying, setIsPlaying] = useState(false);
