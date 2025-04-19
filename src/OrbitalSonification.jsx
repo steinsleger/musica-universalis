@@ -106,7 +106,7 @@ const OrbitalSonification = () => {
     const initTone = async () => {
       try {
         // Create a gain node to control overall volume
-        const gainNode = new Tone.Gain(0.35).toDestination();
+        const gainNode = new Tone.Gain(masterVolume).toDestination();
         gainNodeRef.current = gainNode;
         
         // Configure the main synthesizer for the sequence
@@ -175,7 +175,7 @@ const OrbitalSonification = () => {
         if (synth) synth.dispose();
       });
     };
-  }, [orbitData]);
+  }, [orbitData, masterVolume]);
   
   // NEW: Effect to keep audio state synchronized with application state
   // This effect will now be responsible for managing audio independently
@@ -193,6 +193,11 @@ const OrbitalSonification = () => {
         
         // Resume audio context
         await Tone.context.resume();
+        
+        // Ensure the gain node has the current master volume value
+        if (gainNodeRef.current) {
+          gainNodeRef.current.gain.value = masterVolume;
+        }
         
         // Rebuild entire audio state based on current application state
         // This ensures we always have a coherent audio state
@@ -223,7 +228,7 @@ const OrbitalSonification = () => {
     };
     
     setupAudio();
-  }, [liveMode, orbitData, isPaused]); // Key dependencies to react to changes
+  }, [liveMode, orbitData, isPaused, masterVolume]); // Add masterVolume as dependency
   
   // Restore effect for master volume control
   useEffect(() => {
@@ -234,7 +239,7 @@ const OrbitalSonification = () => {
         const dbValue = masterVolume === 0 ? -Infinity : 20 * Math.log10(masterVolume);
         
         // Use rampTo to avoid clicks and abrupt transitions
-        gainNodeRef.current.gain.rampTo(masterVolume, 0.1);
+        gainNodeRef.current.gain.rampTo(masterVolume, 0.05);
         
         if (debug.current) {
           console.log(`Volume set to ${masterVolume} (${dbValue.toFixed(1)} dB)`);
