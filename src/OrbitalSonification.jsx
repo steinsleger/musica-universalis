@@ -645,6 +645,7 @@ const OrbitalSonification = () => {
               type="checkbox" 
               checked={orbitData.every(planet => planet.enabled)}
               onChange={() => toggleAllPlanets(!orbitData.every(planet => planet.enabled))}
+              disabled={isPlaying}
             />
             {orbitData.every(planet => planet.enabled) ? 'Disable All Planets' : 'Enable All Planets'}
           </label>
@@ -669,6 +670,7 @@ const OrbitalSonification = () => {
                     type="checkbox" 
                     checked={planet.enabled}
                     onChange={() => togglePlanet(index)}
+                    disabled={isPlaying}
                   />
                 </td>
                 <td>{planet.name}</td>

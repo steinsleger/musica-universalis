@@ -206,6 +206,16 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
+input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox-label:has(input:disabled) {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* Highlight enabled/disabled rows */
 tr.enabled {
   background-color: #f0fff0;
@@ -329,4 +339,16 @@ tr.enabled td:nth-child(6) {
   to {
     color: #8BC34A;
   }
+}
+
+/* Notification message */
+.notification {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+  font-size: 0.9rem;
+  text-align: center;
 }
