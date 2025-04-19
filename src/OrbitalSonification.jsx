@@ -21,6 +21,7 @@ const OrbitalSonification = () => {
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [isPaused, setIsPaused] = useState(false);
   const [masterVolume, setMasterVolume] = useState(0.5); // Valor inicial: 0.5 (0dB)
+  const [frequencyUpdateCount, setFrequencyUpdateCount] = useState(0); // Para monitorear actualizaciones
   
   // Referencias para evitar problemas con audio/animación
   const audioContextStarted = useRef(false);
@@ -31,6 +32,12 @@ const OrbitalSonification = () => {
   // Nueva referencia para mantener los sintetizadores individuales
   const synthsRef = useRef({});
   const mainSynthRef = useRef(null);
+  
+  // Guardar las últimas frecuencias utilizadas cuando se pausa
+  const lastFrequenciesRef = useRef({});
+  
+  // Debug flag
+  const debug = useRef(true);
 
   // Calculate frequencies based on the modified Bode law (Murch version)
   const calculateBaseFrequencies = useCallback((baseFreq, n) => {
@@ -152,7 +159,9 @@ const OrbitalSonification = () => {
         // Usar rampTo para evitar clics y transiciones bruscas
         gainNodeRef.current.gain.rampTo(masterVolume, 0.1);
         
-        console.log(`Volume set to ${masterVolume} (${dbValue.toFixed(1)} dB)`);
+        if (debug.current) {
+          console.log(`Volume set to ${masterVolume} (${dbValue.toFixed(1)} dB)`);
+        }
       } catch (e) {
         console.error("Error setting volume:", e);
       }
@@ -171,17 +180,23 @@ const OrbitalSonification = () => {
     setOrbitData(newData);
     
     // Si estamos en modo en vivo, actualizar el sonido
-    if (liveMode && !isPaused) {
+    if (liveMode) {
       try {
         const planetSynth = synthsRef.current[planet.name];
         if (!planetSynth) return;
         
         if (planet.enabled) {
           // Obtener la frecuencia actual
-          const freq = currentFrequencies[planet.name];
+          const freq = isPaused ? 
+            (lastFrequenciesRef.current[planet.name] || currentFrequencies[planet.name]) : 
+            currentFrequencies[planet.name];
+            
           if (freq) {
             // Iniciar el sonido
             planetSynth.triggerAttack(freq);
+            if (debug.current) {
+              console.log(`Activado planeta ${planet.name} con frecuencia ${freq.toFixed(1)} Hz`);
+            }
           }
         } else {
           // Detener el sonido
@@ -194,6 +209,10 @@ const OrbitalSonification = () => {
               planetSynth.volume.value = 0;
             }, 100);
           }, 10);
+          
+          if (debug.current) {
+            console.log(`Desactivado planeta ${planet.name}`);
+          }
         }
       } catch (e) {
         console.error("Error updating sound:", e);
@@ -213,7 +232,7 @@ const OrbitalSonification = () => {
     setOrbitData(newData);
     
     // Si estamos en modo en vivo, actualizar los sonidos
-    if (liveMode && !isPaused) {
+    if (liveMode) {
       try {
         newData.forEach(planet => {
           const planetSynth = synthsRef.current[planet.name];
@@ -221,7 +240,10 @@ const OrbitalSonification = () => {
           
           if (planet.enabled) {
             // Obtener la frecuencia actual
-            const freq = currentFrequencies[planet.name];
+            const freq = isPaused ? 
+              (lastFrequenciesRef.current[planet.name] || currentFrequencies[planet.name]) : 
+              currentFrequencies[planet.name];
+              
             if (freq) {
               // Iniciar el sonido
               planetSynth.triggerAttack(freq);
@@ -239,6 +261,10 @@ const OrbitalSonification = () => {
             }, 10);
           }
         });
+        
+        if (debug.current) {
+          console.log(`Se han ${enable ? 'activado' : 'desactivado'} todos los planetas`);
+        }
       } catch (e) {
         console.error("Error updating sounds:", e);
       }
@@ -248,31 +274,44 @@ const OrbitalSonification = () => {
   // Comprobar si todos los planetas están activados
   const areAllPlanetsEnabled = orbitData.every(planet => planet.enabled);
 
-  // Manejar cambios de frecuencia desde la visualización
+  // Manejar cambios de frecuencia desde la visualización - REVISADO Y CORREGIDO
   const handleFrequencyChange = useCallback((frequencies) => {
+    // Cancelar cualquier timeout pendiente para evitar problemas
     if (frequencyUpdateTimeoutRef.current) {
       clearTimeout(frequencyUpdateTimeoutRef.current);
     }
     
-    frequencyUpdateTimeoutRef.current = setTimeout(() => {
-      const updatedFrequencies = { ...currentFrequencies, ...frequencies };
-      setCurrentFrequencies(updatedFrequencies);
-      
-      if (liveMode && !isPaused) {
-        // Actualizar las frecuencias de todos los sintetizadores activos
-        orbitData.forEach(planet => {
-          if (planet.enabled && updatedFrequencies[planet.name]) {
-            const planetSynth = synthsRef.current[planet.name];
-            if (planetSynth) {
-              // Establecer nueva frecuencia
-              planetSynth.frequency.value = updatedFrequencies[planet.name];
+    // Actualizar inmediatamente sin timeout para garantizar respuesta en tiempo real
+    // Actualizar el estado para la interfaz
+    const updatedFrequencies = { ...currentFrequencies, ...frequencies };
+    setCurrentFrequencies(updatedFrequencies);
+    
+    // Incrementar contador para monitoreo (solo debug)
+    setFrequencyUpdateCount(prev => prev + 1);
+    
+    // También guardar las últimas frecuencias utilizadas
+    lastFrequenciesRef.current = { ...lastFrequenciesRef.current, ...frequencies };
+    
+    // Solo actualizar los sintetizadores si no está pausado
+    if (liveMode && !isPaused) {
+      // Actualizar las frecuencias de todos los sintetizadores activos inmediatamente
+      Object.entries(frequencies).forEach(([planetName, freq]) => {
+        const planet = orbitData.find(p => p.name === planetName);
+        if (planet && planet.enabled) {
+          const planetSynth = synthsRef.current[planetName];
+          if (planetSynth) {
+            // Usar setValue inmediato en lugar de rampTo para frecuencias
+            // Esto proporciona cambios más rápidos y nítidos
+            planetSynth.frequency.value = freq;
+            
+            // Solo log ocasional para no saturar la consola
+            if (debug.current && Math.random() < 0.01) { // Solo 1% de las actualizaciones
+              console.log(`Actualizada frecuencia de ${planetName} a ${freq.toFixed(1)} Hz`);
             }
           }
-        });
-      }
-      
-      frequencyUpdateTimeoutRef.current = null;
-    }, 100);
+        }
+      });
+    }
   }, [liveMode, currentFrequencies, isPaused, orbitData]);
 
   // Iniciar el contexto de audio de forma segura
@@ -299,18 +338,22 @@ const OrbitalSonification = () => {
         if (started) {
           await Tone.context.resume();
           
-          if (!isPaused) {
-            // Activar sonidos para todos los planetas habilitados
-            orbitData.forEach(planet => {
-              if (planet.enabled) {
-                const planetSynth = synthsRef.current[planet.name];
-                const freq = currentFrequencies[planet.name];
-                if (planetSynth && freq) {
-                  planetSynth.triggerAttack(freq);
+          // Activar sonidos para todos los planetas habilitados
+          orbitData.forEach(planet => {
+            if (planet.enabled) {
+              const planetSynth = synthsRef.current[planet.name];
+              const freq = isPaused ? 
+                (lastFrequenciesRef.current[planet.name] || currentFrequencies[planet.name]) : 
+                currentFrequencies[planet.name];
+                
+              if (planetSynth && freq) {
+                planetSynth.triggerAttack(freq);
+                if (debug.current) {
+                  console.log(`Iniciado sonido para ${planet.name} a ${freq.toFixed(1)} Hz`);
                 }
               }
-            });
-          }
+            }
+          });
           
           setLiveMode(true);
         }
@@ -328,34 +371,23 @@ const OrbitalSonification = () => {
       
       // Desactivar modo en vivo
       setLiveMode(false);
+      if (debug.current) {
+        console.log("Modo en vivo desactivado");
+      }
     }
   };
 
-  // Manejar cambios en el estado de pausa/reproducción
+  // Ahora cuando pausamos no afecta a los sonidos, solo a la animación
+  // y actualización de frecuencias
   useEffect(() => {
-    if (liveMode) {
-      if (isPaused) {
-        // Detener todos los sonidos al pausar
-        orbitData.forEach(planet => {
-          const planetSynth = synthsRef.current[planet.name];
-          if (planetSynth) {
-            planetSynth.triggerRelease();
-          }
-        });
-      } else {
-        // Reanudar sonidos para planetas habilitados
-        orbitData.forEach(planet => {
-          if (planet.enabled) {
-            const planetSynth = synthsRef.current[planet.name];
-            const freq = currentFrequencies[planet.name];
-            if (planetSynth && freq) {
-              planetSynth.triggerAttack(freq);
-            }
-          }
-        });
-      }
+    if (isPaused) {
+      // Guardar las frecuencias actuales
+      lastFrequenciesRef.current = { ...currentFrequencies };
+      console.log("Animation paused. Frequencies frozen.");
+    } else {
+      console.log("Animation resumed. Frequencies updating.");
     }
-  }, [isPaused, liveMode, orbitData, currentFrequencies]);
+  }, [isPaused, currentFrequencies]);
 
   // Manejar cambios en la frecuencia base
   const handleBaseFrequencyChange = (e) => {
@@ -365,7 +397,7 @@ const OrbitalSonification = () => {
     // La actualización de frecuencias ahora se hace automáticamente en el useEffect,
     // lo que garantiza que se actualice en todos los lugares necesarios
     
-    // Si estamos en modo en vivo, actualizar los sonidos
+    // Si estamos en modo en vivo y NO está pausado, actualizar los sonidos
     if (liveMode && !isPaused) {
       setTimeout(() => {
         // Actualizar frecuencias para planetas activos
@@ -416,7 +448,7 @@ const OrbitalSonification = () => {
     }
   };
 
-  // Alternar entre pausa y reproducción
+  // Alternar entre pausa y reproducción - Ahora solo afecta a la animación
   const togglePlayPause = () => {
     setIsPaused(!isPaused);
   };
@@ -459,7 +491,7 @@ const OrbitalSonification = () => {
             />
           </div>
           
-          {/* Control de volumen maestro mejorado */}
+          {/* Control de volumen maestro */}
           <div className="control-group">
             <label htmlFor="volume-slider" className="label">
               Master Volume: {volumeToDb(masterVolume)} dB
@@ -482,7 +514,7 @@ const OrbitalSonification = () => {
               className="button playback-button"
               disabled={isPlaying}
             >
-              {isPaused ? '▶️ Play' : '⏸️ Pause'}
+              {isPaused ? '▶️ Resume Animation' : '⏸️ Pause Animation'}
             </button>
           </div>
           
@@ -500,6 +532,14 @@ const OrbitalSonification = () => {
           
           <p className="note">
             Las velocidades orbitales y frecuencias varían según la distancia al Sol en cada punto de la órbita elíptica.
+            {isPaused && liveMode && (
+              <strong> La animación está pausada, pero el sonido continúa con frecuencias fijas.</strong>
+            )}
+          </p>
+          
+          {/* Información de debugging */}
+          <p className="debug-info">
+            <small>Actualizaciones de frecuencia: {frequencyUpdateCount}</small>
           </p>
         </div>
       </div>

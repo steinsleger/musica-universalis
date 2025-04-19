@@ -9,6 +9,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   
   // Para evitar actualizaciones excesivas, creamos un objeto para almacenar frecuencias
   const frequenciesRef = useRef({});
+  // Referencia para evitar ciclos infinitos
+  const lastBaseFrequencyRef = useRef(baseFrequency);
   
   // Constants for visualization
   const svgSize = 600;
@@ -131,14 +133,23 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   }, [animationSpeed, frequencyFactor, orbitData, calculateCurrentFrequencies, notifyFrequencyChanges, isPaused]);
   
   // Efecto separado para actualizar cuando cambie baseFrequency
+  // Este efecto estaba causando la recursión infinita
   useEffect(() => {
-    if (orbitData && orbitData.length > 0 && !isPaused) {
-      // Recalcular frecuencias cuando cambie la frecuencia base
-      frequenciesRef.current = calculateCurrentFrequencies(animationTime);
-      setCurrentFrequencies(frequenciesRef.current);
-      notifyFrequencyChanges();
+    // Verificar si baseFrequency ha cambiado realmente
+    if (lastBaseFrequencyRef.current !== baseFrequency) {
+      if (orbitData && orbitData.length > 0 && !isPaused) {
+        // Recalcular frecuencias cuando cambie la frecuencia base
+        const newFrequencies = calculateCurrentFrequencies(animationTime);
+        setCurrentFrequencies(newFrequencies);
+        frequenciesRef.current = newFrequencies;
+        
+        // No notificamos aquí para evitar un ciclo infinito
+        // El intervalo de notificación ya se encargará de esto
+      }
+      // Actualizar la referencia para la próxima comparación
+      lastBaseFrequencyRef.current = baseFrequency;
     }
-  }, [baseFrequency, calculateCurrentFrequencies, animationTime, orbitData, notifyFrequencyChanges, isPaused]);
+  }, [baseFrequency, calculateCurrentFrequencies, animationTime, orbitData, isPaused]);
   
   // Calculate current distance using the polar equation of an ellipse
   // r = a(1-e²)/(1+e·cos(θ))
