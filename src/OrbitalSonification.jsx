@@ -24,7 +24,6 @@ const OrbitalSonification = () => {
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [isPaused, setIsPaused] = useState(true);
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
-  const [frequencyUpdateCount, setFrequencyUpdateCount] = useState(0); // For monitoring updates
   
   // References to avoid audio/animation issues
   const audioContextStarted = useRef(false);
@@ -342,9 +341,6 @@ const OrbitalSonification = () => {
     const updatedFrequencies = { ...currentFrequencies, ...frequencies };
     setCurrentFrequencies(updatedFrequencies);
     
-    // Increment counter for monitoring (only debug)
-    setFrequencyUpdateCount(prev => prev + 1);
-    
     // Also save the last frequencies used
     lastFrequenciesRef.current = { ...lastFrequenciesRef.current, ...frequencies };
     
@@ -602,11 +598,6 @@ const OrbitalSonification = () => {
             {isPaused && liveMode && (
               <strong> The animation is paused, but the sound continues with fixed frequencies.</strong>
             )}
-          </p>
-          
-          {/* Debugging information */}
-          <p className="debug-info">
-            <small>Frequency updates: {frequencyUpdateCount}</small>
           </p>
         </div>
       </div>
