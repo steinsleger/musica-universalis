@@ -18,7 +18,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   const center = svgSize / 2;
   
   // Max distance to calculate scaling
-  const maxDistance = Math.max(...orbitData.map(planet => planet.distance * (1 + planet.excentricity)));
+  const maxDistance = Math.max(...orbitData.map(planet => planet.distance * (1 + planet.eccentricity)));
   
   // Scale factors - now affected by zoom level
   const orbitScaleFactor = (svgSize / 2) * 0.85 / (maxDistance / zoomLevel); // Apply zoom to scaling
@@ -66,7 +66,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
         const angle = (time / period) * 2 * Math.PI;
         
         // Calculate current distance using the polar equation of an ellipse
-        const currentDistance = getCurrentDistance(planet.distance, planet.excentricity, angle);
+        const currentDistance = getCurrentDistance(planet.distance, planet.eccentricity, angle);
         
         // Base frequency for this planet (when at average distance)
         const n = index - 2; // Adjust so Earth is index 0
@@ -268,7 +268,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
         {orbitData.map((planet) => {
           const pathPoints = generateEllipticalPath(
             planet.distance, 
-            planet.excentricity,
+            planet.eccentricity,
             100
           );
           
@@ -288,7 +288,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           );
         })}
         
-        {/* Sol label */}
+        {/* Sun label */}
         <text
           x={center}
           y={center - sunRadius - 5}
@@ -296,7 +296,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           textAnchor="middle"
           fill="#FDB813"
         >
-          Sol
+          Sun
         </text>
         
         {/* Sun */}
@@ -315,14 +315,14 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           const angle = (animationTime / period) * 2 * Math.PI;
           const position = getPlanetPosition(
             planet.distance,
-            planet.excentricity,
+            planet.eccentricity,
             angle
           );
           
           // Calculate current distance for display
           const currentDistance = getCurrentDistance(
             planet.distance,
-            planet.excentricity,
+            planet.eccentricity,
             angle
           );
           

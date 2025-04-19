@@ -4,18 +4,18 @@ import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
 
 const OrbitalSonification = () => {
-  // Estado para the data of planetary orbits
+  // State for the data of planetary orbits
   const [orbitData, setOrbitData] = useState([
-    { name: "Mercury", distance: 0.39, excentricity: 0.2056, enabled: true },
-    { name: "Venus", distance: 0.72, excentricity: 0.0068, enabled: true },
-    { name: "Earth", distance: 1.00, excentricity: 0.0167, enabled: true },
-    { name: "Mars", distance: 1.52, excentricity: 0.0934, enabled: true },
-    { name: "Ceres", distance: 2.77, excentricity: 0.0758, enabled: true },
-    { name: "Jupiter", distance: 5.20, excentricity: 0.0484, enabled: true },
-    { name: "Saturn", distance: 9.58, excentricity: 0.0539, enabled: true },
-    { name: "Uranus", distance: 19.22, excentricity: 0.0473, enabled: true },
-    { name: "Neptune", distance: 30.05, excentricity: 0.0086, enabled: true },
-    { name: "Pluto", distance: 39.48, excentricity: 0.2488, enabled: true }
+    { name: "Mercury", distance: 0.39, eccentricity: 0.2056, enabled: true },
+    { name: "Venus", distance: 0.72, eccentricity: 0.0068, enabled: true },
+    { name: "Earth", distance: 1.00, eccentricity: 0.0167, enabled: true },
+    { name: "Mars", distance: 1.52, eccentricity: 0.0934, enabled: true },
+    { name: "Ceres", distance: 2.77, eccentricity: 0.0758, enabled: true },
+    { name: "Jupiter", distance: 5.20, eccentricity: 0.0484, enabled: true },
+    { name: "Saturn", distance: 9.58, eccentricity: 0.0539, enabled: true },
+    { name: "Uranus", distance: 19.22, eccentricity: 0.0473, enabled: true },
+    { name: "Neptune", distance: 30.05, eccentricity: 0.0086, enabled: true },
+    { name: "Pluto", distance: 39.48, eccentricity: 0.2488, enabled: true }
   ]);
   const [baseFrequency, setBaseFrequency] = useState(27.5);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -673,7 +673,7 @@ const OrbitalSonification = () => {
                 </td>
                 <td>{planet.name}</td>
                 <td>{planet.distance.toFixed(2)}</td>
-                <td>{planet.excentricity.toFixed(4)}</td>
+                <td>{planet.eccentricity.toFixed(4)}</td>
                 <td>
                   {/* Use currentFrequencies for displaying actual values */}
                   {currentFrequencies[planet.name] 
