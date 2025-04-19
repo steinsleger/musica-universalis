@@ -121,7 +121,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
         if (!isPaused) {
           notifyFrequencyChanges();
         }
-      }, 100); // Notificamos cada 100ms
+      }, 16); // Notificamos cada 100ms
       
       return () => {
         if (requestRef.current) {
