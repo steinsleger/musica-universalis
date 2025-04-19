@@ -17,7 +17,7 @@ const OrbitalSonification = () => {
     { name: "Neptune", distance: 30.05, excentricity: 0.0086, enabled: true },
     { name: "Pluto", distance: 39.48, excentricity: 0.2488, enabled: true }
   ]);
-  const [baseFrequency, setBaseFrequency] = useState(220);
+  const [baseFrequency, setBaseFrequency] = useState(27.5);
   const [isPlaying, setIsPlaying] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(1);
   const [liveMode, setLiveMode] = useState(false);
@@ -348,7 +348,7 @@ const OrbitalSonification = () => {
 
   // Manejar cambios en la frecuencia base
   const handleBaseFrequencyChange = (e) => {
-    const newBaseFrequency = parseInt(e.target.value);
+    const newBaseFrequency = parseFloat(e.target.value);
     setBaseFrequency(newBaseFrequency);
     
     // La actualización de frecuencias ahora se hace automáticamente en el useEffect,
@@ -503,15 +503,15 @@ const OrbitalSonification = () => {
       
       <div className="slider-container">
         <label htmlFor="frequency-slider" className="label">
-          Base Frequency: {baseFrequency} Hz
+          Base Frequency: {baseFrequency.toFixed(1)} Hz
         </label>
         <input 
           id="frequency-slider"
           type="range" 
           value={baseFrequency}
-          min={55}
-          max={330}
-          step={1}
+          min={27.5}
+          max={110}
+          step={0.5}
           className="slider"
           onChange={handleBaseFrequencyChange}
         />
