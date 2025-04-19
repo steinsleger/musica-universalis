@@ -23,7 +23,7 @@ const OrbitalSonification = () => {
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [isPaused, setIsPaused] = useState(false);
-  const [masterVolume, setMasterVolume] = useState(0.5); // Valor inicial: 0.5 (0dB)
+  const [masterVolume, setMasterVolume] = useState(0.35); // -9dB aproximadamente
   const [frequencyUpdateCount, setFrequencyUpdateCount] = useState(0); // Para monitorear actualizaciones
   
   // Referencias para evitar problemas con audio/animación
@@ -84,7 +84,7 @@ const OrbitalSonification = () => {
     const initTone = async () => {
       try {
         // Crear un nodo de ganancia para controlar el volumen general
-        const gainNode = new Tone.Gain(0.5).toDestination();
+        const gainNode = new Tone.Gain(0.35).toDestination();
         gainNodeRef.current = gainNode;
         
         // Configuramos el sintetizador principal para la secuencia
