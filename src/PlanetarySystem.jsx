@@ -8,9 +8,9 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   const requestRef = useRef();
   const previousTimeRef = useRef();
   
-  // Para evitar actualizaciones excesivas, creamos un objeto para almacenar frecuencias
+  // To avoid excessive updates, we create an object to store frequencies
   const frequenciesRef = useRef({});
-  // Referencia para evitar ciclos infinitos
+  // Reference to avoid infinite loops
   const lastBaseFrequencyRef = useRef(baseFrequency);
   
   // Constants for visualization
@@ -36,7 +36,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     setZoomLevel(parseFloat(e.target.value));
   };
   
-  // Función para calcular las frecuencias - ahora fuera del bucle de animación
+  // Function to calculate frequencies - now outside the animation loop
   const calculateCurrentFrequencies = useCallback((time) => {
     const newFrequencies = {};
     
@@ -64,8 +64,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     return newFrequencies;
   }, [orbitData, baseFrequency]);
   
-  // Función para notificar cambios de frecuencia al componente padre
-  // Throttled para evitar actualizaciones excesivas
+  // Function to notify frequency changes to the parent component
+  // Throttled to avoid excessive updates
   const notifyFrequencyChanges = useCallback(() => {
     if (onFrequencyChange) {
       onFrequencyChange(frequenciesRef.current);
@@ -76,7 +76,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   useEffect(() => {
     if (!orbitData || orbitData.length === 0) return;
     
-    // Si la animación está pausada, no hacer nada
+    // If animation is paused, do nothing
     if (isPaused) {
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
@@ -85,49 +85,49 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
       return;
     }
     
-    // Función que maneja la animación
+    // Function that handles animation
     const animate = (time) => {
       if (previousTimeRef.current === undefined) {
         previousTimeRef.current = time;
       }
       
-      // Calculamos el delta de tiempo para hacer la animación independiente del frame rate
+      // Calculate delta time to make animation frame rate independent
       const deltaTime = time - previousTimeRef.current;
       previousTimeRef.current = time;
       
-      // Solo actualizamos el tiempo si tenemos un deltaTime razonable y la animación no está pausada
-      if (deltaTime < 100 && !isPaused) { // Ignoramos saltos grandes en el tiempo
+      // Only update time if we have a reasonable deltaTime and animation isn't paused
+      if (deltaTime < 100 && !isPaused) { // Ignore large time jumps
         setAnimationTime(prevTime => {
           const newTime = prevTime + (deltaTime * 0.001 * animationSpeed * frequencyFactor);
           
-          // Calculamos nuevas frecuencias y las almacenamos en la ref
+          // Calculate new frequencies and store them in the ref
           frequenciesRef.current = calculateCurrentFrequencies(newTime);
           
-          // Actualizamos el estado local de frecuencias de forma menos frecuente
-          // Solo cuando cambie el fotograma de animación
+          // Update local frequency state less frequently
+          // Only when animation frame changes
           setCurrentFrequencies(frequenciesRef.current);
           
           return newTime;
         });
       }
       
-      // Solo continuamos la animación si no está pausada
+      // Only continue animation if not paused
       if (!isPaused) {
         requestRef.current = requestAnimationFrame(animate);
       }
     };
     
-    // Iniciar animación solo si no está pausada
+    // Start animation only if not paused
     if (!isPaused) {
       requestRef.current = requestAnimationFrame(animate);
       
-      // Configuramos un intervalo para notificar cambios de frecuencia
-      // en lugar de hacerlo en cada frame
+      // Set up an interval to notify frequency changes
+      // instead of doing it on every frame
       const notifyInterval = setInterval(() => {
         if (!isPaused) {
           notifyFrequencyChanges();
         }
-      }, 16); // Notificamos cada 100ms
+      }, 16); // Notify every 16ms
       
       return () => {
         if (requestRef.current) {
@@ -138,21 +138,21 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     }
   }, [animationSpeed, frequencyFactor, orbitData, calculateCurrentFrequencies, notifyFrequencyChanges, isPaused]);
   
-  // Efecto separado para actualizar cuando cambie baseFrequency
-  // Este efecto estaba causando la recursión infinita
+  // Separate effect to update when baseFrequency changes
+  // This effect was causing the infinite recursion
   useEffect(() => {
-    // Verificar si baseFrequency ha cambiado realmente
+    // Check if baseFrequency has actually changed
     if (lastBaseFrequencyRef.current !== baseFrequency) {
       if (orbitData && orbitData.length > 0 && !isPaused) {
-        // Recalcular frecuencias cuando cambie la frecuencia base
+        // Recalculate frequencies when the base frequency changes
         const newFrequencies = calculateCurrentFrequencies(animationTime);
         setCurrentFrequencies(newFrequencies);
         frequenciesRef.current = newFrequencies;
         
-        // No notificamos aquí para evitar un ciclo infinito
-        // El intervalo de notificación ya se encargará de esto
+        // Don't notify here to avoid an infinite loop
+        // The notification interval will handle this
       }
-      // Actualizar la referencia para la próxima comparación
+      // Update the reference for the next comparison
       lastBaseFrequencyRef.current = baseFrequency;
     }
   }, [baseFrequency, calculateCurrentFrequencies, animationTime, orbitData, isPaused]);
@@ -172,12 +172,12 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     // Distance focal
     const focalDistance = semiMajorAxis * eccentricity;
     
-    // CORRECCIÓN: Ecuación paramétrica correcta de la elipse con el Sol en un foco
-    // El Sol está en el origen (0,0) y la elipse está alrededor de él
+    // CORRECTION: Correct parametric equation of the ellipse with the Sun at one focus
+    // The Sun is at the origin (0,0) and the ellipse is around it
     const rawX = semiMajorAxis * Math.cos(angle) - focalDistance;
     const rawY = semiMinorAxis * Math.sin(angle);
     
-    // Trasladamos al centro del SVG
+    // Translate to center of SVG
     const x = center + rawX * orbitScaleFactor;
     const y = center + rawY * orbitScaleFactor;
     
@@ -339,7 +339,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
               >
                 {planet.name}
               </text>
-              {/* Distancia actual */}
+              {/* Current distance */}
               <text
                 x={position.x}
                 y={position.y + size + 8}
@@ -349,7 +349,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
               >
                 {currentDistance.toFixed(2)} AU
               </text>
-              {/* Línea desde el sol hasta el planeta */}
+              {/* Line from sun to planet */}
               <line
                 x1={center}
                 y1={center}
@@ -364,7 +364,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
         })}
       </svg>
       <div className="frequency-display">
-        <div className="frequency-header">Frecuencias actuales:</div>
+        <div className="frequency-header">Current Frequencies:</div>
         {Object.entries(currentFrequencies).map(([planet, freq]) => (
           <div key={planet} className="planet-frequency">
             <span className="planet-name">{planet}:</span>
@@ -372,7 +372,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           </div>
         ))}
         <div className="animation-status">
-          {isPaused ? "Animación pausada" : "Animación activa"}
+          {isPaused ? "Animation Paused" : "Animation Active"}
         </div>
       </div>
     </div>
