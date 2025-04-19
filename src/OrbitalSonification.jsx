@@ -39,6 +39,9 @@ const OrbitalSonification = () => {
   // Guardar las últimas frecuencias utilizadas cuando se pausa
   const lastFrequenciesRef = useRef({});
   
+  // Referencia para seguir el timeout de la secuencia orbital
+  const sequenceTimeoutRef = useRef(null);
+  
   // Debug flag
   const debug = useRef(true);
 
@@ -377,9 +380,61 @@ const OrbitalSonification = () => {
     setMasterVolume(newVolume);
   };
 
-  // Reproducir secuencia orbital usando el sintetizador principal
+  // Reproducir o detener secuencia orbital usando el sintetizador principal
   const playOrbitalSequence = async () => {
-    if (!mainSynthRef.current || isPlaying || liveMode) return;
+    // Si ya está reproduciéndose, detener la secuencia
+    if (isPlaying) {
+      // Cancelar el timeout pendiente
+      if (sequenceTimeoutRef.current) {
+        clearTimeout(sequenceTimeoutRef.current);
+        sequenceTimeoutRef.current = null;
+      }
+      
+      // Detener todos los sonidos en el sintetizador principal
+      if (mainSynthRef.current) {
+        mainSynthRef.current.releaseAll();
+        
+        // Cancelar todos los eventos programados en Tone.js
+        Tone.Transport.cancel();
+        
+        // Crear nuevo sintetizador para evitar eventos pendientes
+        const gainNode = gainNodeRef.current;
+        if (gainNode) {
+          // Dispose old synth
+          if (mainSynthRef.current) {
+            mainSynthRef.current.disconnect();
+            mainSynthRef.current.dispose();
+          }
+          
+          // Create new synth
+          const newMainSynth = new Tone.PolySynth(Tone.Synth, {
+            envelope: {
+              attack: 0.02,
+              decay: 0.1,
+              sustain: 0.3,
+              release: 1
+            },
+            oscillator: {
+              type: 'sine'
+            }
+          }).connect(gainNode);
+          
+          mainSynthRef.current = newMainSynth;
+        }
+      }
+      
+      // Actualizar el estado
+      setIsPlaying(false);
+      
+      if (debug.current) {
+        console.log("Secuencia orbital detenida");
+      }
+      
+      return;
+    }
+    
+    // Si no está reproduciendo, comenzar nueva secuencia
+    if (!mainSynthRef.current || liveMode) return;
     
     try {
       const started = await startAudioContext();
@@ -390,14 +445,27 @@ const OrbitalSonification = () => {
       const now = Tone.now();
       const enabledPlanets = orbitData.filter(planet => planet.enabled);
       
-      enabledPlanets.forEach((orbit, index) => {
-        const originalIndex = orbitData.findIndex(planet => planet.name === orbit.name);
+      // Use a more direct approach with individual scheduling instead of all at once
+      const scheduleNote = (planet, index) => {
+        const originalIndex = orbitData.findIndex(p => p.name === planet.name);
         const freq = calculateBaseFrequencies(baseFrequency, originalIndex - 2);
-        mainSynthRef.current.triggerAttackRelease(freq, "1n", now + index * 0.75, 0.3);
-      });
+        const time = now + index * 0.75;
+        
+        // Schedule the note with a bit more precise timing
+        mainSynthRef.current.triggerAttackRelease(freq, "1n", time, 0.3);
+        
+        if (debug.current) {
+          console.log(`Scheduled ${planet.name} at ${freq.toFixed(1)} Hz, time: +${index * 0.75}s`);
+        }
+      };
       
-      setTimeout(() => {
+      // Schedule each planet's note
+      enabledPlanets.forEach(scheduleNote);
+      
+      // Guardar referencia al timeout para poder cancelarlo
+      sequenceTimeoutRef.current = setTimeout(() => {
         setIsPlaying(false);
+        sequenceTimeoutRef.current = null;
       }, enabledPlanets.length * 750 + 500);
     } catch (error) {
       console.error("Error playing orbital sequence:", error);
@@ -416,6 +484,18 @@ const OrbitalSonification = () => {
     if (volume <= 0.01) return "-∞";
     return (20 * Math.log10(volume)).toFixed(1);
   };
+
+  // Limpieza de timeouts en desmontaje del componente
+  useEffect(() => {
+    return () => {
+      if (frequencyUpdateTimeoutRef.current) {
+        clearTimeout(frequencyUpdateTimeoutRef.current);
+      }
+      if (sequenceTimeoutRef.current) {
+        clearTimeout(sequenceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="container">
@@ -519,10 +599,10 @@ const OrbitalSonification = () => {
 
       <button 
         onClick={playOrbitalSequence}
-        disabled={isPlaying || liveMode}
+        disabled={liveMode}
         className="button"
       >
-        {isPlaying ? 'Playing...' : 'Play Orbital Sequence'}
+        {isPlaying ? 'Stop Orbital Sequence' : 'Play Orbital Sequence'}
       </button>
 
       <div className="table-container">
