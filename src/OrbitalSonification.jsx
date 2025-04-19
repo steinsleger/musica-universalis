@@ -42,6 +42,9 @@ const OrbitalSonification = () => {
   // Referencia para seguir el timeout de la secuencia orbital
   const sequenceTimeoutRef = useRef(null);
   
+  // Referencia para seguir el estado anterior de la pausa
+  const wasPausedRef = useRef(false);
+  
   // Debug flag
   const debug = useRef(true);
 
@@ -301,8 +304,15 @@ const OrbitalSonification = () => {
       // Guardar las frecuencias actuales
       lastFrequenciesRef.current = { ...currentFrequencies };
       console.log("Animation paused. Frequencies frozen.");
+      // Actualizar referencia de estado de pausa
+      wasPausedRef.current = true;
     } else {
-      console.log("Animation resumed. Frequencies updating.");
+      // Solo mostrar el mensaje si estaba pausado antes
+      if (wasPausedRef.current) {
+        console.log("Animation resumed. Frequencies updating.");
+        // Resetear el estado de pausa
+        wasPausedRef.current = false;
+      }
     }
   }, [isPaused, currentFrequencies]);
 
