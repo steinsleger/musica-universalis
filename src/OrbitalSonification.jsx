@@ -20,6 +20,7 @@ const OrbitalSonification = () => {
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [isPaused, setIsPaused] = useState(false);
+  const [masterVolume, setMasterVolume] = useState(0.5); // Valor inicial: 0.5 (0dB)
   
   // Referencias para evitar problemas con audio/animación
   const audioContextStarted = useRef(false);
@@ -60,12 +61,17 @@ const OrbitalSonification = () => {
     }
   }, [updateAllFrequencies]);
 
+  // Actualizar las frecuencias cada vez que cambie la frecuencia base
+  useEffect(() => {
+    updateAllFrequencies();
+  }, [baseFrequency, updateAllFrequencies]);
+
   // Initialize synthesizer system
   useEffect(() => {
     const initTone = async () => {
       try {
         // Crear un nodo de ganancia para controlar el volumen general
-        const gainNode = new Tone.Gain(0.3).toDestination();
+        const gainNode = new Tone.Gain(0.5).toDestination();
         gainNodeRef.current = gainNode;
         
         // Configuramos el sintetizador principal para la secuencia
@@ -135,7 +141,25 @@ const OrbitalSonification = () => {
     };
   }, [orbitData]);
 
-  // Función completamente rediseñada para activar/desactivar un planeta
+  // Efecto para actualizar el volumen maestro de forma segura
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      try {
+        // Convertir el volumen lineal a una escala exponencial más adecuada para el audio
+        // Esto evita los problemas de silenciamiento con valores pequeños
+        const dbValue = masterVolume === 0 ? -Infinity : 20 * Math.log10(masterVolume);
+        
+        // Usar rampTo para evitar clics y transiciones bruscas
+        gainNodeRef.current.gain.rampTo(masterVolume, 0.1);
+        
+        console.log(`Volume set to ${masterVolume} (${dbValue.toFixed(1)} dB)`);
+      } catch (e) {
+        console.error("Error setting volume:", e);
+      }
+    }
+  }, [masterVolume]);
+
+  // Función para activar/desactivar un planeta
   const togglePlanet = (index) => {
     // Crear una copia de los datos para modificar
     const newData = [...orbitData];
@@ -176,6 +200,53 @@ const OrbitalSonification = () => {
       }
     }
   };
+
+  // Nueva función para activar/desactivar todos los planetas
+  const toggleAllPlanets = (enable) => {
+    // Crear una copia de los datos para modificar
+    const newData = orbitData.map(planet => ({
+      ...planet,
+      enabled: enable
+    }));
+    
+    // Actualizar el estado
+    setOrbitData(newData);
+    
+    // Si estamos en modo en vivo, actualizar los sonidos
+    if (liveMode && !isPaused) {
+      try {
+        newData.forEach(planet => {
+          const planetSynth = synthsRef.current[planet.name];
+          if (!planetSynth) return;
+          
+          if (planet.enabled) {
+            // Obtener la frecuencia actual
+            const freq = currentFrequencies[planet.name];
+            if (freq) {
+              // Iniciar el sonido
+              planetSynth.triggerAttack(freq);
+            }
+          } else {
+            // Detener el sonido
+            planetSynth.triggerRelease();
+            
+            // Medida adicional - silenciar completamente
+            setTimeout(() => {
+              planetSynth.volume.value = -Infinity;
+              setTimeout(() => {
+                planetSynth.volume.value = 0;
+              }, 100);
+            }, 10);
+          }
+        });
+      } catch (e) {
+        console.error("Error updating sounds:", e);
+      }
+    }
+  };
+
+  // Comprobar si todos los planetas están activados
+  const areAllPlanetsEnabled = orbitData.every(planet => planet.enabled);
 
   // Manejar cambios de frecuencia desde la visualización
   const handleFrequencyChange = useCallback((frequencies) => {
@@ -220,7 +291,7 @@ const OrbitalSonification = () => {
     return true;
   };
 
-  // Activar/desactivar el modo en vivo - completamente rediseñado
+  // Activar/desactivar el modo en vivo
   const toggleLiveMode = async () => {
     if (!liveMode) {
       try {
@@ -291,17 +362,17 @@ const OrbitalSonification = () => {
     const newBaseFrequency = parseInt(e.target.value);
     setBaseFrequency(newBaseFrequency);
     
-    // Actualizar las frecuencias basadas en la nueva frecuencia base
+    // La actualización de frecuencias ahora se hace automáticamente en el useEffect,
+    // lo que garantiza que se actualice en todos los lugares necesarios
+    
+    // Si estamos en modo en vivo, actualizar los sonidos
     if (liveMode && !isPaused) {
       setTimeout(() => {
-        // Recalcular todas las frecuencias
-        const newFrequencies = updateAllFrequencies();
-        
         // Actualizar frecuencias para planetas activos
         orbitData.forEach(planet => {
           if (planet.enabled) {
             const planetSynth = synthsRef.current[planet.name];
-            const freq = newFrequencies[planet.name];
+            const freq = currentFrequencies[planet.name];
             if (planetSynth && freq) {
               planetSynth.frequency.value = freq;
             }
@@ -309,6 +380,12 @@ const OrbitalSonification = () => {
         });
       }, 10);
     }
+  };
+
+  // Manejar cambios en el volumen maestro
+  const handleVolumeChange = (e) => {
+    const newVolume = parseFloat(e.target.value);
+    setMasterVolume(newVolume);
   };
 
   // Reproducir secuencia orbital usando el sintetizador principal
@@ -344,6 +421,13 @@ const OrbitalSonification = () => {
     setIsPaused(!isPaused);
   };
 
+  // Convertir el volumen a decibelios para mostrar en la interfaz
+  const volumeToDb = (volume) => {
+    // Evitar logaritmo de 0
+    if (volume <= 0.01) return "-∞";
+    return (20 * Math.log10(volume)).toFixed(1);
+  };
+
   return (
     <div className="container">
       <h2 className="title">Planetary Orbits Sonification</h2>
@@ -372,6 +456,23 @@ const OrbitalSonification = () => {
               step={0.1}
               className="slider"
               onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+            />
+          </div>
+          
+          {/* Control de volumen maestro mejorado */}
+          <div className="control-group">
+            <label htmlFor="volume-slider" className="label">
+              Master Volume: {volumeToDb(masterVolume)} dB
+            </label>
+            <input 
+              id="volume-slider"
+              type="range" 
+              value={masterVolume}
+              min={0}
+              max={1}
+              step={0.01}
+              className="slider"
+              onChange={handleVolumeChange}
             />
           </div>
           
@@ -429,6 +530,19 @@ const OrbitalSonification = () => {
 
       <div className="table-container">
         <h3>Celestial Bodies and Frequencies</h3>
+        
+        {/* Checkbox para activar/desactivar todos los planetas */}
+        <div className="master-toggle">
+          <label className="checkbox-label">
+            <input 
+              type="checkbox" 
+              checked={areAllPlanetsEnabled}
+              onChange={() => toggleAllPlanets(!areAllPlanetsEnabled)}
+            />
+            {areAllPlanetsEnabled ? 'Disable All Planets' : 'Enable All Planets'}
+          </label>
+        </div>
+        
         <table className="table">
           <thead>
             <tr>
@@ -452,9 +566,11 @@ const OrbitalSonification = () => {
                 <td>{planet.name}</td>
                 <td>{planet.distance.toFixed(2)}</td>
                 <td>{planet.excentricity.toFixed(4)}</td>
-                <td>{currentFrequencies[planet.name] 
+                <td>
+                  {/* Usar siempre currentFrequencies para mostrar los valores actuales */}
+                  {currentFrequencies[planet.name] 
                     ? currentFrequencies[planet.name].toFixed(1) 
-                    : calculateBaseFrequencies(baseFrequency, index - 2).toFixed(1)}
+                    : "Calculando..."}
                 </td>
               </tr>
             ))}
