@@ -22,7 +22,7 @@ const OrbitalSonification = () => {
   const [animationSpeed, setAnimationSpeed] = useState(1);
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
-  const [isPaused, setIsPaused] = useState(false);
+  const [isPaused, setIsPaused] = useState(true);
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB aproximadamente
   const [frequencyUpdateCount, setFrequencyUpdateCount] = useState(0); // Para monitorear actualizaciones
   
@@ -43,7 +43,7 @@ const OrbitalSonification = () => {
   const sequenceTimeoutRef = useRef(null);
   
   // Referencia para seguir el estado anterior de la pausa
-  const wasPausedRef = useRef(false);
+  const wasPausedRef = useRef(true);
   
   // Debug flag
   const debug = useRef(true);
