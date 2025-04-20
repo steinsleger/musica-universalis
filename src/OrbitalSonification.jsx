@@ -26,6 +26,7 @@ const OrbitalSonification = () => {
   const [positionMode, setPositionMode] = useState('normal'); // 'normal', 'average', 'aphelion', 'perihelion'
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
+  const [zoomLevel, setZoomLevel] = useState(1); // Added zoomLevel state
   
   // Estado de la UI
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -270,6 +271,11 @@ const OrbitalSonification = () => {
     };
     
     updateAudioVolume();
+  };
+
+  // Handle zoom level changes
+  const handleZoomChange = (e) => {
+    setZoomLevel(parseFloat(e.target.value));
   };
 
   // Toggle between pause and play
@@ -558,6 +564,8 @@ const OrbitalSonification = () => {
             setToAverageDistance={positionMode === 'average'}
             setToAphelion={positionMode === 'aphelion'}
             setToPerihelion={positionMode === 'perihelion'}
+            zoomLevel={zoomLevel}
+            setZoomLevel={setZoomLevel}
           />
         </div>
         
@@ -608,20 +616,6 @@ const OrbitalSonification = () => {
           >
             🔊
           </button>
-        </div>
-        
-        {/* Control compacto de velocidad */}
-        <div className="speed-control-compact fade-in">
-          <div className="speed-label">Animation Speed: {animationSpeed.toFixed(1)}x</div>
-          <input 
-            type="range" 
-            min="0.1"
-            max="10"
-            step="0.1"
-            value={animationSpeed}
-            onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
-            className="speed-slider"
-          />
         </div>
         
         {/* Botón para acceder a más configuraciones */}
@@ -686,6 +680,48 @@ const OrbitalSonification = () => {
                   className="slider"
                   onChange={handleBaseFrequencyChange}
                 />
+              </div>
+              
+              {/* Zoom control moved to sidebar */}
+              <div className="control-group">
+                <label htmlFor="zoom-slider" className="label">
+                  Zoom Level: {zoomLevel.toFixed(1)}x
+                </label>
+                <input 
+                  id="zoom-slider"
+                  type="range" 
+                  value={zoomLevel}
+                  min={1}
+                  max={20}
+                  step={0.1}
+                  className="slider"
+                  onChange={handleZoomChange}
+                />
+                <div className="control-tip">
+                  {zoomLevel > 1.1 ? 
+                    "Drag the system with your mouse to pan the view" : 
+                    "Increase zoom to see outer planet orbits more clearly"}
+                </div>
+              </div>
+              
+              {/* Animation speed control moved to sidebar */}
+              <div className="control-group">
+                <label htmlFor="speed-slider" className="label">
+                  Animation Speed: {animationSpeed.toFixed(1)}x
+                </label>
+                <input 
+                  id="speed-slider"
+                  type="range" 
+                  min={1}
+                  max={50}
+                  step={0.1}
+                  value={animationSpeed}
+                  onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+                  className="slider"
+                />
+                <div className="control-tip">
+                  Adjust speed to observe orbital relationships
+                </div>
               </div>
               
               <div className="live-mode-toggle">
