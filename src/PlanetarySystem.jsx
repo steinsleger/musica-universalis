@@ -676,8 +676,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
           <input 
             id="speed-slider"
             type="range" 
-            min="0.1"
-            max="5"
+            min="1"
+            max="50"
             step="0.1"
             value={animationSpeed}
             onChange={handleSpeedChange}
