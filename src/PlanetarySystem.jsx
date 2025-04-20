@@ -56,6 +56,14 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
   const frequencyFactor = baseFrequency / 220;
   
+  // Calculate frequency based on the modified Bode law
+  const calculateFrequencies = (baseFreq, n) => {
+    return (1 + Math.pow(2, n)) * 3 * baseFreq;
+  };
+  
+  // Add a ref to track initialization
+  const initializedRef = useRef(false);
+  
   // Initialize planet angles when orbitData changes
   useEffect(() => {
     if (!orbitData || orbitData.length === 0) return;
@@ -72,6 +80,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   
   // Initialize frequencies when component mounts or baseFrequency changes
   useEffect(() => {
+    if (initializedRef.current) return;
+    
     const initialFrequencies = {};
     orbitData.forEach((planet, index) => {
       if (planet.enabled) {
@@ -86,7 +96,9 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     if (onFrequencyChange) {
       onFrequencyChange(initialFrequencies);
     }
-  }, [baseFrequency, orbitData, onFrequencyChange]);
+    
+    initializedRef.current = true;
+  }, [baseFrequency, orbitData, onFrequencyChange, calculateFrequencies]);
   
   // Mouse event handlers for panning
   const handleMouseDown = (e) => {
@@ -348,11 +360,6 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // Calculate orbital period using Kepler's Third Law
   const getOrbitalPeriod = (distance) => {
     return Math.pow(distance, 1.5);
-  };
-  
-  // Calculate frequency based on the modified Bode law
-  const calculateFrequencies = (baseFreq, n) => {
-    return (1 + Math.pow(2, n)) * 3 * baseFreq;
   };
   
   return (
