@@ -60,22 +60,11 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   useEffect(() => {
     if (!orbitData || orbitData.length === 0) return;
     
-    // Initialize angles for all planets
+    // Initialize angles for all planets - all at 0 for a straight line
     const initialAngles = {};
     orbitData.forEach(planet => {
-      // Use a different starting angle for each planet to avoid overlapping
-      // First four planets (Mercury to Mars) are positioned at increasing angles
-      if (planet.name === "Mercury") initialAngles[planet.name] = 0;
-      else if (planet.name === "Venus") initialAngles[planet.name] = Math.PI * 0.4;
-      else if (planet.name === "Earth") initialAngles[planet.name] = Math.PI * 0.8;
-      else if (planet.name === "Mars") initialAngles[planet.name] = Math.PI * 1.2;
-      else if (planet.name === "Ceres") initialAngles[planet.name] = Math.PI * 1.6;
-      else if (planet.name === "Jupiter") initialAngles[planet.name] = Math.PI * 0.2;
-      else if (planet.name === "Saturn") initialAngles[planet.name] = Math.PI * 0.6;
-      else if (planet.name === "Uranus") initialAngles[planet.name] = Math.PI * 1.0;
-      else if (planet.name === "Neptune") initialAngles[planet.name] = Math.PI * 1.4;
-      else if (planet.name === "Pluto") initialAngles[planet.name] = Math.PI * 1.8;
-      else initialAngles[planet.name] = 0;
+      // Set all planets at angle 0 for straight line to the right
+      initialAngles[planet.name] = 0;
     });
     
     setPlanetAngles(initialAngles);

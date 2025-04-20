@@ -22,7 +22,7 @@ const OrbitalSonification = () => {
   const [animationSpeed, setAnimationSpeed] = useState(1);
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
-  const [isPaused, setIsPaused] = useState(false);
+  const [isPaused, setIsPaused] = useState(true);
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
   // Add user interaction handling state
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
