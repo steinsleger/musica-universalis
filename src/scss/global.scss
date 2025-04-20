@@ -178,6 +178,7 @@ html, body, #root {
   background: #4CAF50;
   cursor: pointer;
   border: none;
+  transition: background 0.2s;
 }
 
 .slider::-moz-range-thumb {
@@ -187,10 +188,24 @@ html, body, #root {
   background: #4CAF50;
   cursor: pointer;
   border: none;
+  transition: background 0.2s;
+}
+
+.slider:hover::-webkit-slider-thumb {
+  background: #45a049;
+}
+
+.slider:hover::-moz-range-thumb {
+  background: #45a049;
 }
 
 /* Specific styles for volume slider */
 #volume-slider {
+  background: linear-gradient(to right, #4CAF50, #7dde81);
+}
+
+/* Specific styles for speed slider */
+#speed-slider {
   background: linear-gradient(to right, #4CAF50, #7dde81);
 }
 
