@@ -142,9 +142,15 @@ const OrbitalSonification = () => {
   useEffect(() => {
     const initTone = async () => {
       try {
-        // Create a gain node to control overall volume
-        const gainNode = new Tone.Gain(masterVolume).toDestination();
-        gainNodeRef.current = gainNode;
+        console.log("Initializing Tone.js with master volume:", masterVolume);
+        
+        // Create a master gain node first
+        const masterGain = new Tone.Gain(masterVolume).toDestination();
+        gainNodeRef.current = masterGain;
+        
+        // Set the master volume directly from the start
+        Tone.Destination.volume.value = Tone.gainToDb(masterVolume);
+        console.log("Master volume set to:", masterVolume, "dB:", Tone.gainToDb(masterVolume));
         
         // Configure the main synthesizer for the sequence
         const mainSynth = new Tone.PolySynth(Tone.Synth, {
@@ -157,7 +163,7 @@ const OrbitalSonification = () => {
           oscillator: {
             type: 'sine'
           }
-        }).connect(gainNode);
+        }).connect(masterGain);  // Connect to the master gain node
         
         mainSynthRef.current = mainSynth;
         
@@ -174,7 +180,7 @@ const OrbitalSonification = () => {
             oscillator: {
               type: 'sine'
             }
-          }).connect(gainNode);
+          }).connect(masterGain);  // Connect to the master gain node
           
           // Store the synthesizer in the reference
           synthsRef.current[planet.name] = planetSynth;
@@ -197,9 +203,6 @@ const OrbitalSonification = () => {
     
     return () => {
       // Clean up all synthesizers
-      if (gainNodeRef.current) {
-        gainNodeRef.current.dispose();
-      }
       if (frequencyUpdateTimeoutRef.current) {
         clearTimeout(frequencyUpdateTimeoutRef.current);
       }
@@ -212,7 +215,7 @@ const OrbitalSonification = () => {
         if (synth) synth.dispose();
       });
     };
-  }, [orbitData, masterVolume]);
+  }, [orbitData]);  // Don't include masterVolume to prevent recreation
   
   // NEW: Effect to keep audio state synchronized with application state
   // This effect will now be responsible for managing audio independently
@@ -233,7 +236,15 @@ const OrbitalSonification = () => {
         
         // Ensure the gain node has the current master volume value
         if (gainNodeRef.current) {
+          // Apply volume directly and immediately 
           gainNodeRef.current.gain.value = masterVolume;
+          
+          // Also use rampTo for smooth transitions when changing during playback
+          try {
+            gainNodeRef.current.gain.rampTo(masterVolume, 0.05);
+          } catch (e) {
+            console.log("Using direct volume setting");
+          }
         }
         
         // Rebuild entire audio state based on current application state
@@ -267,26 +278,42 @@ const OrbitalSonification = () => {
     setupAudio();
   }, [liveMode, orbitData, isPaused, masterVolume]); // Add masterVolume as dependency
   
-  // Restore effect for master volume control
-  useEffect(() => {
-    if (gainNodeRef.current) {
+  // Handle master volume changes - also try to start audio
+  const handleVolumeChange = (e) => {
+    const newVolume = parseFloat(e.target.value);
+    console.log("Volume change detected:", newVolume, "Current value:", masterVolume);
+    
+    // Update the state immediately
+    setMasterVolume(newVolume);
+    
+    // Update audio volume after state change
+    const updateAudioVolume = async () => {
       try {
-        // Convert linear volume to a more suitable exponential scale for audio
-        // This avoids silencing issues with small values
-        const dbValue = masterVolume === 0 ? -Infinity : 20 * Math.log10(masterVolume);
-        
-        // Use rampTo to avoid clicks and abrupt transitions
-        gainNodeRef.current.gain.rampTo(masterVolume, 0.05);
-        
-        if (debug.current) {
-          console.log(`Volume set to ${masterVolume} (${dbValue.toFixed(1)} dB)`);
+        // Ensure audio context is running
+        if (!audioContextStarted.current) {
+          await startAudioContext();
         }
-      } catch (e) {
-        console.error("Error setting volume:", e);
+        
+        // Convert linear volume to decibels
+        const dbValue = Tone.gainToDb(newVolume);
+        console.log("Setting volume to:", newVolume, "dB:", dbValue);
+        
+        // Set volume directly on Tone.Destination
+        Tone.Destination.volume.value = dbValue;
+        
+        // Also update the gain node if it exists
+        if (gainNodeRef.current) {
+          gainNodeRef.current.gain.value = newVolume;
+          console.log("Updated gain node volume");
+        }
+      } catch (error) {
+        console.error("Error updating audio volume:", error);
       }
-    }
-  }, [masterVolume]);
-  
+    };
+    
+    updateAudioVolume();
+  };
+
   // Toggle between pause and play - Now also attempts to start audio
   const togglePlayPause = async () => {
     // Always try to start audio context when user interacts with play button
@@ -320,15 +347,6 @@ const OrbitalSonification = () => {
         });
       }, 10);
     }
-  };
-
-  // Handle master volume changes - also try to start audio
-  const handleVolumeChange = async (e) => {
-    // Try to start audio since user interacted with controls
-    await startAudioContext();
-    
-    const newVolume = parseFloat(e.target.value);
-    setMasterVolume(newVolume);
   };
 
   // Function to activate/deactivate a planet - now also starts audio
@@ -384,6 +402,11 @@ const OrbitalSonification = () => {
       
       // Simply toggle the state - effect will handle audio
       setLiveMode(!liveMode);
+      
+      // Force volume update when toggling live mode
+      if (gainNodeRef.current) {
+        gainNodeRef.current.gain.value = masterVolume;
+      }
       
       if (liveMode) {
         // Deactivating live mode, stop all sounds
@@ -513,29 +536,25 @@ const OrbitalSonification = () => {
         Tone.Transport.cancel();
         
         // Create new synthesizer to avoid pending events
-        const gainNode = gainNodeRef.current;
-        if (gainNode) {
-          // Dispose old synth
-          if (mainSynthRef.current) {
-            mainSynthRef.current.disconnect();
-            mainSynthRef.current.dispose();
-          }
-          
-          // Create new synth
-          const newMainSynth = new Tone.PolySynth(Tone.Synth, {
-            envelope: {
-              attack: 0.02,
-              decay: 0.1,
-              sustain: 0.3,
-              release: 1
-            },
-            oscillator: {
-              type: 'sine'
-            }
-          }).connect(gainNode);
-          
-          mainSynthRef.current = newMainSynth;
+        if (mainSynthRef.current) {
+          mainSynthRef.current.disconnect();
+          mainSynthRef.current.dispose();
         }
+          
+        // Create new synth
+        const newMainSynth = new Tone.PolySynth(Tone.Synth, {
+          envelope: {
+            attack: 0.02,
+            decay: 0.1,
+            sustain: 0.3,
+            release: 1
+          },
+          oscillator: {
+            type: 'sine'
+          }
+        }).connect(gainNodeRef.current || Tone.Destination);  // Connect to gain node if available
+        
+        mainSynthRef.current = newMainSynth;
       }
       
       // Update state
@@ -589,7 +608,7 @@ const OrbitalSonification = () => {
   const volumeToDb = (volume) => {
     // Avoid log of 0
     if (volume <= 0.01) return "-∞";
-    return (20 * Math.log10(volume)).toFixed(1);
+    return Tone.gainToDb(volume).toFixed(1);
   };
 
   // Clean up timeouts on component unmount
@@ -654,6 +673,8 @@ const OrbitalSonification = () => {
               step={0.01}
               className="slider"
               onChange={handleVolumeChange}
+              onInput={handleVolumeChange}
+              style={{ cursor: 'pointer' }}
             />
           </div>
           
