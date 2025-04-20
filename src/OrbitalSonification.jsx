@@ -639,6 +639,7 @@ const OrbitalSonification = () => {
             baseFrequency={baseFrequency}
             onFrequencyChange={handleFrequencyChange}
             isPaused={isPaused}
+            setToAverageDistance={animationSpeed === 0}
           />
         </div>
         <div className="controls">
@@ -684,6 +685,16 @@ const OrbitalSonification = () => {
               disabled={isPlaying}
             >
               {isPaused ? '▶️ Resume Animation' : '⏸️ Pause Animation'}
+            </button>
+            <button 
+              onClick={() => {
+                setIsPaused(true);
+                setAnimationSpeed(0);
+              }}
+              className="button playback-button"
+              disabled={isPlaying}
+            >
+              ⏹️ Set to Average Distance
             </button>
           </div>
           

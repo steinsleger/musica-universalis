@@ -1,7 +1,7 @@
 // src/PlanetarySystem.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false }) => {
+const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false, setToAverageDistance = false }) => {
   // Add animation time state that advances based on the animation speed
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [zoomLevel, setZoomLevel] = useState(1); // Default zoom level
@@ -166,6 +166,20 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     setZoomLevel(parseFloat(e.target.value));
   };
   
+  // Calculate the angle at which a planet is at its average distance
+  const getAverageDistanceAngle = (eccentricity) => {
+    // For an ellipse, the average distance occurs at an angle where r = a
+    // Using the polar equation of an ellipse: r = a(1-e²)/(1+e·cos(θ))
+    // Setting r = a and solving for θ:
+    // a = a(1-e²)/(1+e·cos(θ))
+    // 1 = (1-e²)/(1+e·cos(θ))
+    // 1+e·cos(θ) = 1-e²
+    // e·cos(θ) = -e²
+    // cos(θ) = -e
+    // θ = arccos(-e)
+    return Math.acos(-eccentricity);
+  };
+  
   // Animation loop - updates planet positions over time
   const animate = useCallback((time) => {
     if (previousTimeRef.current === undefined) {
@@ -177,7 +191,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     previousTimeRef.current = time;
     
     // Only update positions if not paused
-    if (!isPaused) {
+    if (!isPaused && !setToAverageDistance) {
       // Update planet angles based on animation speed and orbital periods
       setPlanetAngles(prevAngles => {
         const newAngles = { ...prevAngles };
@@ -203,35 +217,39 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
         
         return newAngles;
       });
-      
-      // Calculate and update frequencies based on current positions
-      const newFrequencies = {};
-      orbitData.forEach((planet, index) => {
-        if (planet.enabled) {
-          const angle = planetAngles[planet.name] || 0;
-          const currentDistance = getCurrentDistance(planet.distance, planet.eccentricity, angle);
-          
-          // Base frequency for this planet (when at average distance)
-          const n = index - 2; // Adjust so Earth is index 0
-          const baseFreq = calculateFrequencies(baseFrequency, n);
-          
-          // Modulate frequency based on current distance
-          const avgDistance = planet.distance;
-          const ratio = avgDistance / currentDistance;
-          const modifiedFreq = baseFreq * Math.sqrt(ratio);
-          
-          newFrequencies[planet.name] = modifiedFreq;
-        }
-      });
-      
-      // Store frequencies for parent component
-      setCurrentFrequencies(newFrequencies);
-      frequenciesRef.current = newFrequencies;
     }
+    
+    // Calculate and update frequencies based on current positions
+    const newFrequencies = {};
+    orbitData.forEach((planet, index) => {
+      if (planet.enabled) {
+        const angle = setToAverageDistance ? 
+          getAverageDistanceAngle(planet.eccentricity) : // Use the angle for average distance
+          (planetAngles[planet.name] || 0);
+        const currentDistance = setToAverageDistance ? 
+          planet.distance : // Use average distance when setToAverageDistance is true
+          getCurrentDistance(planet.distance, planet.eccentricity, angle);
+        
+        // Base frequency for this planet (when at average distance)
+        const n = index - 2; // Adjust so Earth is index 0
+        const baseFreq = calculateFrequencies(baseFrequency, n);
+        
+        // Modulate frequency based on current distance
+        const avgDistance = planet.distance;
+        const ratio = avgDistance / currentDistance;
+        const modifiedFreq = baseFreq * Math.sqrt(ratio);
+        
+        newFrequencies[planet.name] = modifiedFreq;
+      }
+    });
+    
+    // Store frequencies for parent component
+    setCurrentFrequencies(newFrequencies);
+    frequenciesRef.current = newFrequencies;
     
     // Request next frame
     requestRef.current = requestAnimationFrame(animate);
-  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles]);
+  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, setToAverageDistance]);
   
   // Start/stop animation loop based on component lifecycle
   useEffect(() => {
@@ -571,8 +589,10 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           {orbitData.map((planet) => {
             if (!planet.enabled) return null;
             
-            // Use the angle from state for this planet
-            const angle = planetAngles[planet.name] || 0;
+            // Use the angle from state for this planet, or the average distance angle if setToAverageDistance is true
+            const angle = setToAverageDistance ? 
+              getAverageDistanceAngle(planet.eccentricity) : 
+              (planetAngles[planet.name] || 0);
             const position = getPlanetPosition(
               planet.distance,
               planet.eccentricity,
@@ -580,11 +600,9 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             );
             
             // Calculate current distance for display
-            const currentDistance = getCurrentDistance(
-              planet.distance,
-              planet.eccentricity,
-              angle
-            );
+            const currentDistance = setToAverageDistance ? 
+              planet.distance : // Use average distance when setToAverageDistance is true
+              getCurrentDistance(planet.distance, planet.eccentricity, angle);
             
             const size = getPlanetSize(planet);
             
