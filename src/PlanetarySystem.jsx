@@ -2,12 +2,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false }) => {
-  // Remove animation time state and just use a fixed angle for all planets
+  // Add animation time state that advances based on the animation speed
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [zoomLevel, setZoomLevel] = useState(1); // Default zoom level
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 }); // Track panning offset
   const [isDragging, setIsDragging] = useState(false); // Track if user is dragging
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 }); // Starting point of drag
+  // Add animation angle state to track planet positions
+  const [planetAngles, setPlanetAngles] = useState({});
   
   const requestRef = useRef();
   const previousTimeRef = useRef();
@@ -53,6 +55,31 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // Calculate frequency factor - we use this to tie animation speed to base frequency
   // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
   const frequencyFactor = baseFrequency / 220;
+  
+  // Initialize planet angles when orbitData changes
+  useEffect(() => {
+    if (!orbitData || orbitData.length === 0) return;
+    
+    // Initialize angles for all planets
+    const initialAngles = {};
+    orbitData.forEach(planet => {
+      // Use a different starting angle for each planet to avoid overlapping
+      // First four planets (Mercury to Mars) are positioned at increasing angles
+      if (planet.name === "Mercury") initialAngles[planet.name] = 0;
+      else if (planet.name === "Venus") initialAngles[planet.name] = Math.PI * 0.4;
+      else if (planet.name === "Earth") initialAngles[planet.name] = Math.PI * 0.8;
+      else if (planet.name === "Mars") initialAngles[planet.name] = Math.PI * 1.2;
+      else if (planet.name === "Ceres") initialAngles[planet.name] = Math.PI * 1.6;
+      else if (planet.name === "Jupiter") initialAngles[planet.name] = Math.PI * 0.2;
+      else if (planet.name === "Saturn") initialAngles[planet.name] = Math.PI * 0.6;
+      else if (planet.name === "Uranus") initialAngles[planet.name] = Math.PI * 1.0;
+      else if (planet.name === "Neptune") initialAngles[planet.name] = Math.PI * 1.4;
+      else if (planet.name === "Pluto") initialAngles[planet.name] = Math.PI * 1.8;
+      else initialAngles[planet.name] = 0;
+    });
+    
+    setPlanetAngles(initialAngles);
+  }, [orbitData]);
   
   // Mouse event handlers for panning
   const handleMouseDown = (e) => {
@@ -120,32 +147,85 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     setZoomLevel(parseFloat(e.target.value));
   };
   
-  // Function to calculate frequencies - now outside the animation loop
-  const calculateCurrentFrequencies = useCallback((time) => {
-    const newFrequencies = {};
+  // Animation loop - updates planet positions over time
+  const animate = useCallback((time) => {
+    if (previousTimeRef.current === undefined) {
+      previousTimeRef.current = time;
+    }
     
-    orbitData.forEach((planet, index) => {
-      if (planet.enabled) {
-        const period = getOrbitalPeriod(planet.distance);
+    // Calculate elapsed time since last frame
+    const deltaTime = time - previousTimeRef.current;
+    previousTimeRef.current = time;
+    
+    // Only update positions if not paused
+    if (!isPaused) {
+      // Update planet angles based on animation speed and orbital periods
+      setPlanetAngles(prevAngles => {
+        const newAngles = { ...prevAngles };
         
-        // Always use the fixed angle for calculations
-        const currentDistance = getCurrentDistance(planet.distance, planet.eccentricity, fixedAngle);
+        orbitData.forEach(planet => {
+          if (planet.enabled) {
+            // Calculate orbital period (Kepler's Third Law)
+            const period = getOrbitalPeriod(planet.distance);
+            
+            // Convert period to radians per millisecond, scale by animation speed
+            // Smaller planets orbit faster (smaller period) so they move more per frame
+            const angularVelocity = (2 * Math.PI / (period * 20000)) * animationSpeed;
+            
+            // Update the angle
+            newAngles[planet.name] = (prevAngles[planet.name] || 0) + angularVelocity * deltaTime;
+            
+            // Normalize angle to keep within 0-2π range
+            while (newAngles[planet.name] >= 2 * Math.PI) {
+              newAngles[planet.name] -= 2 * Math.PI;
+            }
+          }
+        });
         
-        // Base frequency for this planet (when at average distance)
-        const n = index - 2; // Adjust so Earth is index 0
-        const baseFreq = calculateFrequencies(baseFrequency, n);
-        
-        // Modulate frequency based on current distance
-        const avgDistance = planet.distance;
-        const ratio = avgDistance / currentDistance;
-        const modifiedFreq = baseFreq * Math.sqrt(ratio);
-        
-        newFrequencies[planet.name] = modifiedFreq;
+        return newAngles;
+      });
+      
+      // Calculate and update frequencies based on current positions
+      const newFrequencies = {};
+      orbitData.forEach((planet, index) => {
+        if (planet.enabled) {
+          const angle = planetAngles[planet.name] || 0;
+          const currentDistance = getCurrentDistance(planet.distance, planet.eccentricity, angle);
+          
+          // Base frequency for this planet (when at average distance)
+          const n = index - 2; // Adjust so Earth is index 0
+          const baseFreq = calculateFrequencies(baseFrequency, n);
+          
+          // Modulate frequency based on current distance
+          const avgDistance = planet.distance;
+          const ratio = avgDistance / currentDistance;
+          const modifiedFreq = baseFreq * Math.sqrt(ratio);
+          
+          newFrequencies[planet.name] = modifiedFreq;
+        }
+      });
+      
+      // Store frequencies for parent component
+      setCurrentFrequencies(newFrequencies);
+      frequenciesRef.current = newFrequencies;
+    }
+    
+    // Request next frame
+    requestRef.current = requestAnimationFrame(animate);
+  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles]);
+  
+  // Start/stop animation loop based on component lifecycle
+  useEffect(() => {
+    // Start animation loop
+    requestRef.current = requestAnimationFrame(animate);
+    
+    // Clean up on unmount
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
       }
-    });
-    
-    return newFrequencies;
-  }, [orbitData, baseFrequency, fixedAngle]);
+    };
+  }, [animate]);
   
   // Function to notify frequency changes to the parent component
   // Throttled to avoid excessive updates
@@ -155,14 +235,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     }
   }, [onFrequencyChange]);
   
-  // Animation loop with throttled frequency updates
+  // Set up a notification interval
   useEffect(() => {
-    if (!orbitData || orbitData.length === 0) return;
-    
-    // Skip animation entirely - just use fixed position for all planets
-    setCurrentFrequencies(calculateCurrentFrequencies(0));
-    
-    // Set up a notification interval regardless of animation state
     const notifyInterval = setInterval(() => {
       notifyFrequencyChanges();
     }, 16); // Notify every 16ms
@@ -170,21 +244,15 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     return () => {
       clearInterval(notifyInterval);
     };
-  }, [orbitData, calculateCurrentFrequencies, notifyFrequencyChanges]);
+  }, [notifyFrequencyChanges]);
   
   // Separate effect to update when baseFrequency changes
   useEffect(() => {
     // Check if baseFrequency has actually changed
     if (lastBaseFrequencyRef.current !== baseFrequency) {
-      // Recalculate frequencies when the base frequency changes
-      const newFrequencies = calculateCurrentFrequencies(0);
-      setCurrentFrequencies(newFrequencies);
-      frequenciesRef.current = newFrequencies;
-      
-      // Update the reference for the next comparison
       lastBaseFrequencyRef.current = baseFrequency;
     }
-  }, [baseFrequency, calculateCurrentFrequencies]);
+  }, [baseFrequency]);
   
   // Calculate current distance using the polar equation of an ellipse
   // r = a(1-e²)/(1+e·cos(θ))
@@ -485,22 +553,23 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             fill="#FDB813"
           />
           
-          {/* Planets */}
+          {/* Planets - now use dynamic angles from state */}
           {orbitData.map((planet) => {
             if (!planet.enabled) return null;
             
-            // Use fixed angle for all planets to ensure perfect alignment
+            // Use the angle from state for this planet
+            const angle = planetAngles[planet.name] || 0;
             const position = getPlanetPosition(
               planet.distance,
               planet.eccentricity,
-              fixedAngle
+              angle
             );
             
             // Calculate current distance for display
             const currentDistance = getCurrentDistance(
               planet.distance,
               planet.eccentricity,
-              fixedAngle
+              angle
             );
             
             const size = getPlanetSize(planet);
@@ -548,8 +617,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
                 </text>
                 {/* Line from sun to planet */}
                 <line
-                  x1={center}
-                  y1={center}
+                  x1={center + panOffset.x}
+                  y1={center + panOffset.y}
                   x2={position.x}
                   y2={position.y}
                   stroke="#333"
@@ -571,9 +640,6 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             </span>
           </div>
         ))}
-        <div className="animation-status">
-          Fixed Planet Alignment
-        </div>
       </div>
     </div>
   );

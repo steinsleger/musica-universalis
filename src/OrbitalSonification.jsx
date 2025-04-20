@@ -22,8 +22,10 @@ const OrbitalSonification = () => {
   const [animationSpeed, setAnimationSpeed] = useState(1);
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
-  const [isPaused, setIsPaused] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
+  // Add user interaction handling state
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   
   // References to avoid audio/animation issues
   const audioContextStarted = useRef(false);
@@ -42,10 +44,45 @@ const OrbitalSonification = () => {
   const sequenceTimeoutRef = useRef(null);
   
   // Reference to follow the previous state of pause
-  const wasPausedRef = useRef(true);
+  const wasPausedRef = useRef(false);
   
   // Debug flag
   const debug = useRef(true);
+
+  // Handle first user interaction on the page to initialize audio
+  const handleUserInteraction = async () => {
+    if (needsUserInteraction) {
+      try {
+        const started = await startAudioContext();
+        if (started) {
+          setNeedsUserInteraction(false);
+          // Silent initialization - no console logs visible to user
+        }
+      } catch (error) {
+        // Silent error handling - don't show errors to user
+        console.error("Error initializing audio on user interaction:", error);
+      }
+    }
+  };
+
+  // Add a global click handler to capture user interaction - keep this to ensure
+  // we get the first click anywhere on the page
+  useEffect(() => {
+    if (needsUserInteraction) {
+      const handleGlobalClick = async () => {
+        await handleUserInteraction();
+      };
+      
+      // Add event listeners to increase chances of capturing user interaction
+      document.addEventListener('click', handleGlobalClick);
+      document.addEventListener('touchstart', handleGlobalClick);
+      
+      return () => {
+        document.removeEventListener('click', handleGlobalClick);
+        document.removeEventListener('touchstart', handleGlobalClick);
+      };
+    }
+  }, [needsUserInteraction]);
 
   // Utility function to convert frequency to closest musical note
   const frequencyToNote = (frequency) => {
@@ -250,8 +287,55 @@ const OrbitalSonification = () => {
     }
   }, [masterVolume]);
   
-  // Function to activate/deactivate a planet - SIMPLIFIED
-  const togglePlanet = (index) => {
+  // Toggle between pause and play - Now also attempts to start audio
+  const togglePlayPause = async () => {
+    // Always try to start audio context when user interacts with play button
+    await startAudioContext();
+    setIsPaused(!isPaused);
+  };
+
+  // Handle base frequency changes - also try to start audio
+  const handleBaseFrequencyChange = async (e) => {
+    // Try to start audio since user interacted with controls
+    await startAudioContext();
+    
+    const newBaseFrequency = parseFloat(e.target.value);
+    setBaseFrequency(newBaseFrequency);
+    
+    // Frequency update now happens automatically in useEffect,
+    // which guarantees it will be updated everywhere needed
+    
+    // If we're in live mode and NOT paused, update sounds
+    if (liveMode && !isPaused) {
+      setTimeout(() => {
+        // Update frequencies for active planets
+        orbitData.forEach(planet => {
+          if (planet.enabled) {
+            const planetSynth = synthsRef.current[planet.name];
+            const freq = currentFrequencies[planet.name];
+            if (planetSynth && freq) {
+              planetSynth.frequency.value = freq;
+            }
+          }
+        });
+      }, 10);
+    }
+  };
+
+  // Handle master volume changes - also try to start audio
+  const handleVolumeChange = async (e) => {
+    // Try to start audio since user interacted with controls
+    await startAudioContext();
+    
+    const newVolume = parseFloat(e.target.value);
+    setMasterVolume(newVolume);
+  };
+
+  // Function to activate/deactivate a planet - now also starts audio
+  const togglePlanet = async (index) => {
+    // Try to start audio since user interacted with controls
+    await startAudioContext();
+    
     // Create a copy of the data to modify
     const newData = [...orbitData];
     // Get the planet to modify
@@ -261,19 +345,17 @@ const OrbitalSonification = () => {
     // Update state - effect will handle updating audio
     setOrbitData(newData);
     
-    // We do nothing with audio here - effect will handle
-    if (debug.current) {
-      console.log(`${planet.enabled ? 'Activated' : 'Deactivated'} planet ${planet.name}`);
-    }
-    
     // Force audio context resume - safety measure
     if (liveMode) {
       Tone.context.resume().catch(e => console.error("Error resuming audio context:", e));
     }
   };
 
-  // New function to activate/deactivate all planets - SIMPLIFIED
-  const toggleAllPlanets = (enable) => {
+  // New function to activate/deactivate all planets - also starts audio
+  const toggleAllPlanets = async (enable) => {
+    // Try to start audio since user interacted with controls
+    await startAudioContext();
+    
     // Create a copy of the data to modify
     const newData = orbitData.map(planet => ({
       ...planet,
@@ -283,21 +365,22 @@ const OrbitalSonification = () => {
     // Update state - effect will handle updating audio
     setOrbitData(newData);
     
-    if (debug.current) {
-      console.log(`All planets ${enable ? 'activated' : 'deactivated'}`);
-    }
-    
     // Force audio context resume - safety measure
     if (liveMode) {
       Tone.context.resume().catch(e => console.error("Error resuming audio context:", e));
     }
   };
 
-  // Activate/deactivate live mode - SIMPLIFIED
+  // Activate/deactivate live mode - IMPROVED WITH AUDIO CONTEXT HANDLING
   const toggleLiveMode = async () => {
     try {
-      // Ensure audio context is active
-      await startAudioContext();
+      // Get user interaction to start audio context
+      const audioStarted = await startAudioContext();
+      if (!audioStarted) {
+        // Silently try again without alerts
+        console.log("User interaction needed for audio");
+        return;
+      }
       
       // Simply toggle the state - effect will handle audio
       setLiveMode(!liveMode);
@@ -307,14 +390,6 @@ const OrbitalSonification = () => {
         Object.values(synthsRef.current).forEach(synth => {
           if (synth) synth.triggerRelease();
         });
-        
-        if (debug.current) {
-          console.log("Live mode deactivated");
-        }
-      } else {
-        if (debug.current) {
-          console.log("Live mode activated");
-        }
       }
     } catch (error) {
       console.error("Error toggling live mode:", error);
@@ -364,55 +439,64 @@ const OrbitalSonification = () => {
     }
   }, [liveMode, currentFrequencies, isPaused, orbitData]);
 
-  // Start audio context safely
+  // Start audio context safely - IMPROVED WITH USER INTERACTION HANDLING
   const startAudioContext = async () => {
     if (!audioContextStarted.current) {
       try {
+        // Attempt to resume the AudioContext first if it exists
+        if (Tone.context.state !== 'running') {
+          await Tone.context.resume();
+        }
+        
+        // Then try to start Tone.js
         await Tone.start();
         audioContextStarted.current = true;
         console.log("AudioContext started successfully");
+        
+        // Force resume for Safari and mobile browsers
+        if (Tone.context.state !== 'running') {
+          console.log("Additional context resume needed");
+          await Tone.context.resume();
+        }
+        
+        // Mark that we don't need user interaction anymore
+        setNeedsUserInteraction(false);
+        
         return true;
       } catch (error) {
         console.error("Could not start AudioContext:", error);
+        console.log("Auto-play policy may be preventing audio. User interaction required.");
+        // Make sure we still need user interaction
+        setNeedsUserInteraction(true);
+        return false;
+      }
+    } else if (Tone.context.state !== 'running') {
+      // If context exists but is suspended, try to resume it
+      try {
+        await Tone.context.resume();
+        console.log("AudioContext resumed successfully");
+        setNeedsUserInteraction(false);
+        return true;
+      } catch (error) {
+        console.error("Could not resume AudioContext:", error);
+        setNeedsUserInteraction(true);
         return false;
       }
     }
     return true;
   };
 
-  // Handle base frequency changes
-  const handleBaseFrequencyChange = (e) => {
-    const newBaseFrequency = parseFloat(e.target.value);
-    setBaseFrequency(newBaseFrequency);
-    
-    // Frequency update now happens automatically in useEffect,
-    // which guarantees it will be updated everywhere needed
-    
-    // If we're in live mode and NOT paused, update sounds
-    if (liveMode && !isPaused) {
-      setTimeout(() => {
-        // Update frequencies for active planets
-        orbitData.forEach(planet => {
-          if (planet.enabled) {
-            const planetSynth = synthsRef.current[planet.name];
-            const freq = currentFrequencies[planet.name];
-            if (planetSynth && freq) {
-              planetSynth.frequency.value = freq;
-            }
-          }
-        });
-      }, 10);
-    }
-  };
-
-  // Handle master volume changes
-  const handleVolumeChange = (e) => {
-    const newVolume = parseFloat(e.target.value);
-    setMasterVolume(newVolume);
-  };
-
   // Play or stop orbital sequence using the main synthesizer
   const playOrbitalSequence = async () => {
+    // Try to start audio context - uses user interaction
+    const audioStarted = await startAudioContext();
+    if (!audioStarted) {
+      // Silently try again without alerts
+      console.log("User interaction needed for audio");
+      return;
+    }
+    
+    // Rest of the playOrbitalSequence function
     // If already playing, stop the sequence
     if (isPlaying) {
       // Cancel pending timeout
@@ -468,9 +552,6 @@ const OrbitalSonification = () => {
     if (!mainSynthRef.current || liveMode) return;
     
     try {
-      const started = await startAudioContext();
-      if (!started) return;
-      
       setIsPlaying(true);
       
       const now = Tone.now();
@@ -504,11 +585,6 @@ const OrbitalSonification = () => {
     }
   };
 
-  // Toggle between pause and play - Now only affects animation
-  const togglePlayPause = () => {
-    setIsPaused(!isPaused);
-  };
-
   // Convert volume to decibels for display in interface
   const volumeToDb = (volume) => {
     // Avoid log of 0
@@ -529,7 +605,12 @@ const OrbitalSonification = () => {
   }, []);
 
   return (
-    <div className="container">
+    <div 
+      className="container" 
+      onClick={needsUserInteraction ? handleUserInteraction : undefined}
+    >
+      {/* Modal removed, but we still handle click events for audio initialization */}
+      
       <h2 className="title">Planetary Orbits Sonification</h2>
       
       <div className="visualization-container">
