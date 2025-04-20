@@ -636,6 +636,7 @@ const OrbitalSonification = () => {
           <PlanetarySystem 
             orbitData={orbitData} 
             animationSpeed={animationSpeed} 
+            setAnimationSpeed={setAnimationSpeed}
             baseFrequency={baseFrequency}
             onFrequencyChange={handleFrequencyChange}
             isPaused={isPaused}
@@ -645,23 +646,6 @@ const OrbitalSonification = () => {
           />
         </div>
         <div className="controls">
-          <div className="control-group">
-            <label htmlFor="speed-slider" className="label">
-              Animation Speed: {animationSpeed.toFixed(1)}x
-            </label>
-            <input 
-              id="speed-slider"
-              type="range" 
-              value={animationSpeed}
-              min={0.1}
-              max={5}
-              step={0.1}
-              className="slider"
-              onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
-            />
-          </div>
-          
-          {/* Master volume control */}
           <div className="control-group">
             <label htmlFor="volume-slider" className="label">
               Master Volume: {volumeToDb(masterVolume)} dB

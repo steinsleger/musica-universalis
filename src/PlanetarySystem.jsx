@@ -1,7 +1,7 @@
 // src/PlanetarySystem.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false, setToAverageDistance = false, setToAphelion = false, setToPerihelion = false }) => {
+const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, baseFrequency = 220, onFrequencyChange, isPaused = false, setToAverageDistance = false, setToAphelion = false, setToPerihelion = false }) => {
   // Add animation time state that advances based on the animation speed
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [zoomLevel, setZoomLevel] = useState(1); // Default zoom level
@@ -164,6 +164,13 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // Function to handle zoom changes
   const handleZoomChange = (e) => {
     setZoomLevel(parseFloat(e.target.value));
+  };
+  
+  // Function to handle animation speed changes
+  const handleSpeedChange = (e) => {
+    if (setAnimationSpeed) {
+      setAnimationSpeed(parseFloat(e.target.value));
+    }
   };
   
   // Calculate the angle at which a planet is at its average distance
@@ -423,43 +430,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             "Increase zoom to see outer planet orbits more clearly"}
         </div>
       </div>
-      <style>
-        {`
-          .zoom-tip {
-            font-size: 0.8rem;
-            color: #AAA;
-            margin-top: 4px;
-            font-style: italic;
-          }
-          
-          .orbital-visualization {
-            background-color: #111;
-            border-radius: 8px;
-            overflow: hidden;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-          }
-          
-          .svg-container {
-            cursor: ${zoomLevel > 1.1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 550px;
-          }
-          
-          svg {
-            max-width: 100%;
-            height: auto;
-            aspect-ratio: 1 / 1;
-            display: block;
-          }
-        `}
-      </style>
-      <div 
-        className="svg-container"
+      <div className="svg-container"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -692,6 +663,28 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           })}
         </svg>
       </div>
+      {setAnimationSpeed && (
+        <div className="speed-control">
+          <label htmlFor="speed-slider" className="speed-label">
+            Animation Speed: {animationSpeed.toFixed(1)}x
+          </label>
+          <input 
+            id="speed-slider"
+            type="range" 
+            min="0.1"
+            max="5"
+            step="0.1"
+            value={animationSpeed}
+            onChange={handleSpeedChange}
+            className="speed-slider"
+          />
+          <div className="speed-tip">
+            {animationSpeed < 0.5 ? 
+              "Slow motion for detailed observation" : 
+              "Adjust speed to observe orbital relationships"}
+          </div>
+        </div>
+      )}
       <div className="frequency-display">
         <div className="frequency-header">Current Frequencies:</div>
         {Object.entries(currentFrequencies).map(([planet, freq]) => (
@@ -703,6 +696,74 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           </div>
         ))}
       </div>
+      <style>
+        {`
+          .zoom-tip, .speed-tip {
+            font-size: 0.8rem;
+            color: #AAA;
+            margin-top: 4px;
+            font-style: italic;
+          }
+          
+          .orbital-visualization {
+            background-color: #111;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+          }
+          
+          .zoom-control, .speed-control {
+            position: absolute;
+            width: 200px;
+            padding: 8px;
+            background-color: #222;
+            border-radius: 4px;
+            z-index: 10;
+          }
+          
+          .zoom-control {
+            top: 8px;
+            left: 8px;
+          }
+          
+          .speed-control {
+            bottom: 8px;
+            left: 8px;
+          }
+          
+          .zoom-label, .speed-label {
+            display: block;
+            color: #CCC;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+          }
+          
+          .zoom-slider, .speed-slider {
+            width: 100%;
+            margin: 4px 0;
+          }
+          
+          .svg-container {
+            cursor: ${zoomLevel > 1.1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 550px;
+            position: relative;
+          }
+          
+          svg {
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            display: block;
+          }
+        `}
+      </style>
     </div>
   );
 };
