@@ -2,11 +2,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false }) => {
-  const [animationTime, setAnimationTime] = useState(0);
+  const [animationTime, setAnimationTime] = useState(Math.PI);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [zoomLevel, setZoomLevel] = useState(1); // Default zoom level
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 }); // Track panning offset
+  const [isDragging, setIsDragging] = useState(false); // Track if user is dragging
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 }); // Starting point of drag
+  
   const requestRef = useRef();
   const previousTimeRef = useRef();
+  const svgRef = useRef(null); // Reference to the SVG element
   
   // To avoid excessive updates, we create an object to store frequencies
   const frequenciesRef = useRef({});
@@ -24,16 +29,19 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   const getEffectiveZoom = (baseZoom) => {
     // This function makes zoom more aggressive for outer planets
     // which helps distinguish Neptune and Pluto orbits even at low zoom settings
-    if (baseZoom <= 2) {
+    if (baseZoom <= 1) {
+      // At zoom level 1, use a fixed value to ensure entire system is visible
+      return 0.45;  // Reduced from 0.75 to ensure we see the full system
+    } else if (baseZoom <= 2) {
       // Apply non-linear scaling for low zoom values to better separate outer orbits
       return baseZoom * (1 + (baseZoom - 1) * 0.2);
     }
     return baseZoom;
   };
   
-  // Scale factors - now with improved zoom handling
+  // Scale factors - now with improved zoom handling that ensures visibility at zoom=1
   const effectiveZoom = getEffectiveZoom(zoomLevel);
-  const orbitScaleFactor = (svgSize / 2) * 0.9 / (maxDistance / effectiveZoom);
+  const orbitScaleFactor = (svgSize / 2) * 0.98 / (maxDistance / effectiveZoom);
   const minPlanetSize = 3; // Minimum size for visibility
   
   // Sun properties
@@ -42,6 +50,47 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // Calculate frequency factor - we use this to tie animation speed to base frequency
   // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
   const frequencyFactor = baseFrequency / 220;
+  
+  // Mouse event handlers for panning
+  const handleMouseDown = (e) => {
+    // Only enable dragging if zoomed in
+    if (zoomLevel > 1.1) {
+      setIsDragging(true);
+      setDragStart({ 
+        x: e.clientX - panOffset.x, 
+        y: e.clientY - panOffset.y 
+      });
+    }
+  };
+  
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      const dx = e.clientX - dragStart.x;
+      const dy = e.clientY - dragStart.y;
+      
+      // Limit panning based on zoom level - the more zoomed in, the more you can pan
+      const maxPan = (zoomLevel - 1) * svgSize / 2;
+      const newX = Math.max(-maxPan, Math.min(maxPan, dx));
+      const newY = Math.max(-maxPan, Math.min(maxPan, dy));
+      
+      setPanOffset({ x: newX, y: newY });
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+  
+  // Reset pan offset when zoom level changes to 1
+  useEffect(() => {
+    if (zoomLevel <= 1.1) {
+      setPanOffset({ x: 0, y: 0 });
+    }
+  }, [zoomLevel]);
   
   // Utility function to convert frequency to closest musical note
   const frequencyToNote = (frequency) => {
@@ -201,19 +250,30 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     // Semi-minor axis
     const semiMinorAxis = semiMajorAxis * Math.sqrt(1 - Math.pow(eccentricity, 2));
     
-    // Distance focal
-    const focalDistance = semiMajorAxis * eccentricity;
+    // FIXED CALCULATION: Proper elliptical orbit coordinates
+    // Use the polar form of an ellipse to get the distance from the focus
+    const distance = (semiMajorAxis * (1 - Math.pow(eccentricity, 2))) / 
+                     (1 + eccentricity * Math.cos(angle));
     
-    // CORRECTION: Correct parametric equation of the ellipse with the Sun at one focus
-    // The Sun is at the origin (0,0) and the ellipse is around it
-    const rawX = semiMajorAxis * Math.cos(angle) - focalDistance;
-    const rawY = semiMinorAxis * Math.sin(angle);
+    // Convert polar coordinates (distance, angle) to Cartesian (x, y)
+    const rawX = distance * Math.cos(angle);
+    const rawY = distance * Math.sin(angle);
     
-    // Translate to center of SVG
-    const x = center + rawX * orbitScaleFactor;
-    const y = center + rawY * orbitScaleFactor;
+    // Translate to center of SVG and apply pan offset
+    const x = center + rawX * orbitScaleFactor + panOffset.x;
+    const y = center + rawY * orbitScaleFactor + panOffset.y;
     
     return { x, y };
+  };
+  
+  // Calculate minimum and maximum distances for a planet with given parameters
+  const calculateOrbitalExtremes = (semiMajorAxis, eccentricity) => {
+    // Perihelion - closest approach to sun
+    const perihelion = semiMajorAxis * (1 - eccentricity);
+    // Aphelion - furthest distance from sun
+    const aphelion = semiMajorAxis * (1 + eccentricity);
+    
+    return { perihelion, aphelion };
   };
   
   // Generate points for elliptical orbit path
@@ -227,6 +287,16 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     }
     
     return path;
+  };
+  
+  // Get the position for perihelion and aphelion points
+  const getExtremePositions = (semiMajorAxis, eccentricity) => {
+    // Perihelion is at angle = 0 (closest to Sun)
+    const perihelion = getPlanetPosition(semiMajorAxis, eccentricity, 0);
+    // Aphelion is at angle = PI (farthest from Sun)
+    const aphelion = getPlanetPosition(semiMajorAxis, eccentricity, Math.PI);
+    
+    return { perihelion, aphelion };
   };
   
   // Calculate planetary size (not to scale, but preserving relative sizes)
@@ -275,7 +345,9 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           className="zoom-slider"
         />
         <div className="zoom-tip">
-          Increase zoom to see outer planet orbits more clearly
+          {zoomLevel > 1.1 ? 
+            "Drag the system with your mouse to pan the view" : 
+            "Increase zoom to see outer planet orbits more clearly"}
         </div>
       </div>
       <style>
@@ -291,151 +363,266 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             background-color: #111;
             border-radius: 8px;
             overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+          }
+          
+          .svg-container {
+            cursor: ${zoomLevel > 1.1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 550px;
+          }
+          
+          svg {
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            display: block;
           }
         `}
       </style>
-      <svg width="100%" height="100%" viewBox={`0 0 ${svgSize} ${svgSize}`}>
-        {/* Orbital paths as ellipses */}
-        {orbitData.map((planet) => {
-          const pathPoints = generateEllipticalPath(
-            planet.distance, 
-            planet.eccentricity,
-            100
-          );
-          
-          const pathData = pathPoints
-            .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
-            .join(' ') + ' Z';
-          
-          // Get a color based on the planet's distance from the sun
-          // This ensures visually distinct orbits, especially for outer planets
-          const getOrbitColor = (name, enabled) => {
-            if (!enabled) return "#333";
+      <div 
+        className="svg-container"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
+        <svg 
+          ref={svgRef}
+          width="100%" 
+          height="100%" 
+          viewBox={`0 0 ${svgSize} ${svgSize}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Orbital paths as ellipses */}
+          {orbitData.map((planet) => {
+            const pathPoints = generateEllipticalPath(
+              planet.distance, 
+              planet.eccentricity,
+              100
+            );
             
-            // Custom colors for each planet to make orbits more distinguishable
-            const planetColors = {
-              "Mercury": "#AAA",
-              "Venus": "#DAA",
-              "Earth": "#5A5",
-              "Mars": "#A55",
-              "Ceres": "#AA8",
-              "Jupiter": "#DA8",
-              "Saturn": "#DD5",
-              "Uranus": "#8DD",
-              "Neptune": "#55D",
-              "Pluto": "#D5D"
+            const pathData = pathPoints
+              .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+              .join(' ') + ' Z';
+            
+            // Get a color based on the planet's distance from the sun
+            // This ensures visually distinct orbits, especially for outer planets
+            const getOrbitColor = (name, enabled) => {
+              if (!enabled) return "#333";
+              
+              // Custom colors for each planet to make orbits more distinguishable
+              const planetColors = {
+                "Mercury": "#AAA",
+                "Venus": "#DAA",
+                "Earth": "#5A5",
+                "Mars": "#A55",
+                "Ceres": "#AA8",
+                "Jupiter": "#DA8",
+                "Saturn": "#DD5",
+                "Uranus": "#8DD",
+                "Neptune": "#55D",
+                "Pluto": "#D5D"
+              };
+              
+              return planetColors[name] || "#666";
             };
             
-            return planetColors[name] || "#666";
-          };
+            // For highly eccentric orbits, mark perihelion and aphelion
+            const showOrbitExtremes = planet.eccentricity > 0.1;
+            const { perihelion, aphelion } = showOrbitExtremes ? 
+              getExtremePositions(planet.distance, planet.eccentricity) : 
+              { perihelion: null, aphelion: null };
+            
+            const { perihelion: perihelionDist, aphelion: aphelionDist } = 
+              calculateOrbitalExtremes(planet.distance, planet.eccentricity);
+            
+            return (
+              <React.Fragment key={`orbit-${planet.name}`}>
+                <path
+                  d={pathData}
+                  fill="none"
+                  stroke={getOrbitColor(planet.name, planet.enabled)}
+                  strokeWidth={planet.name === "Neptune" || planet.name === "Pluto" ? 0.8 : 0.5}
+                  strokeDasharray={planet.enabled ? "none" : "2,2"}
+                />
+                
+                {/* Orbit label - visible at higher zoom levels or for outer planets */}
+                {(zoomLevel > 3 || (zoomLevel > 1.5 && (planet.name === "Neptune" || planet.name === "Pluto" || planet.name === "Uranus"))) && (
+                  <text
+                    x={center + (planet.distance * 0.7) * orbitScaleFactor + panOffset.x}
+                    y={center - (planet.distance * 0.7) * orbitScaleFactor + panOffset.y}
+                    fontSize="7"
+                    fill={getOrbitColor(planet.name, planet.enabled)}
+                    opacity={planet.enabled ? 1 : 0.5}
+                    textAnchor="middle"
+                  >
+                    {planet.name} orbit
+                  </text>
+                )}
+                
+                {/* Show perihelion and aphelion markers for eccentric orbits */}
+                {planet.enabled && showOrbitExtremes && (
+                  <>
+                    {/* Perihelion marker */}
+                    <circle
+                      cx={perihelion.x}
+                      cy={perihelion.y}
+                      r={1.5}
+                      fill="#f44"
+                    />
+                    {zoomLevel > 4 && (
+                      <text
+                        x={perihelion.x}
+                        y={perihelion.y - 5}
+                        fontSize="6"
+                        textAnchor="middle"
+                        fill="#f88"
+                      >
+                        {planet.name} perihelion
+                        ({perihelionDist.toFixed(2)} AU)
+                      </text>
+                    )}
+                    
+                    {/* Aphelion marker */}
+                    <circle
+                      cx={aphelion.x}
+                      cy={aphelion.y}
+                      r={1.5}
+                      fill="#88f"
+                    />
+                    {zoomLevel > 4 && (
+                      <text
+                        x={aphelion.x}
+                        y={aphelion.y - 5}
+                        fontSize="6"
+                        textAnchor="middle"
+                        fill="#88f"
+                      >
+                        {planet.name} aphelion
+                        ({aphelionDist.toFixed(2)} AU)
+                      </text>
+                    )}
+                  </>
+                )}
+              </React.Fragment>
+            );
+          })}
           
-          return (
-            <path
-              key={`orbit-${planet.name}`}
-              d={pathData}
-              fill="none"
-              stroke={getOrbitColor(planet.name, planet.enabled)}
-              strokeWidth={planet.name === "Neptune" || planet.name === "Pluto" ? 0.8 : 0.5}
-              strokeDasharray={planet.enabled ? "none" : "2,2"}
-            />
-          );
-        })}
-        
-        {/* Sun label */}
-        <text
-          x={center}
-          y={center - sunRadius - 5}
-          fontSize="10"
-          textAnchor="middle"
-          fill="#FDB813"
-        >
-          Sun
-        </text>
-        
-        {/* Sun */}
-        <circle
-          cx={center}
-          cy={center}
-          r={sunRadius}
-          fill="#FDB813"
-        />
-        
-        {/* Planets */}
-        {orbitData.map((planet) => {
-          if (!planet.enabled) return null;
+          {/* Sun label */}
+          <text
+            x={center + panOffset.x}
+            y={center + panOffset.y - sunRadius - 5}
+            fontSize="10"
+            textAnchor="middle"
+            fill="#FDB813"
+          >
+            Sun
+          </text>
           
-          const period = getOrbitalPeriod(planet.distance);
-          const angle = (animationTime / period) * 2 * Math.PI;
-          const position = getPlanetPosition(
-            planet.distance,
-            planet.eccentricity,
-            angle
-          );
+          {/* Sun */}
+          <circle
+            cx={center + panOffset.x}
+            cy={center + panOffset.y}
+            r={sunRadius}
+            fill="#FDB813"
+          />
           
-          // Calculate current distance for display
-          const currentDistance = getCurrentDistance(
-            planet.distance,
-            planet.eccentricity,
-            angle
-          );
-          
-          const size = getPlanetSize(planet);
-          
-          // Planet colors
-          const planetColors = {
-            "Mercury": "#A9A9A9",
-            "Venus": "#E6D3A3",
-            "Earth": "#1E90FF",
-            "Mars": "#CD5C5C",
-            "Ceres": "#8B8B83",
-            "Jupiter": "#E59866",
-            "Saturn": "#F4D03F",
-            "Uranus": "#73C6B6",
-            "Neptune": "#5DADE2",
-            "Pluto": "#C39BD3"
-          };
-          
-          return (
-            <g key={`planet-${planet.name}`}>
-              <circle
-                cx={position.x}
-                cy={position.y}
-                r={size}
-                fill={planetColors[planet.name] || "#999"}
-              />
-              <text
-                x={position.x}
-                y={position.y - size - 2}
-                fontSize="8"
-                textAnchor="middle"
-                fill="#ccc"
-              >
-                {planet.name}
-              </text>
-              {/* Current distance */}
-              <text
-                x={position.x}
-                y={position.y + size + 8}
-                fontSize="6"
-                textAnchor="middle"
-                fill="#aaa"
-              >
-                {currentDistance.toFixed(2)} AU
-              </text>
-              {/* Line from sun to planet */}
-              <line
-                x1={center}
-                y1={center}
-                x2={position.x}
-                y2={position.y}
-                stroke="#333"
-                strokeWidth="0.3"
-                strokeDasharray="1,2"
-              />
-            </g>
-          );
-        })}
-      </svg>
+          {/* Planets */}
+          {orbitData.map((planet) => {
+            if (!planet.enabled) return null;
+            
+            // Calculate angle based on planet properties to ensure proper orbital positioning
+            // Add planet-specific phase offset to ensure planets with high eccentricity
+            // don't all start at the same position (especially important for Pluto)
+            let phaseOffset = 0;
+            if (planet.name === "Pluto") {
+              // Place Pluto at a position where it's furthest from the sun initially
+              phaseOffset = Math.PI;
+            } else if (planet.name === "Neptune") {
+              // Place Neptune 90 degrees offset from Pluto
+              phaseOffset = Math.PI / 2;
+            }
+            
+            const period = getOrbitalPeriod(planet.distance);
+            const angle = ((animationTime / period) * 2 * Math.PI) + phaseOffset;
+            
+            const position = getPlanetPosition(
+              planet.distance,
+              planet.eccentricity,
+              angle
+            );
+            
+            // Calculate current distance for display
+            const currentDistance = getCurrentDistance(
+              planet.distance,
+              planet.eccentricity,
+              angle
+            );
+            
+            const size = getPlanetSize(planet);
+            
+            // Planet colors
+            const planetColors = {
+              "Mercury": "#A9A9A9",
+              "Venus": "#E6D3A3",
+              "Earth": "#1E90FF",
+              "Mars": "#CD5C5C",
+              "Ceres": "#8B8B83",
+              "Jupiter": "#E59866",
+              "Saturn": "#F4D03F",
+              "Uranus": "#73C6B6",
+              "Neptune": "#5DADE2",
+              "Pluto": "#C39BD3"
+            };
+            
+            return (
+              <g key={`planet-${planet.name}`}>
+                <circle
+                  cx={position.x}
+                  cy={position.y}
+                  r={size}
+                  fill={planetColors[planet.name] || "#999"}
+                />
+                <text
+                  x={position.x}
+                  y={position.y - size - 2}
+                  fontSize="8"
+                  textAnchor="middle"
+                  fill="#ccc"
+                >
+                  {planet.name}
+                </text>
+                {/* Current distance */}
+                <text
+                  x={position.x}
+                  y={position.y + size + 8}
+                  fontSize="6"
+                  textAnchor="middle"
+                  fill="#aaa"
+                >
+                  {currentDistance.toFixed(2)} AU
+                </text>
+                {/* Line from sun to planet */}
+                <line
+                  x1={center}
+                  y1={center}
+                  x2={position.x}
+                  y2={position.y}
+                  stroke="#333"
+                  strokeWidth="0.3"
+                  strokeDasharray="1,2"
+                />
+              </g>
+            );
+          })}
+        </svg>
+      </div>
       <div className="frequency-display">
         <div className="frequency-header">Current Frequencies:</div>
         {Object.entries(currentFrequencies).map(([planet, freq]) => (
