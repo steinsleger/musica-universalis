@@ -4,9 +4,7 @@ import OrbitalSonification from './OrbitalSonification';
 
 function App() {
   return (
-    <div>
-      <OrbitalSonification />
-    </div>
+    <OrbitalSonification />
   );
 }
 

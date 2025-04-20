@@ -25,29 +25,22 @@ const OrbitalSonification = () => {
   const [isPaused, setIsPaused] = useState(true);
   const [positionMode, setPositionMode] = useState('normal'); // 'normal', 'average', 'aphelion', 'perihelion'
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
-  // Add user interaction handling state
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   
-  // References to avoid audio/animation issues
+  // Estado de la UI
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [activeTab, setActiveTab] = useState('controls'); // 'controls' o 'planets'
+  
+  // Referencias para evitar problemas con audio/animación
   const audioContextStarted = useRef(false);
   const frequencyUpdateTimeoutRef = useRef(null);
   const gainNodeRef = useRef(null);
   const initFrequenciesRef = useRef(false);
-  
-  // New reference to keep individual synthesizers
   const synthsRef = useRef({});
   const mainSynthRef = useRef(null);
-  
-  // Save the last frequencies used when paused
   const lastFrequenciesRef = useRef({});
-  
-  // Reference to follow the orbital sequence timeout
   const sequenceTimeoutRef = useRef(null);
-  
-  // Reference to follow the previous state of pause
   const wasPausedRef = useRef(false);
-  
-  // Debug flag
   const debug = useRef(true);
 
   // Handle first user interaction on the page to initialize audio
@@ -57,24 +50,19 @@ const OrbitalSonification = () => {
         const started = await startAudioContext();
         if (started) {
           setNeedsUserInteraction(false);
-          // Silent initialization - no console logs visible to user
         }
       } catch (error) {
-        // Silent error handling - don't show errors to user
         console.error("Error initializing audio on user interaction:", error);
       }
     }
   };
 
-  // Add a global click handler to capture user interaction - keep this to ensure
-  // we get the first click anywhere on the page
   useEffect(() => {
     if (needsUserInteraction) {
       const handleGlobalClick = async () => {
         await handleUserInteraction();
       };
       
-      // Add event listeners to increase chances of capturing user interaction
       document.addEventListener('click', handleGlobalClick);
       document.addEventListener('touchstart', handleGlobalClick);
       
@@ -89,15 +77,11 @@ const OrbitalSonification = () => {
   const frequencyToNote = (frequency) => {
     if (!frequency) return "";
     
-    // A4 is 440Hz, which is the reference
     const A4 = 440.0;
-    // C0 is the 0th note in our system (by convention)
     const C0 = A4 * Math.pow(2, -4.75);
     
-    // Calculate how many half steps from C0
     const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
     
-    // Convert to note
     const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     const octave = Math.floor(halfStepsFromC0 / 12);
     const noteIndex = halfStepsFromC0 % 12;
@@ -151,7 +135,6 @@ const OrbitalSonification = () => {
         
         // Set the master volume directly from the start
         Tone.Destination.volume.value = Tone.gainToDb(masterVolume);
-        console.log("Master volume set to:", masterVolume, "dB:", Tone.gainToDb(masterVolume));
         
         // Configure the main synthesizer for the sequence
         const mainSynth = new Tone.PolySynth(Tone.Synth, {
@@ -164,13 +147,12 @@ const OrbitalSonification = () => {
           oscillator: {
             type: 'sine'
           }
-        }).connect(masterGain);  // Connect to the master gain node
+        }).connect(masterGain);
         
         mainSynthRef.current = mainSynth;
         
         // Create individual synthesizer for each planet
         orbitData.forEach(planet => {
-          // Create a new synthesizer with a clean context
           const planetSynth = new Tone.Synth({
             envelope: {
               attack: 0.02,
@@ -181,13 +163,11 @@ const OrbitalSonification = () => {
             oscillator: {
               type: 'sine'
             }
-          }).connect(masterGain);  // Connect to the master gain node
+          }).connect(masterGain);
           
-          // Store the synthesizer in the reference
           synthsRef.current[planet.name] = planetSynth;
         });
         
-        // Try to start the audio context (may fail if no interaction)
         try {
           await Tone.start();
           audioContextStarted.current = true;
@@ -203,7 +183,6 @@ const OrbitalSonification = () => {
     initTone();
     
     return () => {
-      // Clean up all synthesizers
       if (frequencyUpdateTimeoutRef.current) {
         clearTimeout(frequencyUpdateTimeoutRef.current);
       }
@@ -211,36 +190,28 @@ const OrbitalSonification = () => {
         mainSynthRef.current.dispose();
       }
       
-      // Clean up all individual synthesizers
       Object.values(synthsRef.current).forEach(synth => {
         if (synth) synth.dispose();
       });
     };
-  }, [orbitData]);  // Don't include masterVolume to prevent recreation
+  }, [orbitData]);
   
-  // NEW: Effect to keep audio state synchronized with application state
-  // This effect will now be responsible for managing audio independently
+  // Effect to keep audio state synchronized with application state
   useEffect(() => {
     if (!liveMode) return;
     
-    // Ensure audio context is started
     const setupAudio = async () => {
       try {
-        // Ensure Tone.js is ready
         if (!audioContextStarted.current) {
           await Tone.start();
           audioContextStarted.current = true;
         }
         
-        // Resume audio context
         await Tone.context.resume();
         
-        // Ensure the gain node has the current master volume value
         if (gainNodeRef.current) {
-          // Apply volume directly and immediately 
           gainNodeRef.current.gain.value = masterVolume;
           
-          // Also use rampTo for smooth transitions when changing during playback
           try {
             gainNodeRef.current.gain.rampTo(masterVolume, 0.05);
           } catch (e) {
@@ -248,23 +219,18 @@ const OrbitalSonification = () => {
           }
         }
         
-        // Rebuild entire audio state based on current application state
-        // This ensures we always have a coherent audio state
         orbitData.forEach(planet => {
           const synth = synthsRef.current[planet.name];
           if (!synth) return;
           
-          // Stop any previous sound to start from a clean state
           synth.triggerRelease();
           
-          // If the planet is enabled, start its sound
           if (planet.enabled && liveMode) {
             const freq = isPaused ? 
               (lastFrequenciesRef.current[planet.name] || currentFrequencies[planet.name]) : 
               currentFrequencies[planet.name];
               
             if (freq) {
-              // Small delay to ensure previous release had effect
               setTimeout(() => {
                 synth.triggerAttack(freq);
               }, 50);
@@ -277,35 +243,26 @@ const OrbitalSonification = () => {
     };
     
     setupAudio();
-  }, [liveMode, orbitData, isPaused, masterVolume]); // Add masterVolume as dependency
+  }, [liveMode, orbitData, isPaused, masterVolume]);
   
-  // Handle master volume changes - also try to start audio
+  // Handle master volume changes
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
-    console.log("Volume change detected:", newVolume, "Current value:", masterVolume);
     
-    // Update the state immediately
     setMasterVolume(newVolume);
     
-    // Update audio volume after state change
     const updateAudioVolume = async () => {
       try {
-        // Ensure audio context is running
         if (!audioContextStarted.current) {
           await startAudioContext();
         }
         
-        // Convert linear volume to decibels
         const dbValue = Tone.gainToDb(newVolume);
-        console.log("Setting volume to:", newVolume, "dB:", dbValue);
         
-        // Set volume directly on Tone.Destination
         Tone.Destination.volume.value = dbValue;
         
-        // Also update the gain node if it exists
         if (gainNodeRef.current) {
           gainNodeRef.current.gain.value = newVolume;
-          console.log("Updated gain node volume");
         }
       } catch (error) {
         console.error("Error updating audio volume:", error);
@@ -315,9 +272,8 @@ const OrbitalSonification = () => {
     updateAudioVolume();
   };
 
-  // Toggle between pause and play - Now also attempts to start audio
+  // Toggle between pause and play
   const togglePlayPause = async () => {
-    // Always try to start audio context when user interacts with play button
     await startAudioContext();
     if (isPaused) {
       setPositionMode('normal'); // Reset position mode when resuming
@@ -325,21 +281,15 @@ const OrbitalSonification = () => {
     setIsPaused(!isPaused);
   };
 
-  // Handle base frequency changes - also try to start audio
+  // Handle base frequency changes
   const handleBaseFrequencyChange = async (e) => {
-    // Try to start audio since user interacted with controls
     await startAudioContext();
     
     const newBaseFrequency = parseFloat(e.target.value);
     setBaseFrequency(newBaseFrequency);
     
-    // Frequency update now happens automatically in useEffect,
-    // which guarantees it will be updated everywhere needed
-    
-    // If we're in live mode and NOT paused, update sounds
     if (liveMode && !isPaused) {
       setTimeout(() => {
-        // Update frequencies for active planets
         orbitData.forEach(planet => {
           if (planet.enabled) {
             const planetSynth = synthsRef.current[planet.name];
@@ -353,67 +303,52 @@ const OrbitalSonification = () => {
     }
   };
 
-  // Function to activate/deactivate a planet - now also starts audio
+  // Function to activate/deactivate a planet
   const togglePlanet = async (index) => {
-    // Try to start audio since user interacted with controls
     await startAudioContext();
     
-    // Create a copy of the data to modify
     const newData = [...orbitData];
-    // Get the planet to modify
     const planet = newData[index];
-    // Invert its state
     planet.enabled = !planet.enabled;
-    // Update state - effect will handle updating audio
     setOrbitData(newData);
     
-    // Force audio context resume - safety measure
     if (liveMode) {
       Tone.context.resume().catch(e => console.error("Error resuming audio context:", e));
     }
   };
 
-  // New function to activate/deactivate all planets - also starts audio
+  // Function to activate/deactivate all planets
   const toggleAllPlanets = async (enable) => {
-    // Try to start audio since user interacted with controls
     await startAudioContext();
     
-    // Create a copy of the data to modify
     const newData = orbitData.map(planet => ({
       ...planet,
       enabled: enable
     }));
     
-    // Update state - effect will handle updating audio
     setOrbitData(newData);
     
-    // Force audio context resume - safety measure
     if (liveMode) {
       Tone.context.resume().catch(e => console.error("Error resuming audio context:", e));
     }
   };
 
-  // Activate/deactivate live mode - IMPROVED WITH AUDIO CONTEXT HANDLING
+  // Activate/deactivate live mode
   const toggleLiveMode = async () => {
     try {
-      // Get user interaction to start audio context
       const audioStarted = await startAudioContext();
       if (!audioStarted) {
-        // Silently try again without alerts
         console.log("User interaction needed for audio");
         return;
       }
       
-      // Simply toggle the state - effect will handle audio
       setLiveMode(!liveMode);
       
-      // Force volume update when toggling live mode
       if (gainNodeRef.current) {
         gainNodeRef.current.gain.value = masterVolume;
       }
       
       if (liveMode) {
-        // Deactivating live mode, stop all sounds
         Object.values(synthsRef.current).forEach(synth => {
           if (synth) synth.triggerRelease();
         });
@@ -423,36 +358,27 @@ const OrbitalSonification = () => {
     }
   };
 
-  // Now when pausing doesn't affect sounds, only animation
-  // and frequency update
+  // Effect for pause state
   useEffect(() => {
     if (isPaused) {
-      // Save current frequencies
       lastFrequenciesRef.current = { ...currentFrequencies };
-      // Update pause state reference
       wasPausedRef.current = true;
     } else {
-      // Only show message if previously paused
       if (wasPausedRef.current) {
         console.log("Animation resumed. Frequencies updating.");
-        // Reset pause state
         wasPausedRef.current = false;
       }
     }
   }, [isPaused, currentFrequencies]);
 
-  // Handle frequency changes from visualization - SIMPLIFIED
+  // Handle frequency changes from visualization
   const handleFrequencyChange = useCallback((frequencies) => {
-    // Update state for interface
     const updatedFrequencies = { ...currentFrequencies, ...frequencies };
     setCurrentFrequencies(updatedFrequencies);
     
-    // Also save the last frequencies used
     lastFrequenciesRef.current = { ...lastFrequenciesRef.current, ...frequencies };
     
-    // Only update synthesizers if not paused and we're in live mode
     if (liveMode && !isPaused) {
-      // Update frequencies for active synthesizers
       Object.entries(frequencies).forEach(([planetName, freq]) => {
         const planet = orbitData.find(p => p.name === planetName);
         if (planet && planet.enabled) {
@@ -465,42 +391,32 @@ const OrbitalSonification = () => {
     }
   }, [liveMode, currentFrequencies, isPaused, orbitData]);
 
-  // Start audio context safely - IMPROVED WITH USER INTERACTION HANDLING
+  // Start audio context safely
   const startAudioContext = async () => {
     if (!audioContextStarted.current) {
       try {
-        // Attempt to resume the AudioContext first if it exists
         if (Tone.context.state !== 'running') {
           await Tone.context.resume();
         }
         
-        // Then try to start Tone.js
         await Tone.start();
         audioContextStarted.current = true;
-        console.log("AudioContext started successfully");
         
-        // Force resume for Safari and mobile browsers
         if (Tone.context.state !== 'running') {
-          console.log("Additional context resume needed");
           await Tone.context.resume();
         }
         
-        // Mark that we don't need user interaction anymore
         setNeedsUserInteraction(false);
         
         return true;
       } catch (error) {
         console.error("Could not start AudioContext:", error);
-        console.log("Auto-play policy may be preventing audio. User interaction required.");
-        // Make sure we still need user interaction
         setNeedsUserInteraction(true);
         return false;
       }
     } else if (Tone.context.state !== 'running') {
-      // If context exists but is suspended, try to resume it
       try {
         await Tone.context.resume();
-        console.log("AudioContext resumed successfully");
         setNeedsUserInteraction(false);
         return true;
       } catch (error) {
@@ -512,39 +428,30 @@ const OrbitalSonification = () => {
     return true;
   };
 
-  // Play or stop orbital sequence using the main synthesizer
+  // Play or stop orbital sequence
   const playOrbitalSequence = async () => {
-    // Try to start audio context - uses user interaction
     const audioStarted = await startAudioContext();
     if (!audioStarted) {
-      // Silently try again without alerts
       console.log("User interaction needed for audio");
       return;
     }
     
-    // Rest of the playOrbitalSequence function
-    // If already playing, stop the sequence
     if (isPlaying) {
-      // Cancel pending timeout
       if (sequenceTimeoutRef.current) {
         clearTimeout(sequenceTimeoutRef.current);
         sequenceTimeoutRef.current = null;
       }
       
-      // Stop all sounds in the main synthesizer
       if (mainSynthRef.current) {
         mainSynthRef.current.releaseAll();
         
-        // Cancel all scheduled events in Tone.js
         Tone.Transport.cancel();
         
-        // Create new synthesizer to avoid pending events
         if (mainSynthRef.current) {
           mainSynthRef.current.disconnect();
           mainSynthRef.current.dispose();
         }
           
-        // Create new synth
         const newMainSynth = new Tone.PolySynth(Tone.Synth, {
           envelope: {
             attack: 0.02,
@@ -555,22 +462,16 @@ const OrbitalSonification = () => {
           oscillator: {
             type: 'sine'
           }
-        }).connect(gainNodeRef.current || Tone.Destination);  // Connect to gain node if available
+        }).connect(gainNodeRef.current || Tone.Destination);
         
         mainSynthRef.current = newMainSynth;
       }
       
-      // Update state
       setIsPlaying(false);
-      
-      if (debug.current) {
-        console.log("Orbital sequence stopped");
-      }
       
       return;
     }
     
-    // If not playing, start new sequence
     if (!mainSynthRef.current || liveMode) return;
     
     try {
@@ -579,24 +480,16 @@ const OrbitalSonification = () => {
       const now = Tone.now();
       const enabledPlanets = orbitData.filter(planet => planet.enabled);
       
-      // Use a more direct approach with individual scheduling instead of all at once
       const scheduleNote = (planet, index) => {
         const originalIndex = orbitData.findIndex(p => p.name === planet.name);
         const freq = calculateBaseFrequencies(baseFrequency, originalIndex - 2);
         const time = now + index * 0.75;
         
-        // Schedule the note with a bit more precise timing
         mainSynthRef.current.triggerAttackRelease(freq, "1n", time, 0.3);
-        
-        if (debug.current) {
-          console.log(`Scheduled ${planet.name} at ${freq.toFixed(1)} Hz, time: +${index * 0.75}s`);
-        }
       };
       
-      // Schedule each planet's note
       enabledPlanets.forEach(scheduleNote);
       
-      // Save reference to timeout for canceling
       sequenceTimeoutRef.current = setTimeout(() => {
         setIsPlaying(false);
         sequenceTimeoutRef.current = null;
@@ -607,11 +500,15 @@ const OrbitalSonification = () => {
     }
   };
 
-  // Convert volume to decibels for display in interface
+  // Convert volume to decibels for display
   const volumeToDb = (volume) => {
-    // Avoid log of 0
     if (volume <= 0.01) return "-∞";
     return Tone.gainToDb(volume).toFixed(1);
+  };
+
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   // Clean up timeouts on component unmount
@@ -626,15 +523,29 @@ const OrbitalSonification = () => {
     };
   }, []);
 
+  // Obtener colores de planetas para los toggle switches
+  const getPlanetColor = (name) => {
+    const planetColors = {
+      "Mercury": "#A9A9A9",
+      "Venus": "#E6D3A3",
+      "Earth": "#1E90FF",
+      "Mars": "#CD5C5C",
+      "Ceres": "#8B8B83",
+      "Jupiter": "#E59866",
+      "Saturn": "#F4D03F",
+      "Uranus": "#73C6B6",
+      "Neptune": "#5DADE2",
+      "Pluto": "#C39BD3"
+    };
+    
+    return planetColors[name] || "#999";
+  };
+
   return (
     <div 
       className="container" 
       onClick={needsUserInteraction ? handleUserInteraction : undefined}
     >
-      {/* Modal removed, but we still handle click events for audio initialization */}
-      
-      <h2 className="title">Planetary Orbits Sonification</h2>
-      
       <div className="visualization-container">
         <div className="orbital-display">
           <PlanetarySystem 
@@ -649,122 +560,232 @@ const OrbitalSonification = () => {
             setToPerihelion={positionMode === 'perihelion'}
           />
         </div>
-        <div className="controls">
-          <div className="control-group">
-            <label htmlFor="volume-slider" className="label">
-              Master Volume: {volumeToDb(masterVolume)} dB
-            </label>
-            <input 
-              id="volume-slider"
-              type="range" 
-              value={masterVolume}
-              min={0}
-              max={1}
-              step={0.01}
-              className="slider"
-              onChange={handleVolumeChange}
-              onInput={handleVolumeChange}
-              style={{ cursor: 'pointer' }}
-            />
+        
+        {/* Controles flotantes minimizados (siempre visibles) */}
+        <div className="floating-controls fade-in">
+          <button 
+            className="floating-button"
+            onClick={togglePlayPause}
+            disabled={isPlaying}
+            title={isPaused ? "Play Animation" : "Pause Animation"}
+          >
+            {isPaused ? '▶️' : '⏸️'}
+          </button>
+          
+          <button 
+            className="floating-button"
+            onClick={() => setPositionMode('average')}
+            disabled={isPlaying}
+            title="Set to Average Distance"
+          >
+            ⏹️
+          </button>
+          
+          <button 
+            className="floating-button"
+            onClick={() => setPositionMode('aphelion')}
+            disabled={isPlaying}
+            title="Set to Aphelion"
+          >
+            🌞
+          </button>
+          
+          <button 
+            className="floating-button"
+            onClick={() => setPositionMode('perihelion')}
+            disabled={isPlaying}
+            title="Set to Perihelion"
+          >
+            ☀️
+          </button>
+          
+          <button 
+            className="floating-button"
+            onClick={toggleLiveMode}
+            disabled={isPlaying}
+            title={liveMode ? "Disable Live Mode" : "Enable Live Mode"}
+            style={{background: liveMode ? '#45a049' : '#4CAF50'}}
+          >
+            🔊
+          </button>
+        </div>
+        
+        {/* Control compacto de velocidad */}
+        <div className="speed-control-compact fade-in">
+          <div className="speed-label">Animation Speed: {animationSpeed.toFixed(1)}x</div>
+          <input 
+            type="range" 
+            min="0.1"
+            max="10"
+            step="0.1"
+            value={animationSpeed}
+            onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+            className="speed-slider"
+          />
+        </div>
+        
+        {/* Botón para acceder a más configuraciones */}
+        <button 
+          className="more-settings-button" 
+          onClick={toggleSidebar}
+          title="More Settings"
+        >
+          {sidebarCollapsed ? '⚙️' : '✖️'}
+        </button>
+        
+        {/* Panel lateral de configuraciones avanzadas */}
+        <div className={`controls-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          {/* Pestañas de navegación */}
+          <div className="sidebar-tabs">
+            <button 
+              className={`tab-button ${activeTab === 'controls' ? 'active' : ''}`}
+              onClick={() => setActiveTab('controls')}
+            >
+              Controls
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'planets' ? 'active' : ''}`}
+              onClick={() => setActiveTab('planets')}
+            >
+              Planets
+            </button>
           </div>
           
-          <div className="playback-controls">
-            <button 
-              onClick={togglePlayPause}
-              className="button playback-button"
-              disabled={isPlaying}
-            >
-              {isPaused ? '▶️ Play Animation' : '⏸️ Pause Animation'}
-            </button>
-            <button 
-              onClick={() => {
-                setPositionMode('average');
-              }}
-              className="button playback-button"
-              disabled={isPlaying}
-            >
-              ⏹️ Set to Average Distance
-            </button>
-            <button 
-              onClick={() => {
-                setPositionMode('aphelion');
-              }}
-              className="button playback-button"
-              disabled={isPlaying}
-            >
-              🌞 Set to Aphelion
-            </button>
-            <button 
-              onClick={() => {
-                setPositionMode('perihelion');
-              }}
-              className="button playback-button"
-              disabled={isPlaying}
-            >
-              ☀️ Set to Perihelion
-            </button>
-          </div>
+          {/* Contenido de la pestaña de controles */}
+          {activeTab === 'controls' && (
+            <div className="sidebar-content fade-in">
+              <div className="control-group">
+                <label htmlFor="volume-slider" className="label">
+                  Master Volume: {volumeToDb(masterVolume)} dB
+                </label>
+                <input 
+                  id="volume-slider"
+                  type="range" 
+                  value={masterVolume}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  className="slider"
+                  onChange={handleVolumeChange}
+                  onInput={handleVolumeChange}
+                  style={{ cursor: 'pointer' }}
+                />
+              </div>
+              
+              <div className="control-group">
+                <label htmlFor="frequency-slider" className="label">
+                  Base Frequency: {baseFrequency.toFixed(1)} Hz
+                </label>
+                <input 
+                  id="frequency-slider"
+                  type="range" 
+                  value={baseFrequency}
+                  min={27.5}
+                  max={110}
+                  step={0.5}
+                  className="slider"
+                  onChange={handleBaseFrequencyChange}
+                />
+              </div>
+              
+              <div className="live-mode-toggle">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox"
+                    checked={liveMode}
+                    onChange={toggleLiveMode}
+                    disabled={isPlaying}
+                  />
+                  Live mode (continuous sound)
+                </label>
+              </div>
+              
+              <button 
+                onClick={playOrbitalSequence}
+                disabled={liveMode}
+                className="button"
+                style={{marginTop: '10px'}}
+              >
+                {isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
+              </button>
+              
+              <p className="note" style={{marginTop: '15px'}}>
+                {isPaused && liveMode ? (
+                  <strong>Animation paused, sound continues with fixed frequencies.</strong>
+                ) : (
+                  "Orbital velocities and frequencies vary with distance from the Sun."
+                )}
+              </p>
+            </div>
+          )}
           
-          <div className="live-mode-toggle">
-            <label className="checkbox-label">
-              <input 
-                type="checkbox"
-                checked={liveMode}
-                onChange={toggleLiveMode}
-                disabled={isPlaying}
-              />
-              Live mode (continuous sound following elliptical orbits)
-            </label>
-          </div>
-          
-          <p className="note">
-            Orbital velocities and frequencies vary according to the distance from the Sun at each point of the elliptical orbit.
-            {isPaused && liveMode && (
-              <strong> The animation is paused, but the sound continues with fixed frequencies.</strong>
-            )}
-          </p>
+          {/* Contenido de la pestaña de planetas */}
+          {activeTab === 'planets' && (
+            <div className="sidebar-content planets-tab fade-in">
+              <div className="master-toggle">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={orbitData.every(planet => planet.enabled)}
+                    onChange={() => toggleAllPlanets(!orbitData.every(planet => planet.enabled))}
+                    disabled={isPlaying}
+                  />
+                  {orbitData.every(planet => planet.enabled) ? 'Disable All' : 'Enable All'}
+                </label>
+              </div>
+              
+              <div className="planets-list">
+                {orbitData.map((planet, index) => (
+                  <div 
+                    key={planet.name} 
+                    className={`planet-item ${planet.enabled ? 'enabled' : 'disabled'}`}
+                    style={{
+                      borderLeft: `4px solid ${getPlanetColor(planet.name)}`
+                    }}
+                  >
+                    <label className="planet-toggle-label">
+                      <input 
+                        type="checkbox" 
+                        checked={planet.enabled}
+                        onChange={() => togglePlanet(index)}
+                        disabled={isPlaying}
+                      />
+                      <span className="planet-name">{planet.name}</span>
+                    </label>
+                    
+                    <div className="planet-info">
+                      <div className="planet-data">
+                        <span className="data-label">Dist:</span>
+                        <span className="data-value">{planet.distance.toFixed(2)} AU</span>
+                      </div>
+                      <div className="planet-data">
+                        <span className="data-label">Freq:</span>
+                        <span className="data-value">
+                          {currentFrequencies[planet.name] 
+                            ? `${currentFrequencies[planet.name].toFixed(1)} Hz`
+                            : "Calculating..."}
+                        </span>
+                      </div>
+                      <div className="planet-data">
+                        <span className="data-label">Note:</span>
+                        <span className="data-value note-value">
+                          {currentFrequencies[planet.name] 
+                            ? frequencyToNote(currentFrequencies[planet.name])
+                            : ""}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
-      <div className="slider-container">
-        <label htmlFor="frequency-slider" className="label">
-          Base Frequency: {baseFrequency.toFixed(1)} Hz
-        </label>
-        <input 
-          id="frequency-slider"
-          type="range" 
-          value={baseFrequency}
-          min={27.5}
-          max={110}
-          step={0.5}
-          className="slider"
-          onChange={handleBaseFrequencyChange}
-        />
-      </div>
-
-      <button 
-        onClick={playOrbitalSequence}
-        disabled={liveMode}
-        className="button"
-      >
-        {isPlaying ? 'Stop Orbital Sequence' : 'Play Orbital Sequence'}
-      </button>
-
+      {/* Contenido desplazable */}
       <div className="table-container">
         <h3>Celestial Bodies and Frequencies</h3>
-        
-        {/* Checkbox to activate/deactivate all planets */}
-        <div className="master-toggle">
-          <label className="checkbox-label">
-            <input 
-              type="checkbox" 
-              checked={orbitData.every(planet => planet.enabled)}
-              onChange={() => toggleAllPlanets(!orbitData.every(planet => planet.enabled))}
-              disabled={isPlaying}
-            />
-            {orbitData.every(planet => planet.enabled) ? 'Disable All Planets' : 'Enable All Planets'}
-          </label>
-        </div>
         
         <table className="table">
           <thead>
@@ -792,7 +813,6 @@ const OrbitalSonification = () => {
                 <td>{planet.distance.toFixed(2)}</td>
                 <td>{planet.eccentricity.toFixed(4)}</td>
                 <td>
-                  {/* Use currentFrequencies for displaying actual values */}
                   {currentFrequencies[planet.name] 
                     ? currentFrequencies[planet.name].toFixed(1) 
                     : "Calculating..."}
@@ -807,6 +827,9 @@ const OrbitalSonification = () => {
           </tbody>
         </table>
       </div>
+      
+      {/* Espacio al final para mejor desplazamiento */}
+      <div className="content-end-spacer"></div>
     </div>
   );
 };

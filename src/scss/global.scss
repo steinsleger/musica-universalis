@@ -1,41 +1,44 @@
-/* src/styles/global.scss */
+/* src/scss/global.scss */
 
 html, body, #root {
   margin: 0;
   padding: 0;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  background-color: #ffffff;
-  color: #213547;
+  background-color: #111;
+  color: #f0f0f0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
 }
 
 .container {
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.title {
-  text-align: center;
-  margin-bottom: 20px;
-  font-size: 2rem;
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* Visualization styles */
 .visualization-container {
-  margin-bottom: 30px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  margin-bottom: 0;
+  border: none;
   overflow: hidden;
-  background-color: #f9f9f9;
+  background-color: #111;
+  width: 100%;
+  height: 100vh;
+  position: relative;
 }
 
 .orbital-display {
-  height: 500px;
+  height: 100vh;
   width: 100%;
   background-color: #111;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
 }
 
 .orbital-visualization {
@@ -44,12 +47,54 @@ html, body, #root {
   position: relative;
 }
 
+/* Controles optimizados para no solaparse */
+.controls-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  padding: 15px;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 15px;
+  transition: transform 0.3s ease;
+}
+
+.controls-sidebar.collapsed {
+  transform: translateX(250px);
+}
+
+.toggle-sidebar {
+  position: fixed;
+  right: 250px;
+  top: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  padding: 10px;
+  cursor: pointer;
+  z-index: 1001;
+  transition: right 0.3s ease;
+}
+
+.toggle-sidebar.collapsed {
+  right: 0;
+}
+
 /* Zoom control styles */
 .zoom-control {
   position: absolute;
   top: 10px;
   left: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   padding: 8px 12px;
   border-radius: 4px;
   z-index: 10;
@@ -96,12 +141,48 @@ html, body, #root {
   position: absolute;
   top: 10px;
   right: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   padding: 8px;
   border-radius: 4px;
   font-size: 12px;
   color: #fff;
   width: 175px;
+}
+
+/* Contenedor de controles en la parte inferior que no obstruye */
+.bottom-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  padding: 10px 15px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  z-index: 100;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.bottom-controls.visible {
+  transform: translateY(0);
+}
+
+.toggle-bottom-controls {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px 4px 0 0;
+  padding: 5px 15px;
+  cursor: pointer;
+  z-index: 101;
 }
 
 .planet-frequency {
@@ -115,24 +196,20 @@ html, body, #root {
   margin-right: 8px;
 }
 
-.controls {
-  padding: 10px 15px;
-  background-color: #f0f0f0;
-  border-top: 1px solid #ddd;
-}
-
 .control-group {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  width: 100%;
 }
 
 .live-mode-toggle {
-  margin: 10px 0;
+  margin: 15px 0;
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
   cursor: pointer;
+  color: #f0f0f0;
 }
 
 .checkbox-label input {
@@ -140,21 +217,29 @@ html, body, #root {
 }
 
 .note {
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 0.9rem;
-  color: #666;
+  color: #aaa;
   font-style: italic;
 }
 
 /* Form controls */
 .slider-container {
   margin-bottom: 20px;
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+  background-color: rgba(26, 26, 26, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  margin-top: 100vh;
 }
 
 .label {
   display: block;
   margin-bottom: 10px;
   font-weight: bold;
+  color: #f0f0f0;
 }
 
 .slider {
@@ -162,7 +247,7 @@ html, body, #root {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  background: #ddd;
+  background: #333;
   outline: none;
   border-radius: 3px;
   margin-bottom: 8px;
@@ -210,41 +295,59 @@ html, body, #root {
 }
 
 .button {
-  width: 100%;
-  padding: 12px;
+  padding: 12px 15px;
   background-color: #4CAF50;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: background 0.3s;
+  white-space: nowrap;
 
   &:disabled {
-    background-color: #cccccc;
+    background-color: #333;
+    color: #666;
     cursor: not-allowed;
   }
 }
 
 /* Table styles */
 .table-container {
-  margin-top: 30px;
+  padding: 20px;
+  margin: 20px auto;
+  background-color: rgba(26, 26, 26, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 2;
 }
 
 .table-container h3 {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  color: #f0f0f0;
+  text-align: center;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  background-color: #222;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .table th,
 .table td {
-  border: 1px solid #ddd;
-  padding: 8px;
+  border: 1px solid #333;
+  padding: 10px;
   text-align: left;
+  color: #f0f0f0;
+}
+
+.table th {
+  background-color: #2a2a2a;
+  color: #4CAF50;
 }
 
 /* Checkbox styling */
@@ -252,6 +355,7 @@ input[type="checkbox"] {
   transform: scale(1.2);
   margin-right: 5px;
   cursor: pointer;
+  accent-color: #4CAF50;
 }
 
 input[type="checkbox"]:disabled {
@@ -266,35 +370,39 @@ input[type="checkbox"]:disabled {
 
 /* Highlight enabled/disabled rows */
 tr.enabled {
-  background-color: #f0fff0;
+  background-color: #1a2f1a;
 }
 
 tr.disabled {
-  background-color: #f0f0f0;
-  color: #999;
+  background-color: #1a1a1a;
+  color: #666;
 }
 
 /* Styles for playback controls */
 .playback-controls {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 10px;
   margin: 15px 0;
+  width: 100%;
 }
 
 .playback-button {
   background-color: #4CAF50;
   color: white;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border: none;
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: background-color 0.3s;
-  width: auto;
-  margin: 0 5px;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 100px;
+  flex: 1;
 }
 
 .playback-button:hover {
@@ -302,7 +410,8 @@ tr.disabled {
 }
 
 .playback-button:disabled {
-  background-color: #cccccc;
+  background-color: #333;
+  color: #666;
   cursor: not-allowed;
 }
 
@@ -316,36 +425,14 @@ tr.disabled {
   text-align: center;
 }
 
-/* Improvements for responsive design in visualization */
-@media (max-width: 768px) {
-  .orbital-display {
-    height: 400px;
-  }
-  
-  .playback-button {
-    padding: 6px 12px;
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .orbital-display {
-    height: 300px;
-  }
-  
-  .playback-button {
-    padding: 4px 8px;
-    font-size: 12px;
-  }
-}
-
 /* Styles for planet master controls */
 .master-toggle {
   margin-bottom: 15px;
   padding: 10px;
-  background-color: #f5f5f5;
+  background-color: #2a2a2a;
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid #333;
+  width: 100%;
 }
 
 .master-toggle .checkbox-label {
@@ -353,6 +440,7 @@ tr.disabled {
   font-weight: bold;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .master-toggle input[type="checkbox"] {
@@ -389,14 +477,170 @@ tr.enabled td:nth-child(6) {
   }
 }
 
-/* Notification message */
-.notification {
-  background-color: #f8d7da;
-  color: #721c24;
+/* Botonera flotante minimalista */
+.floating-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
   padding: 10px;
-  margin-bottom: 15px;
-  border-radius: 4px;
-  border: 1px solid #f5c6cb;
-  font-size: 0.9rem;
+  border-radius: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.floating-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 18px;
+}
+
+.floating-button:hover {
+  background-color: #45a049;
+  transform: scale(1.1);
+}
+
+.floating-button:disabled {
+  background-color: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.more-settings-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 1002;
+  font-size: 24px;
+  transition: all 0.2s ease;
+}
+
+.more-settings-button:hover {
+  background-color: #45a049;
+  transform: scale(1.1);
+}
+
+/* Animation Speed Control (incorporado en los floating-controls) */
+.speed-control-compact {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  padding: 5px 10px;
+  border-radius: 20px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 99;
+}
+
+.speed-slider {
+  width: 100%;
+  height: 4px;
+}
+
+.speed-label {
+  font-size: 10px;
+  color: #ccc;
   text-align: center;
+  margin-bottom: 2px;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+  .controls-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    bottom: 0;
+    top: auto;
+    right: 0;
+    transform: translateY(100%);
+  }
+  
+  .controls-sidebar.collapsed {
+    transform: translateY(0);
+  }
+  
+  .toggle-sidebar {
+    right: auto;
+    bottom: 20px;
+    top: auto;
+    left: 20px;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+  }
+  
+  .toggle-sidebar.collapsed {
+    right: auto;
+  }
+  
+  .speed-control-compact {
+    bottom: 70px;
+    width: 150px;
+  }
+  
+  .floating-controls {
+    bottom: 15px;
+  }
+  
+  .more-settings-button {
+    bottom: 15px;
+    right: 15px;
+  }
+  
+  .frequency-display {
+    width: auto;
+    max-width: 140px;
+    font-size: 10px;
+  }
+  
+  .zoom-control {
+    width: 140px;
+  }
+}
+
+/* Transición suave para todos los elementos animados */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.5s forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Añadir un poco de espacio al final del contenido para mejor scroll */
+.content-end-spacer {
+  height: 50px;
 }
