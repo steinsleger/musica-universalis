@@ -23,6 +23,7 @@ const OrbitalSonification = () => {
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [isPaused, setIsPaused] = useState(true);
+  const [positionMode, setPositionMode] = useState('normal'); // 'normal', 'average', 'aphelion', 'perihelion'
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
   // Add user interaction handling state
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
@@ -318,6 +319,9 @@ const OrbitalSonification = () => {
   const togglePlayPause = async () => {
     // Always try to start audio context when user interacts with play button
     await startAudioContext();
+    if (isPaused) {
+      setPositionMode('normal'); // Reset position mode when resuming
+    }
     setIsPaused(!isPaused);
   };
 
@@ -640,9 +644,9 @@ const OrbitalSonification = () => {
             baseFrequency={baseFrequency}
             onFrequencyChange={handleFrequencyChange}
             isPaused={isPaused}
-            setToAverageDistance={animationSpeed === 0}
-            setToAphelion={animationSpeed === -1}
-            setToPerihelion={animationSpeed === -2}
+            setToAverageDistance={positionMode === 'average'}
+            setToAphelion={positionMode === 'aphelion'}
+            setToPerihelion={positionMode === 'perihelion'}
           />
         </div>
         <div className="controls">
@@ -670,12 +674,11 @@ const OrbitalSonification = () => {
               className="button playback-button"
               disabled={isPlaying}
             >
-              {isPaused ? '▶️ Resume Animation' : '⏸️ Pause Animation'}
+              {isPaused ? '▶️ Play Animation' : '⏸️ Pause Animation'}
             </button>
             <button 
               onClick={() => {
-                setIsPaused(true);
-                setAnimationSpeed(0);
+                setPositionMode('average');
               }}
               className="button playback-button"
               disabled={isPlaying}
@@ -684,8 +687,7 @@ const OrbitalSonification = () => {
             </button>
             <button 
               onClick={() => {
-                setIsPaused(true);
-                setAnimationSpeed(-1); // Use -1 to indicate aphelion position
+                setPositionMode('aphelion');
               }}
               className="button playback-button"
               disabled={isPlaying}
@@ -694,8 +696,7 @@ const OrbitalSonification = () => {
             </button>
             <button 
               onClick={() => {
-                setIsPaused(true);
-                setAnimationSpeed(-2); // Use -2 to indicate perihelion position
+                setPositionMode('perihelion');
               }}
               className="button playback-button"
               disabled={isPlaying}
