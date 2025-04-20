@@ -1,7 +1,7 @@
 // src/PlanetarySystem.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false, setToAverageDistance = false, setToAphelion = false }) => {
+const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, onFrequencyChange, isPaused = false, setToAverageDistance = false, setToAphelion = false, setToPerihelion = false }) => {
   // Add animation time state that advances based on the animation speed
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [zoomLevel, setZoomLevel] = useState(1); // Default zoom level
@@ -186,6 +186,12 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     return Math.PI;
   };
   
+  // Calculate the angle at which a planet is at its perihelion
+  const getPerihelionAngle = () => {
+    // Perihelion occurs at angle 0 (0 degrees) in our coordinate system
+    return 0;
+  };
+  
   // Animation loop - updates planet positions over time
   const animate = useCallback((time) => {
     if (previousTimeRef.current === undefined) {
@@ -197,7 +203,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     previousTimeRef.current = time;
     
     // Only update positions if not paused and not in special positions
-    if (!isPaused && !setToAverageDistance && !setToAphelion) {
+    if (!isPaused && !setToAverageDistance && !setToAphelion && !setToPerihelion) {
       // Update planet angles based on animation speed and orbital periods
       setPlanetAngles(prevAngles => {
         const newAngles = { ...prevAngles };
@@ -229,17 +235,21 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     const newFrequencies = {};
     orbitData.forEach((planet, index) => {
       if (planet.enabled) {
-        const angle = setToAphelion ? 
-          getAphelionAngle() : // Use aphelion angle
-          (setToAverageDistance ? 
-            getAverageDistanceAngle(planet.eccentricity) : // Use average distance angle
-            (planetAngles[planet.name] || 0));
+        const angle = setToPerihelion ? 
+          getPerihelionAngle() : // Use perihelion angle
+          (setToAphelion ? 
+            getAphelionAngle() : // Use aphelion angle
+            (setToAverageDistance ? 
+              getAverageDistanceAngle(planet.eccentricity) : // Use average distance angle
+              (planetAngles[planet.name] || 0)));
         
-        const currentDistance = setToAphelion ? 
-          planet.distance * (1 + planet.eccentricity) : // Aphelion distance
-          (setToAverageDistance ? 
-            planet.distance : // Average distance
-            getCurrentDistance(planet.distance, planet.eccentricity, angle));
+        const currentDistance = setToPerihelion ? 
+          planet.distance * (1 - planet.eccentricity) : // Perihelion distance
+          (setToAphelion ? 
+            planet.distance * (1 + planet.eccentricity) : // Aphelion distance
+            (setToAverageDistance ? 
+              planet.distance : // Average distance
+              getCurrentDistance(planet.distance, planet.eccentricity, angle)));
         
         // Base frequency for this planet (when at average distance)
         const n = index - 2; // Adjust so Earth is index 0
@@ -260,7 +270,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     
     // Request next frame
     requestRef.current = requestAnimationFrame(animate);
-  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, setToAverageDistance, setToAphelion]);
+  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, setToAverageDistance, setToAphelion, setToPerihelion]);
   
   // Start/stop animation loop based on component lifecycle
   useEffect(() => {
@@ -601,11 +611,13 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             if (!planet.enabled) return null;
             
             // Use the appropriate angle based on the current mode
-            const angle = setToAphelion ? 
-              getAphelionAngle() : // Use aphelion angle
-              (setToAverageDistance ? 
-                getAverageDistanceAngle(planet.eccentricity) : // Use average distance angle
-                (planetAngles[planet.name] || 0));
+            const angle = setToPerihelion ? 
+              getPerihelionAngle() : // Use perihelion angle
+              (setToAphelion ? 
+                getAphelionAngle() : // Use aphelion angle
+                (setToAverageDistance ? 
+                  getAverageDistanceAngle(planet.eccentricity) : // Use average distance angle
+                  (planetAngles[planet.name] || 0)));
             
             const position = getPlanetPosition(
               planet.distance,
@@ -614,11 +626,13 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             );
             
             // Calculate current distance for display
-            const currentDistance = setToAphelion ? 
-              planet.distance * (1 + planet.eccentricity) : // Aphelion distance
-              (setToAverageDistance ? 
-                planet.distance : // Average distance
-                getCurrentDistance(planet.distance, planet.eccentricity, angle));
+            const currentDistance = setToPerihelion ? 
+              planet.distance * (1 - planet.eccentricity) : // Perihelion distance
+              (setToAphelion ? 
+                planet.distance * (1 + planet.eccentricity) : // Aphelion distance
+                (setToAverageDistance ? 
+                  planet.distance : // Average distance
+                  getCurrentDistance(planet.distance, planet.eccentricity, angle)));
             
             const size = getPlanetSize(planet);
             

@@ -641,6 +641,7 @@ const OrbitalSonification = () => {
             isPaused={isPaused}
             setToAverageDistance={animationSpeed === 0}
             setToAphelion={animationSpeed === -1}
+            setToPerihelion={animationSpeed === -2}
           />
         </div>
         <div className="controls">
@@ -706,6 +707,16 @@ const OrbitalSonification = () => {
               disabled={isPlaying}
             >
               🌞 Set to Aphelion
+            </button>
+            <button 
+              onClick={() => {
+                setIsPaused(true);
+                setAnimationSpeed(-2); // Use -2 to indicate perihelion position
+              }}
+              className="button playback-button"
+              disabled={isPlaying}
+            >
+              ☀️ Set to Perihelion
             </button>
           </div>
           
