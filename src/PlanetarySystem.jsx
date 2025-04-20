@@ -70,6 +70,24 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
     setPlanetAngles(initialAngles);
   }, [orbitData]);
   
+  // Initialize frequencies when component mounts or baseFrequency changes
+  useEffect(() => {
+    const initialFrequencies = {};
+    orbitData.forEach((planet, index) => {
+      if (planet.enabled) {
+        const n = index - 2; // Adjust so Earth is index 0
+        const baseFreq = calculateFrequencies(baseFrequency, n);
+        initialFrequencies[planet.name] = baseFreq;
+      }
+    });
+    
+    setCurrentFrequencies(initialFrequencies);
+    frequenciesRef.current = initialFrequencies;
+    if (onFrequencyChange) {
+      onFrequencyChange(initialFrequencies);
+    }
+  }, [baseFrequency, orbitData, onFrequencyChange]);
+  
   // Mouse event handlers for panning
   const handleMouseDown = (e) => {
     // Only enable dragging if zoomed in

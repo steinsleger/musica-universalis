@@ -425,7 +425,6 @@ const OrbitalSonification = () => {
     if (isPaused) {
       // Save current frequencies
       lastFrequenciesRef.current = { ...currentFrequencies };
-      console.log("Animation paused. Frequencies frozen.");
       // Update pause state reference
       wasPausedRef.current = true;
     } else {
