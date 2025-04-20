@@ -20,8 +20,20 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
   // Max distance to calculate scaling
   const maxDistance = Math.max(...orbitData.map(planet => planet.distance * (1 + planet.eccentricity)));
   
-  // Scale factors - now affected by zoom level
-  const orbitScaleFactor = (svgSize / 2) * 0.85 / (maxDistance / zoomLevel); // Apply zoom to scaling
+  // Apply a non-linear zoom scaling for better orbit separation at low zoom values
+  const getEffectiveZoom = (baseZoom) => {
+    // This function makes zoom more aggressive for outer planets
+    // which helps distinguish Neptune and Pluto orbits even at low zoom settings
+    if (baseZoom <= 2) {
+      // Apply non-linear scaling for low zoom values to better separate outer orbits
+      return baseZoom * (1 + (baseZoom - 1) * 0.2);
+    }
+    return baseZoom;
+  };
+  
+  // Scale factors - now with improved zoom handling
+  const effectiveZoom = getEffectiveZoom(zoomLevel);
+  const orbitScaleFactor = (svgSize / 2) * 0.9 / (maxDistance / effectiveZoom);
   const minPlanetSize = 3; // Minimum size for visibility
   
   // Sun properties
@@ -262,7 +274,26 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
           onChange={handleZoomChange}
           className="zoom-slider"
         />
+        <div className="zoom-tip">
+          Increase zoom to see outer planet orbits more clearly
+        </div>
       </div>
+      <style>
+        {`
+          .zoom-tip {
+            font-size: 0.8rem;
+            color: #AAA;
+            margin-top: 4px;
+            font-style: italic;
+          }
+          
+          .orbital-visualization {
+            background-color: #111;
+            border-radius: 8px;
+            overflow: hidden;
+          }
+        `}
+      </style>
       <svg width="100%" height="100%" viewBox={`0 0 ${svgSize} ${svgSize}`}>
         {/* Orbital paths as ellipses */}
         {orbitData.map((planet) => {
@@ -276,13 +307,35 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, baseFrequency = 220, o
             .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
             .join(' ') + ' Z';
           
+          // Get a color based on the planet's distance from the sun
+          // This ensures visually distinct orbits, especially for outer planets
+          const getOrbitColor = (name, enabled) => {
+            if (!enabled) return "#333";
+            
+            // Custom colors for each planet to make orbits more distinguishable
+            const planetColors = {
+              "Mercury": "#AAA",
+              "Venus": "#DAA",
+              "Earth": "#5A5",
+              "Mars": "#A55",
+              "Ceres": "#AA8",
+              "Jupiter": "#DA8",
+              "Saturn": "#DD5",
+              "Uranus": "#8DD",
+              "Neptune": "#55D",
+              "Pluto": "#D5D"
+            };
+            
+            return planetColors[name] || "#666";
+          };
+          
           return (
             <path
               key={`orbit-${planet.name}`}
               d={pathData}
               fill="none"
-              stroke={planet.enabled ? "#666" : "#333"}
-              strokeWidth={0.5}
+              stroke={getOrbitColor(planet.name, planet.enabled)}
+              strokeWidth={planet.name === "Neptune" || planet.name === "Pluto" ? 0.8 : 0.5}
               strokeDasharray={planet.enabled ? "none" : "2,2"}
             />
           );
