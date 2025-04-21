@@ -677,7 +677,7 @@ input[type="checkbox"]:disabled {
   border-radius: var(--radius-md);
   font-size: 0.8rem;
   color: var(--color-text-secondary);
-  width: 180px;
+  width: 200px;
   border: 1px solid var(--color-ui-border);
   box-shadow: var(--shadow-md);
 }
@@ -842,9 +842,4 @@ tr.enabled td:nth-child(6) {
     opacity: 1;
     transform: scale(1);
   }
-}
-
-/* Spacer for better scrolling */
-.content-end-spacer {
-  height: 60px;
 }

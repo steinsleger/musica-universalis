@@ -145,6 +145,24 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
     setIsDragging(false);
   };
   
+  // Handle mouse wheel zoom
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY;
+    const zoomSpeed = 0.1;
+    
+    // Calculate new zoom level
+    const newZoom = zoomLevel * (1 + (delta > 0 ? -zoomSpeed : zoomSpeed));
+    
+    // Clamp zoom level between 1 and 20
+    const clampedZoom = Math.max(1, Math.min(20, newZoom));
+    
+    // Update zoom level through prop
+    if (setZoomLevel) {
+      setZoomLevel(clampedZoom);
+    }
+  };
+  
   // Reset pan offset when zoom level changes to 1
   useEffect(() => {
     if (zoomLevel <= 1.1) {
@@ -421,6 +439,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
       >
         <svg 
           ref={svgRef}

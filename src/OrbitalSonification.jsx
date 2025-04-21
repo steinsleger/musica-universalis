@@ -818,54 +818,6 @@ const OrbitalSonification = () => {
           )}
         </div>
       </div>
-      
-      {/* Contenido desplazable */}
-      <div className="table-container">
-        <h3>Celestial Bodies and Frequencies</h3>
-        
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Enable</th>
-              <th>Planet</th>
-              <th>Distance (AU)</th>
-              <th>Eccentricity</th>
-              <th>Current Freq (Hz)</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orbitData.map((planet, index) => (
-              <tr key={planet.name} className={planet.enabled ? 'enabled' : 'disabled'}>
-                <td>
-                  <input 
-                    type="checkbox" 
-                    checked={planet.enabled}
-                    onChange={() => togglePlanet(index)}
-                    disabled={isPlaying}
-                  />
-                </td>
-                <td>{planet.name}</td>
-                <td>{planet.distance.toFixed(2)}</td>
-                <td>{planet.eccentricity.toFixed(4)}</td>
-                <td>
-                  {currentFrequencies[planet.name] 
-                    ? currentFrequencies[planet.name].toFixed(1) 
-                    : "Calculating..."}
-                </td>
-                <td>
-                  {currentFrequencies[planet.name] 
-                    ? frequencyToNote(currentFrequencies[planet.name])
-                    : ""}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Espacio al final para mejor desplazamiento */}
-      <div className="content-end-spacer"></div>
     </div>
   );
 };
