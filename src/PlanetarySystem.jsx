@@ -15,6 +15,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
   const requestRef = useRef();
   const previousTimeRef = useRef();
   const svgRef = useRef(null); // Reference to the SVG element
+  const containerRef = useRef(null); // Add new ref for the container
   
   // Fixed angle for all planets - 0 for horizontal right alignment
   const fixedAngle = 0; // Initial angle for all planets
@@ -146,7 +147,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
   };
   
   // Handle mouse wheel zoom
-  const handleWheel = (e) => {
+  const handleWheel = useCallback((e) => {
     e.preventDefault();
     const delta = e.deltaY;
     const zoomSpeed = 0.1;
@@ -161,7 +162,18 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
     if (setZoomLevel) {
       setZoomLevel(clampedZoom);
     }
-  };
+  }, [zoomLevel, setZoomLevel]);
+  
+  // Add wheel event listener with non-passive option
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      return () => {
+        container.removeEventListener('wheel', handleWheel);
+      };
+    }
+  }, [handleWheel]);
   
   // Reset pan offset when zoom level changes to 1
   useEffect(() => {
@@ -434,12 +446,13 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
   
   return (
     <div className="orbital-visualization">
-      <div className="svg-container"
+      <div 
+        ref={containerRef}
+        className="svg-container"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        onWheel={handleWheel}
       >
         <svg 
           ref={svgRef}
