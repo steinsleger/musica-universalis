@@ -288,24 +288,48 @@ const OrbitalSonification = () => {
   };
 
   // Handle base frequency changes
-  const handleBaseFrequencyChange = async (e) => {
-    await startAudioContext();
-    
+  const handleBaseFrequencyChange = (e) => {
+    // Immediately update the UI with the new value
     const newBaseFrequency = parseFloat(e.target.value);
     setBaseFrequency(newBaseFrequency);
     
-    if (liveMode && !isPaused) {
-      setTimeout(() => {
-        orbitData.forEach(planet => {
-          if (planet.enabled) {
-            const planetSynth = synthsRef.current[planet.name];
-            const freq = currentFrequencies[planet.name];
-            if (planetSynth && freq) {
-              planetSynth.frequency.value = freq;
-            }
+    // Use a separate function for the async operations
+    updateAudioFrequency(newBaseFrequency);
+  };
+  
+  // Separate function for audio context and synth updates
+  const updateAudioFrequency = async (newBaseFrequency) => {
+    try {
+      await startAudioContext();
+      
+      // Recalculate the frequencies based on the new base frequency
+      const recalculatedFrequencies = {};
+      orbitData.forEach((planet, index) => {
+        if (planet.enabled) {
+          // Calculate using the Bode law formula
+          const n = index - 2; // Adjust so Earth is index 0
+          const baseFreq = calculateBaseFrequencies(newBaseFrequency, n);
+          recalculatedFrequencies[planet.name] = baseFreq;
+        }
+      });
+      
+      // Update the frequencies in the state and refs
+      setCurrentFrequencies(prevFreqs => ({
+        ...prevFreqs,
+        ...recalculatedFrequencies
+      }));
+      
+      if (liveMode && !isPaused) {
+        // Update the synths with the new frequencies immediately
+        Object.entries(recalculatedFrequencies).forEach(([planetName, freq]) => {
+          const planetSynth = synthsRef.current[planetName];
+          if (planetSynth && freq) {
+            planetSynth.frequency.value = freq;
           }
         });
-      }, 10);
+      }
+    } catch (error) {
+      console.error("Error updating audio frequency:", error);
     }
   };
 
@@ -547,6 +571,33 @@ const OrbitalSonification = () => {
     return planetColors[name] || "#999";
   };
 
+  // Update frequencies and synths when base frequency changes in live mode
+  useEffect(() => {
+    if (liveMode && !isPaused) {
+      // Recalculate frequencies based on the new base frequency
+      const updatedFrequencies = {};
+      orbitData.forEach((planet, index) => {
+        if (planet.enabled) {
+          const n = index - 2; // Adjust so Earth is index 0
+          const baseFreq = calculateBaseFrequencies(baseFrequency, n);
+          updatedFrequencies[planet.name] = baseFreq;
+          
+          // Update the synth frequency directly
+          const planetSynth = synthsRef.current[planet.name];
+          if (planetSynth) {
+            planetSynth.frequency.value = baseFreq;
+          }
+        }
+      });
+      
+      // Update the frequencies in state
+      setCurrentFrequencies(prevFreqs => ({
+        ...prevFreqs,
+        ...updatedFrequencies
+      }));
+    }
+  }, [baseFrequency, liveMode, isPaused, orbitData, calculateBaseFrequencies]);
+
   return (
     <div 
       className="container" 
@@ -679,6 +730,13 @@ const OrbitalSonification = () => {
                   step={0.5}
                   className="slider"
                   onChange={handleBaseFrequencyChange}
+                  onInput={handleBaseFrequencyChange}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  aria-label="Base Frequency"
+                  aria-valuemin={27.5}
+                  aria-valuemax={110}
+                  aria-valuenow={baseFrequency}
+                  style={{ cursor: 'pointer' }}
                 />
               </div>
               
