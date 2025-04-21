@@ -586,7 +586,7 @@ const OrbitalSonification = () => {
             disabled={isPlaying}
             title="Set to Average Distance"
           >
-            ⏹️
+            🔄
           </button>
           
           <button 
@@ -612,7 +612,7 @@ const OrbitalSonification = () => {
             onClick={toggleLiveMode}
             disabled={isPlaying}
             title={liveMode ? "Disable Live Mode" : "Enable Live Mode"}
-            style={{background: liveMode ? '#45a049' : '#4CAF50'}}
+            style={{backgroundColor: liveMode ? 'rgba(69, 160, 73, 0.5)' : 'rgba(76, 175, 80, 0.5)'}}
           >
             🔊
           </button>
