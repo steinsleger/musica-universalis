@@ -217,15 +217,19 @@ const OrbitalSonification = () => {
         await startAudioContext();
       }
       
-      // Make sure all synths are stopped first
-      Object.values(synthsRef.current).forEach(synth => {
-        if (synth) {
-          synth.triggerRelease();
-        }
-      });
-      
-      // Clear the active synths set
-      activeSynthsRef.current.clear();
+      // Only stop synths when turning live mode OFF
+      // This prevents the conflict with the toggle function
+      if (!liveMode) {
+        // Make sure all synths are stopped first
+        Object.values(synthsRef.current).forEach(synth => {
+          if (synth) {
+            synth.triggerRelease();
+          }
+        });
+        
+        // Clear the active synths set
+        activeSynthsRef.current.clear();
+      }
     };
     
     handleLiveModeChange();
@@ -412,16 +416,36 @@ const OrbitalSonification = () => {
         return;
       }
       
-      // If turning off live mode, make sure to release all synths first
-      if (liveMode) {
+      // Will be toggling to new state
+      const newLiveMode = !liveMode;
+      
+      // If turning off live mode, release all synths first
+      if (!newLiveMode) {
         Object.values(synthsRef.current).forEach(synth => {
           if (synth) synth.triggerRelease();
         });
         activeSynthsRef.current.clear();
+      } else {
+        // If turning ON live mode, immediately start synths for enabled planets
+        // This prevents the delay between toggling and hearing sound
+        await Tone.context.resume();
+        
+        const enabledPlanets = orbitData.filter(planet => planet.enabled);
+        enabledPlanets.forEach(planet => {
+          const freq = currentFrequencies[planet.name];
+          const synth = synthsRef.current[planet.name];
+          
+          if (synth && freq) {
+            // Set frequency and trigger attack immediately
+            synth.frequency.value = freq;
+            synth.triggerAttack(freq);
+            activeSynthsRef.current.add(planet.name);
+          }
+        });
       }
       
       // Then update state
-      setLiveMode(!liveMode);
+      setLiveMode(newLiveMode);
     } catch (error) {
       console.error("Error toggling live mode:", error);
     }
