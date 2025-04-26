@@ -504,22 +504,25 @@ const OrbitalSonification = () => {
   };
 
   // Function to activate/deactivate a planet with completely isolated audio handling
-  const togglePlanet = async (index) => {
+  const togglePlanet = async (index, forceState = null) => {
     try {
       // Get the current planet state before changing it
       const newData = [...orbitData];
       const planet = newData[index];
       const wasEnabled = planet.enabled;
-      
+  
+      // Determine the new state
+      const newEnabled = forceState !== null ? forceState : !wasEnabled;
+  
       // Update the state immediately
-      planet.enabled = !wasEnabled;
+      planet.enabled = newEnabled;
       setOrbitData(newData);
-      
-      debugAudio(`Toggling planet ${planet.name}, was ${wasEnabled ? 'enabled' : 'disabled'}`);
-      
+  
+      debugAudio(`Toggling planet ${planet.name}, was ${wasEnabled ? 'enabled' : 'disabled'}, now ${newEnabled ? 'enabled' : 'disabled'}`);
+  
       // Handle audio changes if in live mode
       if (liveMode) {
-        if (wasEnabled) {
+        if (wasEnabled && !newEnabled) {
           // Was enabled, now disabled - stop sound for THIS PLANET ONLY
           debugAudio(`Stopping sound for ${planet.name} only`);
           try {
@@ -529,7 +532,7 @@ const OrbitalSonification = () => {
             // Create a fresh isolated synth for this planet only
             createIsolatedSynth(planet.name);
           }
-        } else {
+        } else if (!wasEnabled && newEnabled) {
           // Was disabled, now enabled - start sound for THIS PLANET ONLY
           const freq = currentFrequencies[planet.name];
           if (freq) {
@@ -550,7 +553,7 @@ const OrbitalSonification = () => {
             }
           }
         }
-        
+  
         // Log the active synths to verify
         debugAudio(`Active synths after toggle: ${Array.from(activeSynthsRef.current).join(', ')}`);
       }
@@ -563,35 +566,7 @@ const OrbitalSonification = () => {
   // Toggle all planets with improved audio isolation
   const toggleAllPlanets = async (enable) => {
     try {
-      await initializeAudioContext();
-      
-      // Update state
-      const newData = orbitData.map(planet => ({
-        ...planet,
-        enabled: enable
-      }));
-      
-      setOrbitData(newData);
-      
-      debugAudio(`Toggling all planets to ${enable ? 'enabled' : 'disabled'}`);
-      
-      // Handle audio if in live mode
-      if (liveMode) {
-        if (!enable) {
-          // Disable all - stop all sounds
-          orbitData.forEach(planet => {
-            stopPlanetSound(planet.name);
-          });
-        } else {
-          // Enable all - start all sounds
-          orbitData.forEach(planet => {
-            const freq = currentFrequencies[planet.name];
-            if (freq) {
-              startPlanetSound(planet.name, freq);
-            }
-          });
-        }
-      }
+      await Promise.all(orbitData.map((_, index) => togglePlanet(index, enable)));
     } catch (error) {
       console.error("Error toggling all planets:", error);
     }
