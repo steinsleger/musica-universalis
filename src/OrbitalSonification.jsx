@@ -4,19 +4,20 @@ import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
 
 const OrbitalSonification = () => {
-  // State for the data of planetary orbits
+  // State for planetary orbit data - with Titius-Bode law distances and actual distances in AU
   const [orbitData, setOrbitData] = useState([
-    { name: "Mercury", distance: 0.39, eccentricity: 0.2056, enabled: true },
-    { name: "Venus", distance: 0.72, eccentricity: 0.0068, enabled: true },
-    { name: "Earth", distance: 1.00, eccentricity: 0.0167, enabled: true },
-    { name: "Mars", distance: 1.52, eccentricity: 0.0934, enabled: true },
-    { name: "Ceres", distance: 2.77, eccentricity: 0.0758, enabled: true },
-    { name: "Jupiter", distance: 5.20, eccentricity: 0.0484, enabled: true },
-    { name: "Saturn", distance: 9.58, eccentricity: 0.0539, enabled: true },
-    { name: "Uranus", distance: 19.22, eccentricity: 0.0473, enabled: true },
-    { name: "Neptune", distance: 30.05, eccentricity: 0.0086, enabled: true },
-    { name: "Pluto", distance: 39.48, eccentricity: 0.2488, enabled: true }
+    { name: "Mercury", distance: 0.4, actualDistance: 0.39, eccentricity: 0.2056, enabled: true },
+    { name: "Venus", distance: 0.7, actualDistance: 0.72, eccentricity: 0.0068, enabled: true },
+    { name: "Earth", distance: 1.0, actualDistance: 1.00, eccentricity: 0.0167, enabled: true },
+    { name: "Mars", distance: 1.6, actualDistance: 1.52, eccentricity: 0.0934, enabled: true },
+    { name: "Ceres", distance: 2.8, actualDistance: 2.77, eccentricity: 0.0758, enabled: true },
+    { name: "Jupiter", distance: 5.2, actualDistance: 5.20, eccentricity: 0.0484, enabled: true },
+    { name: "Saturn", distance: 10.0, actualDistance: 9.58, eccentricity: 0.0539, enabled: true },
+    { name: "Uranus", distance: 19.6, actualDistance: 19.20, eccentricity: 0.0473, enabled: true },
+    { name: "Neptune", distance: 38.8, actualDistance: 30.05, eccentricity: 0.0086, enabled: true },
+    { name: "Pluto", distance: 77.2, actualDistance: 39.48, eccentricity: 0.2488, enabled: true }
   ]);
+
   const [baseFrequency, setBaseFrequency] = useState(27.5);
   const [isPlaying, setIsPlaying] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(1);
@@ -27,6 +28,8 @@ const OrbitalSonification = () => {
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(1); // Added zoomLevel state
+  const [distanceMode, setDistanceMode] = useState('titiusBode'); // 'titiusBode' or 'actual'
+  const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
   
   // Estado de la UI
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -92,19 +95,27 @@ const OrbitalSonification = () => {
     return noteNames[noteIndex] + octave;
   };
 
-  // Calculate frequencies based on the modified Bode law (Murch version)
-  const calculateBaseFrequencies = useCallback((baseFreq, n) => {
-    return (1 + Math.pow(2, n)) * 3 * baseFreq;
-  }, []);
+  // Calculate frequencies based on the modified Bode law or actual distances
+  const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
+    if (distanceMode === 'titiusBode') {
+      // Use Titius-Bode law formula
+      const n = index - 2; // Adjust so Earth is index 0
+      return (1 + Math.pow(2, n)) * 3 * baseFreq;
+    } else {
+      // Use actual distances with square root relationship
+      const earthDistance = 1.0; // Earth's distance in AU
+      const ratio = earthDistance / planet.actualDistance;
+      // Frequency is inversely proportional to distance
+      return baseFreq / Math.sqrt(planet.actualDistance / earthDistance);
+    }
+  }, [distanceMode]);
 
-  // Function to calculate and update all frequencies
-  const updateAllFrequencies = useCallback(() => {
-    // Initialize default frequencies for all planets
+   // Function to calculate and update all frequencies
+   const updateAllFrequencies = useCallback(() => {
     const defaultFrequencies = {};
     orbitData.forEach((planet, index) => {
-      // Calculate using the Bode law formula
-      const n = index - 2; // Adjust so Earth is index 0
-      const freq = calculateBaseFrequencies(baseFrequency, n);
+      // Calculate frequencies based on the selected distance mode
+      const freq = calculateBaseFrequencies(baseFrequency, planet, index);
       defaultFrequencies[planet.name] = freq;
     });
     
@@ -486,7 +497,7 @@ const OrbitalSonification = () => {
     orbitData.forEach((planet, index) => {
       if (planet.enabled) {
         const n = index - 2; // Adjust so Earth is index 0
-        const baseFreq = calculateBaseFrequencies(newBaseFrequency, n);
+        const baseFreq = calculateBaseFrequencies(newBaseFrequency, planet, index);
         recalculatedFrequencies[planet.name] = baseFreq;
         
         // Update active synths immediately in live mode
@@ -687,7 +698,7 @@ const OrbitalSonification = () => {
       // Schedule notes for each planet
       enabledPlanets.forEach((planet, index) => {
         const originalIndex = orbitData.findIndex(p => p.name === planet.name);
-        const freq = calculateBaseFrequencies(baseFrequency, originalIndex - 2);
+        const freq = calculateBaseFrequencies(baseFrequency, planet, originalIndex);
         const time = now + index * 0.75;
         
         try {
@@ -1065,6 +1076,17 @@ const OrbitalSonification = () => {
     return planetColors[name] || "#999";
   };
 
+  // Handle distance mode change
+  const handleDistanceModeChange = (e) => {
+    const newMode = e.target.value;
+    setDistanceMode(newMode);
+    
+    // When distance mode changes, update the frequencies if in live mode
+    if (liveMode) {
+      updateAllFrequencies();
+    }
+  };
+
   // Update frequencies and synths when base frequency changes in live mode
   useEffect(() => {
     if (liveMode && !isPaused) {
@@ -1073,7 +1095,7 @@ const OrbitalSonification = () => {
       orbitData.forEach((planet, index) => {
         if (planet.enabled) {
           const n = index - 2; // Adjust so Earth is index 0
-          const baseFreq = calculateBaseFrequencies(baseFrequency, n);
+          const baseFreq = calculateBaseFrequencies(baseFrequency, planet, n);
           updatedFrequencies[planet.name] = baseFreq;
         }
       });
@@ -1151,6 +1173,7 @@ const OrbitalSonification = () => {
             setToPerihelion={positionMode === 'perihelion'}
             zoomLevel={zoomLevel}
             setZoomLevel={setZoomLevel}
+            distanceMode={distanceMode}
           />
         </div>
         
@@ -1272,6 +1295,21 @@ const OrbitalSonification = () => {
                   aria-valuenow={baseFrequency}
                   style={{ cursor: 'pointer' }}
                 />
+              </div>
+
+              <div className="control-group">
+                <label htmlFor="distance-mode" className="label">
+                  Distance Mode:
+                </label>
+                <select
+                  id="distance-mode"
+                  value={distanceMode}
+                  onChange={handleDistanceModeChange}
+                  className="select-dropdown"
+                >
+                  <option value="titiusBode">Titius-Bode Law</option>
+                  <option value="actual">Actual Distances</option>
+                </select>
               </div>
               
               {/* Zoom control moved to sidebar */}

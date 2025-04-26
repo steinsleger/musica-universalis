@@ -1,7 +1,20 @@
 // src/PlanetarySystem.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, baseFrequency = 220, onFrequencyChange, isPaused = false, setToAverageDistance = false, setToAphelion = false, setToPerihelion = false, zoomLevel = 1, setZoomLevel }) => {
+const PlanetarySystem = ({
+    orbitData,
+    animationSpeed = 1,
+    setAnimationSpeed,
+    baseFrequency = 220,
+    onFrequencyChange,
+    isPaused = false,
+    setToAverageDistance = false,
+    setToAphelion = false,
+    setToPerihelion = false,
+    zoomLevel = 1,
+    setZoomLevel,
+    distanceMode = 'titiusBode'
+  }) => {
   // Add animation time state that advances based on the animation speed
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 }); // Track panning offset
@@ -25,12 +38,53 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
   // Reference to avoid infinite loops
   const lastBaseFrequencyRef = useRef(baseFrequency);
   
+  // Reference for distance mode to detect changes
+  const distanceModeRef = useRef(distanceMode);
+  
   // Constants for visualization
   const svgSize = 600;
   const center = svgSize / 2;
+
+  // Function to get the correct distance based on the mode
+  const getDistance = (planet) => {
+    return distanceMode === 'titiusBode' ? planet.distance : planet.actualDistance;
+  };
   
   // Max distance to calculate scaling
-  const maxDistance = Math.max(...orbitData.map(planet => planet.distance * (1 + planet.eccentricity)));
+  const maxDistance = Math.max(...orbitData.map(planet => getDistance(planet) * (1 + planet.eccentricity)));
+  
+  // Effect to update calculations when distance mode changes
+  useEffect(() => {
+    if (distanceModeRef.current !== distanceMode) {
+      // Distance mode changed, update reference
+      distanceModeRef.current = distanceMode;
+      
+      // Recalculate frequencies if callback is provided
+      if (onFrequencyChange && !isPaused) {
+        const updatedFrequencies = {};
+        
+        orbitData.forEach((planet) => {
+          if (planet.enabled) {
+            const angle = planetAngles[planet.name] || 0;
+            const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
+            
+            // Calculate base frequency for this planet
+            const n = orbitData.indexOf(planet) - 2; // Adjust so Earth is index 0
+            const baseFreq = (1 + Math.pow(2, n)) * 3 * (baseFrequency || 220);
+            
+            // Modulate frequency based on current distance
+            const avgDistance = getDistance(planet);
+            const ratio = avgDistance / currentDistance;
+            const modifiedFreq = baseFreq * Math.sqrt(ratio);
+            
+            updatedFrequencies[planet.name] = modifiedFreq;
+          }
+        });
+        
+        onFrequencyChange(updatedFrequencies);
+      }
+    }
+  }, [distanceMode, orbitData, planetAngles, onFrequencyChange, isPaused, baseFrequency]);
   
   // Apply a non-linear zoom scaling for better orbit separation at low zoom values
   const getEffectiveZoom = (baseZoom) => {
@@ -268,7 +322,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
         orbitData.forEach(planet => {
           if (planet.enabled) {
             // Calculate orbital period (Kepler's Third Law)
-            const period = getOrbitalPeriod(planet.distance);
+            const period = getOrbitalPeriod(getDistance(planet));
             
             // Convert period to radians per millisecond, scale by animation speed
             const angularVelocity = (2 * Math.PI / (period * 20000)) * animationSpeed;
@@ -292,14 +346,14 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
     orbitData.forEach((planet, index) => {
       if (planet.enabled) {
         const angle = planetAngles[planet.name] || 0;
-        const currentDistance = getCurrentDistance(planet.distance, planet.eccentricity, angle);
+        const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
         
         // Base frequency for this planet (when at average distance)
         const n = index - 2; // Adjust so Earth is index 0
         const baseFreq = calculateFrequencies(baseFrequency, n);
         
         // Modulate frequency based on current distance
-        const avgDistance = planet.distance;
+        const avgDistance = getDistance(planet);
         const ratio = avgDistance / currentDistance;
         const modifiedFreq = baseFreq * Math.sqrt(ratio);
         
@@ -464,7 +518,7 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
           {/* Orbital paths as ellipses */}
           {orbitData.map((planet) => {
             const pathPoints = generateEllipticalPath(
-              planet.distance, 
+              getDistance(planet), 
               planet.eccentricity,
               100
             );
@@ -498,11 +552,11 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
             // For highly eccentric orbits, mark perihelion and aphelion
             const showOrbitExtremes = planet.eccentricity > 0.1;
             const { perihelion, aphelion } = showOrbitExtremes ? 
-              getExtremePositions(planet.distance, planet.eccentricity) : 
+              getExtremePositions(getDistance(planet), planet.eccentricity) : 
               { perihelion: null, aphelion: null };
             
             const { perihelion: perihelionDist, aphelion: aphelionDist } = 
-              calculateOrbitalExtremes(planet.distance, planet.eccentricity);
+              calculateOrbitalExtremes(getDistance(planet), planet.eccentricity);
             
             return (
               <React.Fragment key={`orbit-${planet.name}`}>
@@ -517,8 +571,8 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
                 {/* Orbit label - visible at higher zoom levels or for outer planets */}
                 {(zoomLevel > 3 || (zoomLevel > 1.5 && (planet.name === "Neptune" || planet.name === "Pluto" || planet.name === "Uranus"))) && (
                   <text
-                    x={center + (planet.distance * 0.7) * orbitScaleFactor + panOffset.x}
-                    y={center - (planet.distance * 0.7) * orbitScaleFactor + panOffset.y}
+                    x={center + (getDistance(planet) * 0.7) * orbitScaleFactor + panOffset.x}
+                    y={center - (getDistance(planet) * 0.7) * orbitScaleFactor + panOffset.y}
                     fontSize="7"
                     fill={getOrbitColor(planet.name, planet.enabled)}
                     opacity={planet.enabled ? 1 : 0.5}
@@ -601,13 +655,13 @@ const PlanetarySystem = ({ orbitData, animationSpeed = 1, setAnimationSpeed, bas
             
             const angle = planetAngles[planet.name] || 0;
             const position = getPlanetPosition(
-              planet.distance,
+              getDistance(planet),
               planet.eccentricity,
               angle
             );
             
             // Calculate current distance for display
-            const currentDistance = getCurrentDistance(planet.distance, planet.eccentricity, angle);
+            const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
             
             const size = getPlanetSize(planet);
             
