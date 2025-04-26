@@ -1,8 +1,9 @@
 {
-  "name": "my-react-app",
+  "name": "musica-universalis",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "license": "CC-BY-NC-SA-4.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -24,7 +25,9 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "terser": "^5.39.0",
     "vite": "^6.2.0",
-    "vite-plugin-pwa": "^1.0.0"
+    "vite-plugin-pwa": "^1.0.0",
+    "vite-plugin-remove-console": "^2.2.0"
   }
 }
