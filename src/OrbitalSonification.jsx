@@ -30,71 +30,19 @@ const OrbitalSonification = () => {
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(1); // Added zoomLevel state
   const [distanceMode, setDistanceMode] = useState('titiusBode'); // 'titiusBode' or 'actual'
-  const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
-  
-  // Estado de la UI
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('controls'); // 'controls' o 'planets'
   
-  // Referencias para evitar problemas con audio/animación
   const audioContextStarted = useRef(false);
-  const frequencyUpdateTimeoutRef = useRef(null);
   const gainNodeRef = useRef(null);
   const initFrequenciesRef = useRef(false);
   const synthsRef = useRef({});
   const mainSynthRef = useRef(null);
   const lastFrequenciesRef = useRef({});
   const sequenceTimeoutRef = useRef(null);
-  const wasPausedRef = useRef(false);
   const debug = useRef(true);
   const activeSynthsRef = useRef(new Set());
   const audioInitializedRef = useRef(false);
-
-  // Handle first user interaction on the page to initialize audio
-  const handleUserInteraction = async () => {
-    if (needsUserInteraction) {
-      try {
-        const started = await startAudioContext();
-        if (started) {
-          setNeedsUserInteraction(false);
-        }
-      } catch (error) {
-        console.error("Error initializing audio on user interaction:", error);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (needsUserInteraction) {
-      const handleGlobalClick = async () => {
-        await handleUserInteraction();
-      };
-      
-      document.addEventListener('click', handleGlobalClick);
-      document.addEventListener('touchstart', handleGlobalClick);
-      
-      return () => {
-        document.removeEventListener('click', handleGlobalClick);
-        document.removeEventListener('touchstart', handleGlobalClick);
-      };
-    }
-  }, [needsUserInteraction]);
-
-  // Utility function to convert frequency to closest musical note
-  const frequencyToNote = (frequency) => {
-    if (!frequency) return "";
-    
-    const A4 = 440.0;
-    const C0 = A4 * Math.pow(2, -4.75);
-    
-    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
-    
-    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    const octave = Math.floor(halfStepsFromC0 / 12);
-    const noteIndex = halfStepsFromC0 % 12;
-    
-    return noteNames[noteIndex] + octave;
-  };
 
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
@@ -115,6 +63,102 @@ const OrbitalSonification = () => {
     return defaultFrequencies;
   }, [orbitData, baseFrequency, calculateBaseFrequencies]);
 
+  // Handle frequency changes from visualization - improved to actually apply the changes
+  const handleFrequencyChange = useCallback((frequencies) => {
+    // Log frequency changes from animation occasionally
+    if (debug.current && Math.random() < 0.01) {
+      const freqSample = Object.entries(frequencies).map(
+        ([name, freq]) => `${name}: ${freq.toFixed(2)}`
+      ).join(', ');
+      debugAudio(`Animation frequency update: ${freqSample}`);
+    }
+    
+    const updatedFrequencies = { ...currentFrequencies, ...frequencies };
+    
+    // Store the new frequencies in state
+    setCurrentFrequencies(updatedFrequencies);
+    
+    // Store in ref for the animation loop to access
+    lastFrequenciesRef.current = { ...lastFrequenciesRef.current, ...frequencies };
+    
+    // If in live mode, immediately update the frequencies of active synths
+    if (liveMode && !isPaused) {
+      Object.entries(frequencies).forEach(([planetName, freq]) => {
+        if (activeSynthsRef.current.has(planetName)) {
+          updatePlanetFrequency(planetName, freq);
+        }
+      });
+    }
+  }, [currentFrequencies, liveMode, isPaused]);
+
+  // Initialize audio when component loads
+  useEffect(() => {
+    if (!audioInitializedRef.current) {
+      initializeAudioContext().then(success => {
+        if (success) {
+          audioInitializedRef.current = true;
+          debugAudio("Audio initialized on component load");
+        } else {
+          debugAudio("Failed to initialize audio on component load");
+        }
+      });
+    }
+    
+    return () => {
+      // Clean up all audio on unmount
+      debugAudio("Component unmounting, cleaning up audio");
+      
+      Object.values(synthsRef.current).forEach(synthObj => {
+        if (synthObj && synthObj.synth) {
+          try {
+            synthObj.synth.dispose();
+          } catch (err) {
+            // Ignore disposal errors
+          }
+        }
+        if (synthObj && synthObj.gain) {
+          try {
+            synthObj.gain.dispose();
+          } catch (err) {
+            // Ignore disposal errors
+          }
+        }
+      });
+      
+      if (mainSynthRef.current) {
+        try {
+          mainSynthRef.current.dispose();
+        } catch (err) {
+          // Ignore disposal errors
+        }
+      }
+      
+      if (gainNodeRef.current) {
+        try {
+          gainNodeRef.current.dispose();
+        } catch (err) {
+          // Ignore disposal errors
+        }
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (needsUserInteraction) {
+      const handleGlobalClick = async () => {
+        await handleUserInteraction();
+      };
+      
+      document.addEventListener('click', handleGlobalClick);
+      document.addEventListener('touchstart', handleGlobalClick);
+      
+      return () => {
+        document.removeEventListener('click', handleGlobalClick);
+        document.removeEventListener('touchstart', handleGlobalClick);
+      };
+    }
+  }, [needsUserInteraction]);
+
   // Initialize default frequencies if not provided by PlanetarySystem
   useEffect(() => {
     if (!initFrequenciesRef.current) {
@@ -127,16 +171,432 @@ const OrbitalSonification = () => {
   useEffect(() => {
     updateAllFrequencies();
   }, [baseFrequency, updateAllFrequencies]);
+  
+  // Effect to apply frequency changes when animation status changes
+  useEffect(() => {
+    if (liveMode && !isPaused) {
+      // When animation starts or resumes, update all active frequencies
+      Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
+        if (activeSynthsRef.current.has(planetName)) {
+          debugAudio(`Updating ${planetName} frequency to ${freq.toFixed(2)} Hz on animation status change`);
+          updatePlanetFrequency(planetName, freq);
+        }
+      });
+    }
+  }, [liveMode, isPaused]);
+  
+  // Now let's update the continuous audio update effect to properly check enabled status
+  useEffect(() => {
+    // Don't do anything if not in live mode
+    if (!liveMode) return;
+    
+    // Don't run until audio is initialized
+    if (!audioInitializedRef.current) {
+      // Try to initialize audio
+      initializeAudioContext().then(success => {
+        if (success) {
+          audioInitializedRef.current = true;
+        }
+      });
+      return;
+    }
+    
+    debugAudio("Starting live mode audio interval");
+    
+    let recoveryCounter = 0;
+    let lastFrequencyUpdate = Date.now();
+    
+    // Create interval to update audio
+    const intervalId = setInterval(async () => {
+      try {
+        // Check audio context health periodically
+        if (Tone.context.state !== "running") {
+          try {
+            await Tone.context.resume();
+            debugAudio("Resumed audio context");
+          } catch (resumeErr) {
+            console.error("Failed to resume audio context:", resumeErr);
+          }
+        }
+        
+        // Check if gain node is healthy
+        if (!gainNodeRef.current || gainNodeRef.current.disposed) {
+          debugAudio("Gain node is missing or disposed, recreating");
+          await initializeAudioContext();
+        }
+        
+        // Get the current enabled planets directly from state
+        const enabledPlanets = orbitData.filter(p => p.enabled);
+        const enabledPlanetNames = new Set(enabledPlanets.map(p => p.name));
+        
+        // Log status for debugging
+        if (debug.current && Math.random() < 0.05) { // Only log 5% of the time to prevent console spam
+          debugAudio(`Enabled planets: ${Array.from(enabledPlanetNames).join(', ')}`);
+          debugAudio(`Active synths: ${Array.from(activeSynthsRef.current).join(', ')}`);
+        }
+        
+        // Emergency recovery if no sounds are working but should be
+        const shouldHaveSounds = enabledPlanets.length > 0;
+        const hasSounds = activeSynthsRef.current.size > 0;
+        
+        // Check if there's a mismatch between what should be playing and what is playing
+        const shouldBePlayingButIsnt = enabledPlanets.some(p => 
+          !activeSynthsRef.current.has(p.name) && currentFrequencies[p.name]
+        );
+        
+        const shouldNotBePlayingButIs = Array.from(activeSynthsRef.current).some(name => 
+          !enabledPlanetNames.has(name)
+        );
+        
+        if ((shouldHaveSounds && !hasSounds) || shouldBePlayingButIsnt || shouldNotBePlayingButIs) {
+          recoveryCounter++;
+          
+          if (recoveryCounter >= 3) {
+            debugAudio("EMERGENCY RECOVERY: Sound state mismatch detected");
+            
+            // Handle planet-by-planet, with complete separation between operations
+            let recoverySucceeded = true;
+            let planetsFixed = 0;
+            
+            // First, stop planets that shouldn't be playing
+            for (const name of Array.from(activeSynthsRef.current)) {
+              if (!enabledPlanetNames.has(name)) {
+                try {
+                  // Create a fresh synth first to ensure full isolation
+                  createIsolatedSynth(name);
+                  const success = stopPlanetSound(name);
+                  if (success) planetsFixed++;
+                  else recoverySucceeded = false;
+                } catch (err) {
+                  console.error(`Error stopping ${name} during recovery:`, err);
+                  recoverySucceeded = false;
+                }
+              }
+            }
+            
+            // Next, start planets that should be playing but aren't
+            for (const planet of enabledPlanets) {
+              if (!activeSynthsRef.current.has(planet.name) && currentFrequencies[planet.name]) {
+                try {
+                  // Always create a fresh synth for maximum reliability
+                  createIsolatedSynth(planet.name);
+                  // Short delay to ensure audio graph is stable
+                  await new Promise(resolve => setTimeout(resolve, 10));
+                  const success = startPlanetSound(planet.name, currentFrequencies[planet.name]);
+                  if (success) {
+                    planetsFixed++;
+                    debugAudio(`Recovery: Started sound for ${planet.name}`);
+                  } else {
+                    recoverySucceeded = false;
+                  }
+                } catch (err) {
+                  console.error(`Error starting ${planet.name} during recovery:`, err);
+                  recoverySucceeded = false;
+                }
+              }
+            }
+            
+            // Only do a full reset if targeted recovery failed completely
+            if (!recoverySucceeded && planetsFixed === 0) {
+              debugAudio("Targeted recovery failed completely, attempting full audio system reset");
+              await recreateAllAudio();
+            } else {
+              debugAudio(`Recovery fixed ${planetsFixed} planets`);
+            }
+            
+            recoveryCounter = 0;
+          }
+        } else {
+          recoveryCounter = 0;
+        }
+        
+        // Update frequencies for all active synths if animation is running
+        if (!isPaused) {
+          const now = Date.now();
+          // Update frequencies at most every 50ms to avoid overloading
+          if (now - lastFrequencyUpdate > 50) {
+            Array.from(activeSynthsRef.current).forEach(planetName => {
+              const freq = currentFrequencies[planetName];
+              if (freq && synthsRef.current[planetName] && synthsRef.current[planetName].synth) {
+                updatePlanetFrequency(planetName, freq);
+              }
+            });
+            lastFrequencyUpdate = now;
+          }
+        }
+        
+        // Process each planet's playing state - ensure only enabled planets are playing
+        orbitData.forEach(planet => {
+          // Check if planet is enabled in the current state
+          const isEnabled = planet.enabled;
+          const isPlaying = activeSynthsRef.current.has(planet.name);
+          const freq = currentFrequencies[planet.name];
+          
+          if (!freq) return; // Skip if no frequency data
+          
+          if (isEnabled && !isPlaying) {
+            // Should be playing but isn't
+            startPlanetSound(planet.name, freq);
+          } else if (!isEnabled && isPlaying) {
+            // Shouldn't be playing but is
+            stopPlanetSound(planet.name);
+          }
+        });
+      } catch (err) {
+        console.error("Error in audio update interval:", err);
+        
+        // Try to recover from serious errors
+        recoveryCounter++;
+        if (recoveryCounter >= 3) {
+          debugAudio("Critical error in audio update, attempting full reset");
+          await recreateAllAudio();
+          recoveryCounter = 0;
+        }
+      }
+    }, 100); // Slightly slower update rate to reduce CPU usage
+    
+    // Cleanup function
+    return () => {
+      clearInterval(intervalId);
+      debugAudio("Stopped live mode audio interval");
+      
+      // Stop all sounds when leaving live mode
+      Array.from(activeSynthsRef.current).forEach(planetName => {
+        stopPlanetSound(planetName);
+      });
+    };
+  }, [liveMode, distanceMode]); // The dependency array contains ONLY liveMode to prevent rerunning unnecessarily
 
-  // Debug monitoring function
-  const debugAudio = (message, obj = null) => {
-    if (debug.current) {
-      if (obj) {
-        console.log(`[AUDIO DEBUG] ${message}`, obj);
+  // Update frequencies and synths when base frequency changes in live mode
+  useEffect(() => {
+    if (liveMode && !isPaused) {
+      // Recalculate frequencies based on the new base frequency
+      const updatedFrequencies = {};
+      orbitData.forEach((planet, index) => {
+        if (planet.enabled) {
+          const n = index - 2; // Adjust so Earth is index 0
+          const baseFreq = calculateBaseFrequencies(baseFrequency, planet, n);
+          updatedFrequencies[planet.name] = baseFreq;
+        }
+      });
+      
+      // Update the frequencies in state
+      setCurrentFrequencies(prevFreqs => ({
+        ...prevFreqs,
+        ...updatedFrequencies
+      }));
+    }
+  }, [baseFrequency, liveMode, isPaused, orbitData, calculateBaseFrequencies]);
+
+  // Add this useEffect before any audio implementation functions to log initialization
+  useEffect(() => {
+    console.log("Component initialized");
+    
+    // Set debug flag for audio diagnostics
+    debug.current = true;
+    
+    // Cleanup function
+    return () => {
+      console.log("Component unmounting");
+    };
+  }, []);
+
+  // Initialize Tone.js when the component mounts - just once
+  useEffect(() => {
+    const initializeTone = async () => {
+      try {
+        // Force a clean start for Tone.js
+        if (Tone.context.state !== 'running') {
+          try {
+            await Tone.start();
+            console.log("Tone.js initialized");
+          } catch (err) {
+            console.error("Failed to start Tone:", err);
+          }
+        }
+      } catch (err) {
+        console.error("Error initializing Tone.js:", err);
+      }
+    };
+    
+    initializeTone();
+    
+    // Cleanup when component unmounts
+    return () => {
+      console.log("Cleaning up Tone.js");
+      try {
+        // Try to clean up Tone.js resources
+        Tone.Transport.stop();
+        Tone.Transport.cancel();
+      } catch (err) {
+        console.error("Error cleaning up Tone.js:", err);
+      }
+    };
+  }, []);
+
+  // Completely rebuilt orbital sequence player
+  const playOrbitalSequence = async () => {
+    try {
+      const audioStarted = await initializeAudioContext();
+      if (!audioStarted) {
+        debugAudio("Audio context couldn't be started");
+        return;
+      }
+      
+      if (isPlaying) {
+        debugAudio("Stopping orbital sequence");
+        
+        // Stop sequence
+        if (sequenceTimeoutRef.current) {
+          clearTimeout(sequenceTimeoutRef.current);
+          sequenceTimeoutRef.current = null;
+        }
+        
+        // Safely dispose the main synth
+        if (mainSynthRef.current) {
+          try {
+            mainSynthRef.current.releaseAll();
+            mainSynthRef.current.dispose();
+          } catch (err) {
+            console.error("Error disposing main synth:", err);
+          }
+          
+          // Create a new clean synth
+          const newMainSynth = new Tone.PolySynth(Tone.Synth, {
+            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+            oscillator: { type: 'sine' }
+          });
+          
+          // Connect to master gain or destination
+          if (gainNodeRef.current && !gainNodeRef.current.disposed) {
+            newMainSynth.connect(gainNodeRef.current);
+          } else {
+            newMainSynth.toDestination();
+          }
+          
+          mainSynthRef.current = newMainSynth;
+        }
+        
+        setIsPlaying(false);
+        return;
+      }
+      
+      debugAudio("Starting orbital sequence");
+      
+      // Create a fresh synth for the sequence
+      if (mainSynthRef.current) {
+        try {
+          mainSynthRef.current.dispose();
+        } catch (err) {
+          // Ignore disposal errors
+        }
+      }
+      
+      const mainSynth = new Tone.PolySynth(Tone.Synth, {
+        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
+        oscillator: { type: 'sine' }
+      });
+      
+      // Connect to master gain or destination
+      if (gainNodeRef.current && !gainNodeRef.current.disposed) {
+        mainSynth.connect(gainNodeRef.current);
       } else {
-        console.log(`[AUDIO DEBUG] ${message}`);
+        mainSynth.toDestination();
+      }
+      
+      mainSynthRef.current = mainSynth;
+      
+      setIsPlaying(true);
+      
+      const now = Tone.now();
+      const enabledPlanets = orbitData.filter(planet => planet.enabled);
+      
+      debugAudio(`Playing sequence with ${enabledPlanets.length} planets`);
+      
+      // Schedule notes for each planet
+      enabledPlanets.forEach((planet, index) => {
+        const originalIndex = orbitData.findIndex(p => p.name === planet.name);
+        const freq = calculateBaseFrequencies(baseFrequency, planet, originalIndex);
+        const time = now + index * 0.75;
+        
+        try {
+          mainSynth.triggerAttackRelease(freq, "1n", time, 0.3);
+          debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
+        } catch (err) {
+          console.error(`Error scheduling note for ${planet.name}:`, err);
+        }
+      });
+      
+      // Set timeout to end playing state
+      sequenceTimeoutRef.current = setTimeout(() => {
+        setIsPlaying(false);
+        sequenceTimeoutRef.current = null;
+        debugAudio("Sequence playback complete");
+      }, enabledPlanets.length * 750 + 500);
+    } catch (error) {
+      console.error("Error playing orbital sequence:", error);
+      setIsPlaying(false);
+    }
+  };
+
+  // Start audio context safely
+  const startAudioContext = async () => {
+    if (!audioContextStarted.current) {
+      try {
+        if (Tone.context.state !== 'running') {
+          await Tone.context.resume();
+        }
+        
+        await Tone.start();
+        audioContextStarted.current = true;
+        
+        if (Tone.context.state !== 'running') {
+          await Tone.context.resume();
+        }
+        
+        setNeedsUserInteraction(false);
+        
+        return true;
+      } catch (error) {
+        console.error("Could not start AudioContext:", error);
+        setNeedsUserInteraction(true);
+        return false;
+      }
+    } else if (Tone.context.state !== 'running') {
+      try {
+        await Tone.context.resume();
+        setNeedsUserInteraction(false);
+        return true;
+      } catch (error) {
+        console.error("Could not resume AudioContext:", error);
+        setNeedsUserInteraction(true);
+        return false;
       }
     }
+    return true;
+  };
+
+  // Handle first user interaction on the page to initialize audio
+  const handleUserInteraction = async () => {
+    if (needsUserInteraction) {
+      try {
+        const started = await startAudioContext();
+        if (started) {
+          setNeedsUserInteraction(false);
+        }
+      } catch (error) {
+        console.error("Error initializing audio on user interaction:", error);
+      }
+    }
+  };
+
+  // Toggle between pause and play
+  const togglePlayPause = async () => {
+    await startAudioContext();
+    if (isPaused) {
+      setPositionMode('normal'); // Reset position mode when resuming
+    }
+    setIsPaused(!isPaused);
   };
 
   // Function to recreate and restart all audio
@@ -288,6 +748,164 @@ const OrbitalSonification = () => {
     } catch (error) {
       console.error("Failed to initialize audio context:", error);
       return false;
+    }
+  };
+
+  // Function to activate/deactivate a planet with completely isolated audio handling
+  const togglePlanet = async (index, forceState = null) => {
+    try {
+      // Get the current planet state before changing it
+      const newData = [...orbitData];
+      const planet = newData[index];
+      const wasEnabled = planet.enabled;
+  
+      // Determine the new state
+      const newEnabled = forceState !== null ? forceState : !wasEnabled;
+  
+      // Update the state immediately
+      planet.enabled = newEnabled;
+      setOrbitData(newData);
+  
+      debugAudio(`Toggling planet ${planet.name}, was ${wasEnabled ? 'enabled' : 'disabled'}, now ${newEnabled ? 'enabled' : 'disabled'}`);
+  
+      // Handle audio changes if in live mode
+      if (liveMode) {
+        if (wasEnabled && !newEnabled) {
+          // Was enabled, now disabled - stop sound for THIS PLANET ONLY
+          debugAudio(`Stopping sound for ${planet.name} only`);
+          try {
+            stopPlanetSound(planet.name);
+          } catch (err) {
+            console.error(`Error stopping sound for ${planet.name}:`, err);
+            // Create a fresh isolated synth for this planet only
+            createIsolatedSynth(planet.name);
+          }
+        } else if (!wasEnabled && newEnabled) {
+          // Was disabled, now enabled - start sound for THIS PLANET ONLY
+          const freq = currentFrequencies[planet.name];
+          if (freq) {
+            debugAudio(`Starting sound for ${planet.name} at ${freq}Hz`);
+            try {
+              // Ensure we have a fresh synth
+              createIsolatedSynth(planet.name);
+              startPlanetSound(planet.name, freq);
+            } catch (err) {
+              console.error(`Error starting sound for ${planet.name}:`, err);
+              // Try one more time
+              try {
+                createIsolatedSynth(planet.name);
+                startPlanetSound(planet.name, freq);
+              } catch (retryErr) {
+                console.error(`Retry failed for ${planet.name}:`, retryErr);
+              }
+            }
+          }
+        }
+  
+        // Log the active synths to verify
+        debugAudio(`Active synths after toggle: ${Array.from(activeSynthsRef.current).join(', ')}`);
+      }
+    } catch (error) {
+      console.error("Error toggling planet:", error);
+      // No recovery here - just log the error
+    }
+  };
+
+  // Toggle all planets with improved audio isolation
+  const toggleAllPlanets = async (enable) => {
+    try {
+      await Promise.all(orbitData.map((_, index) => togglePlanet(index, enable)));
+    } catch (error) {
+      console.error("Error toggling all planets:", error);
+    }
+  };
+
+  // Toggle live mode with completely rebuilt implementation
+  const toggleLiveMode = async () => {
+    try {
+      const success = await initializeAudioContext();
+      if (!success) {
+        console.error("Could not initialize audio context when toggling live mode");
+        return;
+      }
+      
+      const newLiveMode = !liveMode;
+      debugAudio(`Toggling live mode to ${newLiveMode ? 'on' : 'off'}`);
+      
+      if (!newLiveMode) {
+        // Turning off - stop all sounds
+        Array.from(activeSynthsRef.current).forEach(planetName => {
+          stopPlanetSound(planetName);
+        });
+      } else {
+        // Turning on - recreate everything and start enabled planets
+        const resetSuccess = await recreateAllAudio();
+        if (!resetSuccess) {
+          console.error("Failed to reset audio system when entering live mode");
+          return;
+        }
+      }
+      
+      // Update the state last, after audio operations are complete
+      setLiveMode(newLiveMode);
+    } catch (error) {
+      console.error("Error toggling live mode:", error);
+    }
+  };
+
+  // Convert volume to decibels for display
+  const volumeToDb = (volume) => {
+    if (volume <= 0.01) return "-∞";
+    return Tone.gainToDb(volume).toFixed(1);
+  };
+
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  // Get planet colors for the toggle switches
+  const getPlanetColor = (name) => {
+    const planetColors = {
+      "Mercury": "#A9A9A9",
+      "Venus": "#E6D3A3",
+      "Earth": "#1E90FF",
+      "Mars": "#CD5C5C",
+      "Ceres": "#8B8B83",
+      "Jupiter": "#E59866",
+      "Saturn": "#F4D03F",
+      "Uranus": "#73C6B6",
+      "Neptune": "#5DADE2",
+      "Pluto": "#C39BD3"
+    };
+    
+    return planetColors[name] || "#999";
+  };
+
+  // Handle distance mode change
+  const handleDistanceModeChange = (e) => {
+    const newMode = e.target.value;
+    setDistanceMode(newMode);
+    
+    // When distance mode changes, update the frequencies if in live mode
+    if (liveMode) {
+      updateAllFrequencies();
+    }
+  };
+
+  // Handle zoom level changes
+  const handleZoomChange = (e) => {
+    setZoomLevel(parseFloat(e.target.value));
+  };
+
+  // Debug monitoring function
+  const debugAudio = (message, obj = null) => {
+    if (debug.current) {
+      if (obj) {
+        console.log(`[AUDIO DEBUG] ${message}`, obj);
+      } else {
+        console.log(`[AUDIO DEBUG] ${message}`);
+      }
     }
   };
 
@@ -505,645 +1123,21 @@ const OrbitalSonification = () => {
     }));
   };
 
-  // Function to activate/deactivate a planet with completely isolated audio handling
-  const togglePlanet = async (index, forceState = null) => {
-    try {
-      // Get the current planet state before changing it
-      const newData = [...orbitData];
-      const planet = newData[index];
-      const wasEnabled = planet.enabled;
-  
-      // Determine the new state
-      const newEnabled = forceState !== null ? forceState : !wasEnabled;
-  
-      // Update the state immediately
-      planet.enabled = newEnabled;
-      setOrbitData(newData);
-  
-      debugAudio(`Toggling planet ${planet.name}, was ${wasEnabled ? 'enabled' : 'disabled'}, now ${newEnabled ? 'enabled' : 'disabled'}`);
-  
-      // Handle audio changes if in live mode
-      if (liveMode) {
-        if (wasEnabled && !newEnabled) {
-          // Was enabled, now disabled - stop sound for THIS PLANET ONLY
-          debugAudio(`Stopping sound for ${planet.name} only`);
-          try {
-            stopPlanetSound(planet.name);
-          } catch (err) {
-            console.error(`Error stopping sound for ${planet.name}:`, err);
-            // Create a fresh isolated synth for this planet only
-            createIsolatedSynth(planet.name);
-          }
-        } else if (!wasEnabled && newEnabled) {
-          // Was disabled, now enabled - start sound for THIS PLANET ONLY
-          const freq = currentFrequencies[planet.name];
-          if (freq) {
-            debugAudio(`Starting sound for ${planet.name} at ${freq}Hz`);
-            try {
-              // Ensure we have a fresh synth
-              createIsolatedSynth(planet.name);
-              startPlanetSound(planet.name, freq);
-            } catch (err) {
-              console.error(`Error starting sound for ${planet.name}:`, err);
-              // Try one more time
-              try {
-                createIsolatedSynth(planet.name);
-                startPlanetSound(planet.name, freq);
-              } catch (retryErr) {
-                console.error(`Retry failed for ${planet.name}:`, retryErr);
-              }
-            }
-          }
-        }
-  
-        // Log the active synths to verify
-        debugAudio(`Active synths after toggle: ${Array.from(activeSynthsRef.current).join(', ')}`);
-      }
-    } catch (error) {
-      console.error("Error toggling planet:", error);
-      // No recovery here - just log the error
-    }
+  // Utility function to convert frequency to closest musical note
+  const frequencyToNote = (frequency) => {
+    if (!frequency) return "";
+    
+    const A4 = 440.0;
+    const C0 = A4 * Math.pow(2, -4.75);
+    
+    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
+    
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const octave = Math.floor(halfStepsFromC0 / 12);
+    const noteIndex = halfStepsFromC0 % 12;
+    
+    return noteNames[noteIndex] + octave;
   };
-
-  // Toggle all planets with improved audio isolation
-  const toggleAllPlanets = async (enable) => {
-    try {
-      await Promise.all(orbitData.map((_, index) => togglePlanet(index, enable)));
-    } catch (error) {
-      console.error("Error toggling all planets:", error);
-    }
-  };
-
-  // Toggle live mode with completely rebuilt implementation
-  const toggleLiveMode = async () => {
-    try {
-      const success = await initializeAudioContext();
-      if (!success) {
-        console.error("Could not initialize audio context when toggling live mode");
-        return;
-      }
-      
-      const newLiveMode = !liveMode;
-      debugAudio(`Toggling live mode to ${newLiveMode ? 'on' : 'off'}`);
-      
-      if (!newLiveMode) {
-        // Turning off - stop all sounds
-        Array.from(activeSynthsRef.current).forEach(planetName => {
-          stopPlanetSound(planetName);
-        });
-      } else {
-        // Turning on - recreate everything and start enabled planets
-        const resetSuccess = await recreateAllAudio();
-        if (!resetSuccess) {
-          console.error("Failed to reset audio system when entering live mode");
-          return;
-        }
-      }
-      
-      // Update the state last, after audio operations are complete
-      setLiveMode(newLiveMode);
-    } catch (error) {
-      console.error("Error toggling live mode:", error);
-    }
-  };
-
-  // Completely rebuilt orbital sequence player
-  const playOrbitalSequence = async () => {
-    try {
-      const audioStarted = await initializeAudioContext();
-      if (!audioStarted) {
-        debugAudio("Audio context couldn't be started");
-        return;
-      }
-      
-      if (isPlaying) {
-        debugAudio("Stopping orbital sequence");
-        
-        // Stop sequence
-        if (sequenceTimeoutRef.current) {
-          clearTimeout(sequenceTimeoutRef.current);
-          sequenceTimeoutRef.current = null;
-        }
-        
-        // Safely dispose the main synth
-        if (mainSynthRef.current) {
-          try {
-            mainSynthRef.current.releaseAll();
-            mainSynthRef.current.dispose();
-          } catch (err) {
-            console.error("Error disposing main synth:", err);
-          }
-          
-          // Create a new clean synth
-          const newMainSynth = new Tone.PolySynth(Tone.Synth, {
-            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-            oscillator: { type: 'sine' }
-          });
-          
-          // Connect to master gain or destination
-          if (gainNodeRef.current && !gainNodeRef.current.disposed) {
-            newMainSynth.connect(gainNodeRef.current);
-          } else {
-            newMainSynth.toDestination();
-          }
-          
-          mainSynthRef.current = newMainSynth;
-        }
-        
-        setIsPlaying(false);
-        return;
-      }
-      
-      debugAudio("Starting orbital sequence");
-      
-      // Create a fresh synth for the sequence
-      if (mainSynthRef.current) {
-        try {
-          mainSynthRef.current.dispose();
-        } catch (err) {
-          // Ignore disposal errors
-        }
-      }
-      
-      const mainSynth = new Tone.PolySynth(Tone.Synth, {
-        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-        oscillator: { type: 'sine' }
-      });
-      
-      // Connect to master gain or destination
-      if (gainNodeRef.current && !gainNodeRef.current.disposed) {
-        mainSynth.connect(gainNodeRef.current);
-      } else {
-        mainSynth.toDestination();
-      }
-      
-      mainSynthRef.current = mainSynth;
-      
-      setIsPlaying(true);
-      
-      const now = Tone.now();
-      const enabledPlanets = orbitData.filter(planet => planet.enabled);
-      
-      debugAudio(`Playing sequence with ${enabledPlanets.length} planets`);
-      
-      // Schedule notes for each planet
-      enabledPlanets.forEach((planet, index) => {
-        const originalIndex = orbitData.findIndex(p => p.name === planet.name);
-        const freq = calculateBaseFrequencies(baseFrequency, planet, originalIndex);
-        const time = now + index * 0.75;
-        
-        try {
-          mainSynth.triggerAttackRelease(freq, "1n", time, 0.3);
-          debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
-        } catch (err) {
-          console.error(`Error scheduling note for ${planet.name}:`, err);
-        }
-      });
-      
-      // Set timeout to end playing state
-      sequenceTimeoutRef.current = setTimeout(() => {
-        setIsPlaying(false);
-        sequenceTimeoutRef.current = null;
-        debugAudio("Sequence playback complete");
-      }, enabledPlanets.length * 750 + 500);
-    } catch (error) {
-      console.error("Error playing orbital sequence:", error);
-      setIsPlaying(false);
-    }
-  };
-
-  // Initialize audio when component loads
-  useEffect(() => {
-    if (!audioInitializedRef.current) {
-      initializeAudioContext().then(success => {
-        if (success) {
-          audioInitializedRef.current = true;
-          debugAudio("Audio initialized on component load");
-        } else {
-          debugAudio("Failed to initialize audio on component load");
-        }
-      });
-    }
-    
-    return () => {
-      // Clean up all audio on unmount
-      debugAudio("Component unmounting, cleaning up audio");
-      
-      Object.values(synthsRef.current).forEach(synthObj => {
-        if (synthObj && synthObj.synth) {
-          try {
-            synthObj.synth.dispose();
-          } catch (err) {
-            // Ignore disposal errors
-          }
-        }
-        if (synthObj && synthObj.gain) {
-          try {
-            synthObj.gain.dispose();
-          } catch (err) {
-            // Ignore disposal errors
-          }
-        }
-      });
-      
-      if (mainSynthRef.current) {
-        try {
-          mainSynthRef.current.dispose();
-        } catch (err) {
-          // Ignore disposal errors
-        }
-      }
-      
-      if (gainNodeRef.current) {
-        try {
-          gainNodeRef.current.dispose();
-        } catch (err) {
-          // Ignore disposal errors
-        }
-      }
-    };
-  }, []);
-
-  // Handle zoom level changes
-  const handleZoomChange = (e) => {
-    setZoomLevel(parseFloat(e.target.value));
-  };
-
-  // Toggle between pause and play
-  const togglePlayPause = async () => {
-    await startAudioContext();
-    if (isPaused) {
-      setPositionMode('normal'); // Reset position mode when resuming
-    }
-    setIsPaused(!isPaused);
-  };
-
-  // Handle frequency changes from visualization - improved to actually apply the changes
-  const handleFrequencyChange = useCallback((frequencies) => {
-    // Log frequency changes from animation occasionally
-    if (debug.current && Math.random() < 0.01) {
-      const freqSample = Object.entries(frequencies).map(
-        ([name, freq]) => `${name}: ${freq.toFixed(2)}`
-      ).join(', ');
-      debugAudio(`Animation frequency update: ${freqSample}`);
-    }
-    
-    const updatedFrequencies = { ...currentFrequencies, ...frequencies };
-    
-    // Store the new frequencies in state
-    setCurrentFrequencies(updatedFrequencies);
-    
-    // Store in ref for the animation loop to access
-    lastFrequenciesRef.current = { ...lastFrequenciesRef.current, ...frequencies };
-    
-    // If in live mode, immediately update the frequencies of active synths
-    if (liveMode && !isPaused) {
-      Object.entries(frequencies).forEach(([planetName, freq]) => {
-        if (activeSynthsRef.current.has(planetName)) {
-          updatePlanetFrequency(planetName, freq);
-        }
-      });
-    }
-  }, [currentFrequencies, liveMode, isPaused]);
-  
-  // Effect to apply frequency changes when animation status changes
-  useEffect(() => {
-    if (liveMode && !isPaused) {
-      // When animation starts or resumes, update all active frequencies
-      Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
-        if (activeSynthsRef.current.has(planetName)) {
-          debugAudio(`Updating ${planetName} frequency to ${freq.toFixed(2)} Hz on animation status change`);
-          updatePlanetFrequency(planetName, freq);
-        }
-      });
-    }
-  }, [liveMode, isPaused]);
-  
-  // Now let's update the continuous audio update effect to properly check enabled status
-  useEffect(() => {
-    // Don't do anything if not in live mode
-    if (!liveMode) return;
-    
-    // Don't run until audio is initialized
-    if (!audioInitializedRef.current) {
-      // Try to initialize audio
-      initializeAudioContext().then(success => {
-        if (success) {
-          audioInitializedRef.current = true;
-        }
-      });
-      return;
-    }
-    
-    debugAudio("Starting live mode audio interval");
-    
-    let recoveryCounter = 0;
-    let lastFrequencyUpdate = Date.now();
-    
-    // Create interval to update audio
-    const intervalId = setInterval(async () => {
-      try {
-        // Check audio context health periodically
-        if (Tone.context.state !== "running") {
-          try {
-            await Tone.context.resume();
-            debugAudio("Resumed audio context");
-          } catch (resumeErr) {
-            console.error("Failed to resume audio context:", resumeErr);
-          }
-        }
-        
-        // Check if gain node is healthy
-        if (!gainNodeRef.current || gainNodeRef.current.disposed) {
-          debugAudio("Gain node is missing or disposed, recreating");
-          await initializeAudioContext();
-        }
-        
-        // Get the current enabled planets directly from state
-        const enabledPlanets = orbitData.filter(p => p.enabled);
-        const enabledPlanetNames = new Set(enabledPlanets.map(p => p.name));
-        
-        // Log status for debugging
-        if (debug.current && Math.random() < 0.05) { // Only log 5% of the time to prevent console spam
-          debugAudio(`Enabled planets: ${Array.from(enabledPlanetNames).join(', ')}`);
-          debugAudio(`Active synths: ${Array.from(activeSynthsRef.current).join(', ')}`);
-        }
-        
-        // Emergency recovery if no sounds are working but should be
-        const shouldHaveSounds = enabledPlanets.length > 0;
-        const hasSounds = activeSynthsRef.current.size > 0;
-        
-        // Check if there's a mismatch between what should be playing and what is playing
-        const shouldBePlayingButIsnt = enabledPlanets.some(p => 
-          !activeSynthsRef.current.has(p.name) && currentFrequencies[p.name]
-        );
-        
-        const shouldNotBePlayingButIs = Array.from(activeSynthsRef.current).some(name => 
-          !enabledPlanetNames.has(name)
-        );
-        
-        if ((shouldHaveSounds && !hasSounds) || shouldBePlayingButIsnt || shouldNotBePlayingButIs) {
-          recoveryCounter++;
-          
-          if (recoveryCounter >= 3) {
-            debugAudio("EMERGENCY RECOVERY: Sound state mismatch detected");
-            
-            // Handle planet-by-planet, with complete separation between operations
-            let recoverySucceeded = true;
-            let planetsFixed = 0;
-            
-            // First, stop planets that shouldn't be playing
-            for (const name of Array.from(activeSynthsRef.current)) {
-              if (!enabledPlanetNames.has(name)) {
-                try {
-                  // Create a fresh synth first to ensure full isolation
-                  createIsolatedSynth(name);
-                  const success = stopPlanetSound(name);
-                  if (success) planetsFixed++;
-                  else recoverySucceeded = false;
-                } catch (err) {
-                  console.error(`Error stopping ${name} during recovery:`, err);
-                  recoverySucceeded = false;
-                }
-              }
-            }
-            
-            // Next, start planets that should be playing but aren't
-            for (const planet of enabledPlanets) {
-              if (!activeSynthsRef.current.has(planet.name) && currentFrequencies[planet.name]) {
-                try {
-                  // Always create a fresh synth for maximum reliability
-                  createIsolatedSynth(planet.name);
-                  // Short delay to ensure audio graph is stable
-                  await new Promise(resolve => setTimeout(resolve, 10));
-                  const success = startPlanetSound(planet.name, currentFrequencies[planet.name]);
-                  if (success) {
-                    planetsFixed++;
-                    debugAudio(`Recovery: Started sound for ${planet.name}`);
-                  } else {
-                    recoverySucceeded = false;
-                  }
-                } catch (err) {
-                  console.error(`Error starting ${planet.name} during recovery:`, err);
-                  recoverySucceeded = false;
-                }
-              }
-            }
-            
-            // Only do a full reset if targeted recovery failed completely
-            if (!recoverySucceeded && planetsFixed === 0) {
-              debugAudio("Targeted recovery failed completely, attempting full audio system reset");
-              await recreateAllAudio();
-            } else {
-              debugAudio(`Recovery fixed ${planetsFixed} planets`);
-            }
-            
-            recoveryCounter = 0;
-          }
-        } else {
-          recoveryCounter = 0;
-        }
-        
-        // Update frequencies for all active synths if animation is running
-        if (!isPaused) {
-          const now = Date.now();
-          // Update frequencies at most every 50ms to avoid overloading
-          if (now - lastFrequencyUpdate > 50) {
-            Array.from(activeSynthsRef.current).forEach(planetName => {
-              const freq = currentFrequencies[planetName];
-              if (freq && synthsRef.current[planetName] && synthsRef.current[planetName].synth) {
-                updatePlanetFrequency(planetName, freq);
-              }
-            });
-            lastFrequencyUpdate = now;
-          }
-        }
-        
-        // Process each planet's playing state - ensure only enabled planets are playing
-        orbitData.forEach(planet => {
-          // Check if planet is enabled in the current state
-          const isEnabled = planet.enabled;
-          const isPlaying = activeSynthsRef.current.has(planet.name);
-          const freq = currentFrequencies[planet.name];
-          
-          if (!freq) return; // Skip if no frequency data
-          
-          if (isEnabled && !isPlaying) {
-            // Should be playing but isn't
-            startPlanetSound(planet.name, freq);
-          } else if (!isEnabled && isPlaying) {
-            // Shouldn't be playing but is
-            stopPlanetSound(planet.name);
-          }
-        });
-      } catch (err) {
-        console.error("Error in audio update interval:", err);
-        
-        // Try to recover from serious errors
-        recoveryCounter++;
-        if (recoveryCounter >= 3) {
-          debugAudio("Critical error in audio update, attempting full reset");
-          await recreateAllAudio();
-          recoveryCounter = 0;
-        }
-      }
-    }, 100); // Slightly slower update rate to reduce CPU usage
-    
-    // Cleanup function
-    return () => {
-      clearInterval(intervalId);
-      debugAudio("Stopped live mode audio interval");
-      
-      // Stop all sounds when leaving live mode
-      Array.from(activeSynthsRef.current).forEach(planetName => {
-        stopPlanetSound(planetName);
-      });
-    };
-  }, [liveMode, distanceMode]); // The dependency array contains ONLY liveMode to prevent rerunning unnecessarily
-
-  // Start audio context safely
-  const startAudioContext = async () => {
-    if (!audioContextStarted.current) {
-      try {
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
-        }
-        
-        await Tone.start();
-        audioContextStarted.current = true;
-        
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
-        }
-        
-        setNeedsUserInteraction(false);
-        
-        return true;
-      } catch (error) {
-        console.error("Could not start AudioContext:", error);
-        setNeedsUserInteraction(true);
-        return false;
-      }
-    } else if (Tone.context.state !== 'running') {
-      try {
-        await Tone.context.resume();
-        setNeedsUserInteraction(false);
-        return true;
-      } catch (error) {
-        console.error("Could not resume AudioContext:", error);
-        setNeedsUserInteraction(true);
-        return false;
-      }
-    }
-    return true;
-  };
-
-  // Convert volume to decibels for display
-  const volumeToDb = (volume) => {
-    if (volume <= 0.01) return "-∞";
-    return Tone.gainToDb(volume).toFixed(1);
-  };
-
-  // Toggle sidebar visibility
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  // Get planet colors for the toggle switches
-  const getPlanetColor = (name) => {
-    const planetColors = {
-      "Mercury": "#A9A9A9",
-      "Venus": "#E6D3A3",
-      "Earth": "#1E90FF",
-      "Mars": "#CD5C5C",
-      "Ceres": "#8B8B83",
-      "Jupiter": "#E59866",
-      "Saturn": "#F4D03F",
-      "Uranus": "#73C6B6",
-      "Neptune": "#5DADE2",
-      "Pluto": "#C39BD3"
-    };
-    
-    return planetColors[name] || "#999";
-  };
-
-  // Handle distance mode change
-  const handleDistanceModeChange = (e) => {
-    const newMode = e.target.value;
-    setDistanceMode(newMode);
-    
-    // When distance mode changes, update the frequencies if in live mode
-    if (liveMode) {
-      updateAllFrequencies();
-    }
-  };
-
-  // Update frequencies and synths when base frequency changes in live mode
-  useEffect(() => {
-    if (liveMode && !isPaused) {
-      // Recalculate frequencies based on the new base frequency
-      const updatedFrequencies = {};
-      orbitData.forEach((planet, index) => {
-        if (planet.enabled) {
-          const n = index - 2; // Adjust so Earth is index 0
-          const baseFreq = calculateBaseFrequencies(baseFrequency, planet, n);
-          updatedFrequencies[planet.name] = baseFreq;
-        }
-      });
-      
-      // Update the frequencies in state
-      setCurrentFrequencies(prevFreqs => ({
-        ...prevFreqs,
-        ...updatedFrequencies
-      }));
-    }
-  }, [baseFrequency, liveMode, isPaused, orbitData, calculateBaseFrequencies]);
-
-  // Add this useEffect before any audio implementation functions to log initialization
-  useEffect(() => {
-    console.log("Component initialized");
-    
-    // Set debug flag for audio diagnostics
-    debug.current = true;
-    
-    // Cleanup function
-    return () => {
-      console.log("Component unmounting");
-    };
-  }, []);
-
-  // Initialize Tone.js when the component mounts - just once
-  useEffect(() => {
-    const initializeTone = async () => {
-      try {
-        // Force a clean start for Tone.js
-        if (Tone.context.state !== 'running') {
-          try {
-            await Tone.start();
-            console.log("Tone.js initialized");
-          } catch (err) {
-            console.error("Failed to start Tone:", err);
-          }
-        }
-      } catch (err) {
-        console.error("Error initializing Tone.js:", err);
-      }
-    };
-    
-    initializeTone();
-    
-    // Cleanup when component unmounts
-    return () => {
-      console.log("Cleaning up Tone.js");
-      try {
-        // Try to clean up Tone.js resources
-        Tone.Transport.stop();
-        Tone.Transport.cancel();
-      } catch (err) {
-        console.error("Error cleaning up Tone.js:", err);
-      }
-    };
-  }, []);
 
   return (
     <div 
