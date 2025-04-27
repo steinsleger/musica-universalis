@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
+import InfoModal from './components/InfoModal';
 import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
 
 const OrbitalSonification = () => {
@@ -32,6 +33,7 @@ const OrbitalSonification = () => {
   const [distanceMode, setDistanceMode] = useState('titiusBode'); // 'titiusBode' or 'actual'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('controls'); // 'controls' o 'planets'
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   
   const audioContextStarted = useRef(false);
   const gainNodeRef = useRef(null);
@@ -1147,26 +1149,25 @@ const OrbitalSonification = () => {
       <div className="visualization-container">
         <div className="orbital-display">
           <PlanetarySystem 
-            orbitData={orbitData} 
             animationSpeed={animationSpeed} 
             baseFrequency={baseFrequency}
-            onFrequencyChange={handleFrequencyChange}
+            distanceMode={distanceMode}
             isPaused={isPaused}
+            onFrequencyChange={handleFrequencyChange}
+            orbitData={orbitData} 
             setToAverageDistance={positionMode === 'average'}
             setToAphelion={positionMode === 'aphelion'}
             setToPerihelion={positionMode === 'perihelion'}
-            zoomLevel={zoomLevel}
             setZoomLevel={setZoomLevel}
-            distanceMode={distanceMode}
+            zoomLevel={zoomLevel}
           />
         </div>
         
-        {/* Controles flotantes minimizados (siempre visibles) */}
+        {/* Floating controls */}
         <div className="floating-controls fade-in">
           <button 
             className="floating-button"
             onClick={togglePlayPause}
-            disabled={isPlaying}
             title={isPaused ? "Play Animation" : "Pause Animation"}
           >
             {isPaused ? '▶️' : '⏸️'}
@@ -1175,7 +1176,6 @@ const OrbitalSonification = () => {
           <button 
             className="floating-button"
             onClick={() => setPositionMode('average')}
-            disabled={isPlaying}
             title="Set to Average Distance"
           >
             🔄
@@ -1184,7 +1184,6 @@ const OrbitalSonification = () => {
           <button 
             className="floating-button"
             onClick={() => setPositionMode('aphelion')}
-            disabled={isPlaying}
             title="Set to Aphelion"
           >
             🌞
@@ -1193,7 +1192,6 @@ const OrbitalSonification = () => {
           <button 
             className="floating-button"
             onClick={() => setPositionMode('perihelion')}
-            disabled={isPlaying}
             title="Set to Perihelion"
           >
             ☀️
@@ -1204,24 +1202,35 @@ const OrbitalSonification = () => {
             onClick={toggleLiveMode}
             disabled={isPlaying}
             title={liveMode ? "Disable Live Mode" : "Enable Live Mode"}
-            style={{backgroundColor: liveMode ? 'rgba(69, 160, 73, 0.5)' : 'rgba(76, 175, 80, 0.5)'}}
+            style={{
+              backgroundColor: liveMode ? 'rgba(69, 160, 73, 0.5)' : 'rgba(0, 0, 0, 0)',
+              opacity: isPlaying ? 0.5 : 1
+            }}
           >
             🔊
           </button>
         </div>
         
-        {/* Botón para acceder a más configuraciones */}
+        {/* Info and Settings buttons */}
+        <button 
+          className="info-button" 
+          onClick={() => setIsInfoModalOpen(!isInfoModalOpen)}
+          title={isInfoModalOpen ? "Close" : "About"}
+        >
+          ℹ️
+        </button>
         <button 
           className="more-settings-button" 
           onClick={toggleSidebar}
           title="More Settings"
+          disabled={isInfoModalOpen}
         >
           {sidebarCollapsed ? '⚙️' : '✖️'}
         </button>
         
-        {/* Panel lateral de configuraciones avanzadas */}
+        {/* Advanced settings sidebar */}
         <div className={`controls-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          {/* Pestañas de navegación */}
+          {/* Navigation tabs */}
           <div className="sidebar-tabs">
             <button 
               className={`tab-button ${activeTab === 'controls' ? 'active' : ''}`}
@@ -1291,7 +1300,7 @@ const OrbitalSonification = () => {
                   onChange={handleDistanceModeChange}
                   className="select-dropdown"
                 >
-                  <option value="titiusBode">Titius-Bode Law</option>
+                  <option value="titiusBode">Modified Titius-Bode Law</option>
                   <option value="actual">Actual Distances</option>
                 </select>
               </div>
@@ -1311,14 +1320,8 @@ const OrbitalSonification = () => {
                   className="slider"
                   onChange={handleZoomChange}
                 />
-                <div className="control-tip">
-                  {zoomLevel > 1.1 ? 
-                    "Drag the system with your mouse to pan the view" : 
-                    "Increase zoom to see outer planet orbits more clearly"}
-                </div>
               </div>
               
-              {/* Animation speed control moved to sidebar */}
               <div className="control-group">
                 <label htmlFor="speed-slider" className="label">
                   Animation Speed: {animationSpeed.toFixed(1)}x
@@ -1333,45 +1336,23 @@ const OrbitalSonification = () => {
                   onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
                   className="slider"
                 />
-                <div className="control-tip">
-                  Adjust speed to observe orbital relationships
-                </div>
               </div>
-              
-              <div className="live-mode-toggle">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox"
-                    checked={liveMode}
-                    onChange={toggleLiveMode}
-                    disabled={isPlaying}
-                  />
-                  Live mode (continuous sound)
-                </label>
-              </div>
-              
-              <button 
-                onClick={playOrbitalSequence}
-                disabled={liveMode}
-                className="button"
-                style={{marginTop: '10px'}}
-              >
-                {isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
-              </button>
-              
-              <p className="note" style={{marginTop: '15px'}}>
-                {isPaused && liveMode ? (
-                  <strong>Animation paused, sound continues with fixed frequencies.</strong>
-                ) : (
-                  "Orbital velocities and frequencies vary with distance from the Sun."
-                )}
-              </p>
             </div>
           )}
           
-          {/* Contenido de la pestaña de planetas */}
+          {/* Content of the planets tab */}
           {activeTab === 'planets' && (
             <div className="sidebar-content planets-tab fade-in">
+              <div className="sequence-controls">
+                <button 
+                  onClick={playOrbitalSequence}
+                  disabled={liveMode}
+                  className={`button ${liveMode ? 'disabled' : ''}`}
+                >
+                  {isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
+                </button>
+              </div>
+
               <div className="master-toggle">
                 <label className="checkbox-label">
                   <input 
@@ -1432,6 +1413,7 @@ const OrbitalSonification = () => {
           )}
         </div>
       </div>
+      <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
     </div>
   );
 };
