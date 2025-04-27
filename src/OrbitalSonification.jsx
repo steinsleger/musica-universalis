@@ -98,11 +98,30 @@ const OrbitalSonification = () => {
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
     if (distanceMode === 'titiusBode') {
-      // Use Titius-Bode law formula
-      const n = index - 2; // Adjust so Earth is index 0
-      return (1 + Math.pow(2, n)) * 3 * baseFreq;
+      // Use Murch's modified formula with specific n values for each planet
+      // This creates the correct musical relationships described in the text
+      
+      // Map each planet to its specific n value according to Murch's theory
+      const murchNValues = {
+        "Mercury": -10, // Very negative n value (Beta limit)
+        "Venus": -2,
+        "Earth": -1,
+        "Mars": 0,
+        "Ceres": 1,
+        "Jupiter": 2,
+        "Saturn": 3,
+        "Uranus": 4,
+        "Neptune": 5,
+        "Pluto": 6
+      };
+      
+      // Get the appropriate n value for this planet
+      const n = murchNValues[planet.name];
+      
+      // Apply Murch's formula: Beta * (1 + 2^n * 3)
+      return baseFreq * (1 + Math.pow(2, n) * 3);
     } else {
-      // TODO: Explain the math behind this
+      // TODO: explain the math behind this
       return baseFrequency * (5 * planet.actualDistance + 1);
     }
   }, [distanceMode]);
