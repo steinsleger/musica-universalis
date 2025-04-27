@@ -45,6 +45,7 @@ const OrbitalSonification = () => {
   const debug = useRef(true);
   const activeSynthsRef = useRef(new Set());
   const audioInitializedRef = useRef(false);
+  const prevPositionMode = useRef(positionMode);
 
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
@@ -68,12 +69,12 @@ const OrbitalSonification = () => {
   // Handle frequency changes from visualization - improved to actually apply the changes
   const handleFrequencyChange = useCallback((frequencies) => {
     // Log frequency changes from animation occasionally
-    if (debug.current && Math.random() < 0.01) {
+    /*if (debug.current && Math.random() < 0.01) {
       const freqSample = Object.entries(frequencies).map(
         ([name, freq]) => `${name}: ${freq.toFixed(2)}`
       ).join(', ');
       debugAudio(`Animation frequency update: ${freqSample}`);
-    }
+    }*/
     
     const updatedFrequencies = { ...currentFrequencies, ...frequencies };
     
@@ -84,14 +85,14 @@ const OrbitalSonification = () => {
     lastFrequenciesRef.current = { ...lastFrequenciesRef.current, ...frequencies };
     
     // If in live mode, immediately update the frequencies of active synths
-    if (liveMode && !isPaused) {
+    if (liveMode) {
       Object.entries(frequencies).forEach(([planetName, freq]) => {
         if (activeSynthsRef.current.has(planetName)) {
           updatePlanetFrequency(planetName, freq);
         }
       });
     }
-  }, [currentFrequencies, liveMode, isPaused]);
+  }, [currentFrequencies, liveMode]);
 
   // Initialize audio when component loads
   useEffect(() => {
@@ -176,16 +177,21 @@ const OrbitalSonification = () => {
   
   // Effect to apply frequency changes when animation status changes
   useEffect(() => {
-    if (liveMode && !isPaused) {
-      // When animation starts or resumes, update all active frequencies
+    const positionModeHasChanged = prevPositionMode.current !== positionMode;
+
+    if (liveMode && (!isPaused || positionModeHasChanged)) {
+      // When animation starts or resumes, or position mode has changed, update all active frequencies
       Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
         if (activeSynthsRef.current.has(planetName)) {
-          debugAudio(`Updating ${planetName} frequency to ${freq.toFixed(2)} Hz on animation status change`);
+          // debugAudio(`Updating ${planetName} frequency to ${freq.toFixed(2)} Hz on animation status change`);
           updatePlanetFrequency(planetName, freq);
         }
-      });
+      });      
     }
-  }, [liveMode, isPaused]);
+
+    prevPositionMode.current = positionMode;
+  }, [liveMode, isPaused, positionMode]);
+  
   
   // Now let's update the continuous audio update effect to properly check enabled status
   useEffect(() => {
