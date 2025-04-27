@@ -102,11 +102,8 @@ const OrbitalSonification = () => {
       const n = index - 2; // Adjust so Earth is index 0
       return (1 + Math.pow(2, n)) * 3 * baseFreq;
     } else {
-      // Use actual distances with square root relationship
-      const earthDistance = 1.0; // Earth's distance in AU
-      const ratio = earthDistance / planet.actualDistance;
-      // Frequency is inversely proportional to distance
-      return baseFreq / Math.sqrt(planet.actualDistance / earthDistance);
+      // TODO: Explain the math behind this
+      return baseFrequency * (5 * planet.actualDistance + 1);
     }
   }, [distanceMode]);
 
@@ -1008,7 +1005,7 @@ const OrbitalSonification = () => {
         stopPlanetSound(planetName);
       });
     };
-  }, [liveMode]); // The dependency array contains ONLY liveMode to prevent rerunning unnecessarily
+  }, [liveMode, distanceMode]); // The dependency array contains ONLY liveMode to prevent rerunning unnecessarily
 
   // Start audio context safely
   const startAudioContext = async () => {

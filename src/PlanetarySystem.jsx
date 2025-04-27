@@ -68,9 +68,17 @@ const PlanetarySystem = ({
             const angle = planetAngles[planet.name] || 0;
             const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
             
-            // Calculate base frequency for this planet
-            const n = orbitData.indexOf(planet) - 2; // Adjust so Earth is index 0
-            const baseFreq = (1 + Math.pow(2, n)) * 3 * (baseFrequency || 220);
+            // Calculate base frequency based on distance mode
+            let baseFreq;
+            if (distanceMode === 'titiusBode') {
+              // Use Titius-Bode law formula
+              const n = index - 2; // Adjust so Earth is index 0
+              baseFreq = (1 + Math.pow(2, n)) * 3 * (baseFrequency || 220);
+            } else {
+              // Use actual distances - with Sun as base frequency (position 0)
+              // Using a square root relationship as it's more musical
+              baseFreq = (baseFrequency || 220) * Math.sqrt(1 + planet.actualDistance);
+            }
             
             // Modulate frequency based on current distance
             const avgDistance = getDistance(planet);
@@ -112,9 +120,16 @@ const PlanetarySystem = ({
   // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
   const frequencyFactor = baseFrequency / 220;
   
-  // Calculate frequency based on the modified Bode law
-  const calculateFrequencies = (baseFreq, n) => {
-    return (1 + Math.pow(2, n)) * 3 * baseFreq;
+  // Calculate frequency based on the distance mode and planet properties
+  const calculateFrequencies = (baseFreq, planet, index) => {
+    if (distanceMode === 'titiusBode') {
+      // Use Titius-Bode law formula
+      const n = index - 2; // Adjust so Earth is index 0
+      return (1 + Math.pow(2, n)) * 3 * baseFreq;
+    } else {
+      // TODO: Explain the math behind this
+      return baseFrequency * (5 * planet.actualDistance + 1);
+    }
   };
   
   // Add a ref to track initialization
@@ -151,8 +166,7 @@ const PlanetarySystem = ({
     const initialFrequencies = {};
     orbitData.forEach((planet, index) => {
       if (planet.enabled) {
-        const n = index - 2; // Adjust so Earth is index 0
-        const baseFreq = calculateFrequencies(baseFrequency, n);
+        const baseFreq = calculateFrequencies(baseFrequency, planet, index);
         initialFrequencies[planet.name] = baseFreq;
       }
     });
@@ -164,7 +178,7 @@ const PlanetarySystem = ({
     }
     
     initializedRef.current = true;
-  }, [baseFrequency, orbitData, onFrequencyChange, calculateFrequencies]);
+  }, [baseFrequency, orbitData, onFrequencyChange, distanceMode]);
   
   // Mouse event handlers for panning
   const handleMouseDown = (e) => {
@@ -301,7 +315,7 @@ const PlanetarySystem = ({
         return newAngles;
       });
     }
-  }, [setToAverageDistance, setToAphelion, setToPerihelion, orbitData]);
+  }, [setToAverageDistance, setToAphelion, setToPerihelion, orbitData, distanceMode]);
   
   // Animation loop - updates planet positions over time
   const animate = useCallback((time) => {
@@ -348,9 +362,8 @@ const PlanetarySystem = ({
         const angle = planetAngles[planet.name] || 0;
         const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
         
-        // Base frequency for this planet (when at average distance)
-        const n = index - 2; // Adjust so Earth is index 0
-        const baseFreq = calculateFrequencies(baseFrequency, n);
+        // Calculate base frequency for this planet based on distance mode
+        const baseFreq = calculateFrequencies(baseFrequency, planet, index);
         
         // Modulate frequency based on current distance
         const avgDistance = getDistance(planet);
@@ -367,7 +380,7 @@ const PlanetarySystem = ({
     
     // Request next frame
     requestRef.current = requestAnimationFrame(animate);
-  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles]);
+  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, distanceMode]);
   
   // Start/stop animation loop based on component lifecycle
   useEffect(() => {
