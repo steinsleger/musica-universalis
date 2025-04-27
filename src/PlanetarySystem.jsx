@@ -74,7 +74,7 @@ const PlanetarySystem = ({
             
             // Modulate frequency based on current distance
             const avgDistance = getDistance(planet);
-            const ratio = avgDistance / currentDistance;
+            const ratio = currentDistance / avgDistance;
             const modifiedFreq = baseFreq * Math.sqrt(ratio);
             
             updatedFrequencies[planet.name] = modifiedFreq;
@@ -354,7 +354,7 @@ const PlanetarySystem = ({
         
         // Modulate frequency based on current distance
         const avgDistance = getDistance(planet);
-        const ratio = avgDistance / currentDistance;
+        const ratio = currentDistance / avgDistance;
         const modifiedFreq = baseFreq * Math.sqrt(ratio);
         
         newFrequencies[planet.name] = modifiedFreq;
