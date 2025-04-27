@@ -1,5 +1,6 @@
 // src/PlanetarySystem.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
 
 const PlanetarySystem = ({
     orbitData,
@@ -122,33 +123,7 @@ const PlanetarySystem = ({
   
   // Calculate frequency based on the distance mode and planet properties
   const calculateFrequencies = (baseFreq, planet, index) => {
-    if (distanceMode === 'titiusBode') {
-      // Use Murch's modified formula with specific n values for each planet
-      // This creates the correct musical relationships described in the text
-      
-      // Map each planet to its specific n value according to Murch's theory
-      const murchNValues = {
-        "Mercury": -10, // Very negative n value (Beta limit)
-        "Venus": -2,
-        "Earth": -1,
-        "Mars": 0,
-        "Ceres": 1,
-        "Jupiter": 2,
-        "Saturn": 3,
-        "Uranus": 4,
-        "Neptune": 5,
-        "Pluto": 6
-      };
-      
-      // Get the appropriate n value for this planet
-      const n = murchNValues[planet.name];
-      
-      // Apply Murch's formula: Beta * (1 + 2^n * 3)
-      return baseFreq * (1 + Math.pow(2, n) * 3);
-    } else {
-      // TODO: explain the math behind this
-      return baseFrequency * (5 * planet.actualDistance + 1);
-    }
+    return calculatePlanetaryFrequency(baseFreq, planet, distanceMode);
   };
   
   // Add a ref to track initialization

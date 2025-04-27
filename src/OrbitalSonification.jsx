@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
+import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
 
 const OrbitalSonification = () => {
   // State for planetary orbit data - with Titius-Bode law distances and actual distances in AU
@@ -97,37 +98,11 @@ const OrbitalSonification = () => {
 
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
-    if (distanceMode === 'titiusBode') {
-      // Use Murch's modified formula with specific n values for each planet
-      // This creates the correct musical relationships described in the text
-      
-      // Map each planet to its specific n value according to Murch's theory
-      const murchNValues = {
-        "Mercury": -10, // Very negative n value (Beta limit)
-        "Venus": -2,
-        "Earth": -1,
-        "Mars": 0,
-        "Ceres": 1,
-        "Jupiter": 2,
-        "Saturn": 3,
-        "Uranus": 4,
-        "Neptune": 5,
-        "Pluto": 6
-      };
-      
-      // Get the appropriate n value for this planet
-      const n = murchNValues[planet.name];
-      
-      // Apply Murch's formula: Beta * (1 + 2^n * 3)
-      return baseFreq * (1 + Math.pow(2, n) * 3);
-    } else {
-      // TODO: explain the math behind this
-      return baseFrequency * (5 * planet.actualDistance + 1);
-    }
+    return calculatePlanetaryFrequency(baseFreq, planet, distanceMode);
   }, [distanceMode]);
 
-   // Function to calculate and update all frequencies
-   const updateAllFrequencies = useCallback(() => {
+  // Function to calculate and update all frequencies
+  const updateAllFrequencies = useCallback(() => {
     const defaultFrequencies = {};
     orbitData.forEach((planet, index) => {
       // Calculate frequencies based on the selected distance mode
