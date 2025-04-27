@@ -164,22 +164,13 @@ const PlanetarySystem = ({
       if (onFrequencyChange && !isPaused) {
         const updatedFrequencies = {};
         
-        orbitData.forEach((planet) => {
+        orbitData.forEach((planet, index) => {
           if (planet.enabled) {
             const angle = planetAngles[planet.name] || 0;
             const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
             
             // Calculate base frequency based on distance mode
-            let baseFreq;
-            if (distanceMode === 'titiusBode') {
-              // Use Titius-Bode law formula
-              const n = index - 2; // Adjust so Earth is index 0
-              baseFreq = (1 + Math.pow(2, n)) * 3 * (baseFrequency || 220);
-            } else {
-              // Use actual distances - with Sun as base frequency (position 0)
-              // Using a square root relationship as it's more musical
-              baseFreq = (baseFrequency || 220) * Math.sqrt(1 + planet.actualDistance);
-            }
+            const baseFreq = calculateFrequencies(baseFrequency, planet, index);
             
             // Modulate frequency based on current distance
             const avgDistance = getDistance(planet);
