@@ -5,7 +5,6 @@ import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency
 const PlanetarySystem = ({
     orbitData,
     animationSpeed = 1,
-    setAnimationSpeed,
     baseFrequency = 220,
     onFrequencyChange,
     isPaused = false,
@@ -16,31 +15,21 @@ const PlanetarySystem = ({
     setZoomLevel,
     distanceMode = 'titiusBode'
   }) => {
-  // Add animation time state that advances based on the animation speed
+    
   const [currentFrequencies, setCurrentFrequencies] = useState({});
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 }); // Track panning offset
-  const [isDragging, setIsDragging] = useState(false); // Track if user is dragging
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 }); // Starting point of drag
-  // Add animation angle state to track planet positions
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [planetAngles, setPlanetAngles] = useState({});
-  const [lastAnimatedAngles, setLastAnimatedAngles] = useState({});
-  const [isInPositionMode, setIsInPositionMode] = useState(false);
   
   const requestRef = useRef();
   const previousTimeRef = useRef();
-  const svgRef = useRef(null); // Reference to the SVG element
-  const containerRef = useRef(null); // Add new ref for the container
-  
-  // Fixed angle for all planets - 0 for horizontal right alignment
-  const fixedAngle = 0; // Initial angle for all planets
-  
-  // To avoid excessive updates, we create an object to store frequencies
+  const svgRef = useRef(null);
+  const containerRef = useRef(null);  
   const frequenciesRef = useRef({});
-  // Reference to avoid infinite loops
   const lastBaseFrequencyRef = useRef(baseFrequency);
-  
-  // Reference for distance mode to detect changes
   const distanceModeRef = useRef(distanceMode);
+  const initializedRef = useRef(false);
   
   // Constants for visualization
   const svgSize = 600;
@@ -53,47 +42,6 @@ const PlanetarySystem = ({
   
   // Max distance to calculate scaling
   const maxDistance = Math.max(...orbitData.map(planet => getDistance(planet) * (1 + planet.eccentricity)));
-  
-  // Effect to update calculations when distance mode changes
-  useEffect(() => {
-    if (distanceModeRef.current !== distanceMode) {
-      // Distance mode changed, update reference
-      distanceModeRef.current = distanceMode;
-      
-      // Recalculate frequencies if callback is provided
-      if (onFrequencyChange && !isPaused) {
-        const updatedFrequencies = {};
-        
-        orbitData.forEach((planet) => {
-          if (planet.enabled) {
-            const angle = planetAngles[planet.name] || 0;
-            const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
-            
-            // Calculate base frequency based on distance mode
-            let baseFreq;
-            if (distanceMode === 'titiusBode') {
-              // Use Titius-Bode law formula
-              const n = index - 2; // Adjust so Earth is index 0
-              baseFreq = (1 + Math.pow(2, n)) * 3 * (baseFrequency || 220);
-            } else {
-              // Use actual distances - with Sun as base frequency (position 0)
-              // Using a square root relationship as it's more musical
-              baseFreq = (baseFrequency || 220) * Math.sqrt(1 + planet.actualDistance);
-            }
-            
-            // Modulate frequency based on current distance
-            const avgDistance = getDistance(planet);
-            const ratio = currentDistance / avgDistance;
-            const modifiedFreq = baseFreq * Math.sqrt(ratio);
-            
-            updatedFrequencies[planet.name] = modifiedFreq;
-          }
-        });
-        
-        onFrequencyChange(updatedFrequencies);
-      }
-    }
-  }, [distanceMode, orbitData, planetAngles, onFrequencyChange, isPaused, baseFrequency]);
   
   // Apply a non-linear zoom scaling for better orbit separation at low zoom values
   const getEffectiveZoom = (baseZoom) => {
@@ -109,207 +57,11 @@ const PlanetarySystem = ({
     return baseZoom;
   };
   
-  // Scale factors - now with improved zoom handling that ensures visibility at zoom=1
+  // Scale factors - zoom handling that ensures visibility at zoom=1
   const effectiveZoom = getEffectiveZoom(zoomLevel);
   const orbitScaleFactor = (svgSize / 2) * 0.98 / (maxDistance / effectiveZoom);
   const minPlanetSize = 3; // Minimum size for visibility
-  
-  // Sun properties
   const sunRadius = 10; // Fixed size for better visualization
-  
-  // Calculate frequency factor - we use this to tie animation speed to base frequency
-  // We normalize by a reference frequency of 220Hz so that speeds are visually appropriate
-  const frequencyFactor = baseFrequency / 220;
-  
-  // Calculate frequency based on the distance mode and planet properties
-  const calculateFrequencies = (baseFreq, planet, index) => {
-    return calculatePlanetaryFrequency(baseFreq, planet, distanceMode);
-  };
-  
-  // Add a ref to track initialization
-  const initializedRef = useRef(false);
-  
-  // Add a ref to track the last position mode
-  const lastPositionModeRef = useRef({
-    average: false,
-    aphelion: false,
-    perihelion: false
-  });
-
-  // Add a ref to store the initial angles when position mode changes
-  const initialPositionAnglesRef = useRef({});
-  
-  // Initialize planet angles when orbitData changes
-  useEffect(() => {
-    if (!orbitData || orbitData.length === 0) return;
-    
-    // Initialize angles for all planets - all at 0 for a straight line
-    const initialAngles = {};
-    orbitData.forEach(planet => {
-      // Set all planets at angle 0 for straight line to the right
-      initialAngles[planet.name] = 0;
-    });
-    
-    setPlanetAngles(initialAngles);
-  }, [orbitData]);
-  
-  // Initialize frequencies when component mounts or baseFrequency changes
-  useEffect(() => {
-    if (initializedRef.current) return;
-    
-    const initialFrequencies = {};
-    orbitData.forEach((planet, index) => {
-      if (planet.enabled) {
-        const baseFreq = calculateFrequencies(baseFrequency, planet, index);
-        initialFrequencies[planet.name] = baseFreq;
-      }
-    });
-    
-    setCurrentFrequencies(initialFrequencies);
-    frequenciesRef.current = initialFrequencies;
-    if (onFrequencyChange) {
-      onFrequencyChange(initialFrequencies);
-    }
-    
-    initializedRef.current = true;
-  }, [baseFrequency, orbitData, onFrequencyChange, distanceMode]);
-  
-  // Mouse event handlers for panning
-  const handleMouseDown = (e) => {
-    // Only enable dragging if zoomed in
-    if (zoomLevel > 1.1) {
-      setIsDragging(true);
-      setDragStart({ 
-        x: e.clientX - panOffset.x, 
-        y: e.clientY - panOffset.y 
-      });
-    }
-  };
-  
-  const handleMouseMove = (e) => {
-    if (isDragging) {
-      const dx = e.clientX - dragStart.x;
-      const dy = e.clientY - dragStart.y;
-      
-      // Limit panning based on zoom level - the more zoomed in, the more you can pan
-      const maxPan = (zoomLevel - 1) * svgSize / 2;
-      const newX = Math.max(-maxPan, Math.min(maxPan, dx));
-      const newY = Math.max(-maxPan, Math.min(maxPan, dy));
-      
-      setPanOffset({ x: newX, y: newY });
-    }
-  };
-  
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-  
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-  
-  // Handle mouse wheel zoom
-  const handleWheel = useCallback((e) => {
-    e.preventDefault();
-    const delta = e.deltaY;
-    const zoomSpeed = 0.1;
-    
-    // Calculate new zoom level
-    const newZoom = zoomLevel * (1 + (delta > 0 ? -zoomSpeed : zoomSpeed));
-    
-    // Clamp zoom level between 1 and 20
-    const clampedZoom = Math.max(1, Math.min(20, newZoom));
-    
-    // Update zoom level through prop
-    if (setZoomLevel) {
-      setZoomLevel(clampedZoom);
-    }
-  }, [zoomLevel, setZoomLevel]);
-  
-  // Add wheel event listener with non-passive option
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: false });
-      return () => {
-        container.removeEventListener('wheel', handleWheel);
-      };
-    }
-  }, [handleWheel]);
-  
-  // Reset pan offset when zoom level changes to 1
-  useEffect(() => {
-    if (zoomLevel <= 1.1) {
-      setPanOffset({ x: 0, y: 0 });
-    }
-  }, [zoomLevel]);
-  
-  // Utility function to convert frequency to closest musical note
-  const frequencyToNote = (frequency) => {
-    if (!frequency) return "";
-    
-    // A4 is 440Hz, which is the reference
-    const A4 = 440.0;
-    // C0 is the 0th note in our system (by convention)
-    const C0 = A4 * Math.pow(2, -4.75);
-    
-    // Calculate how many half steps from C0
-    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
-    
-    // Convert to note
-    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    const octave = Math.floor(halfStepsFromC0 / 12);
-    const noteIndex = halfStepsFromC0 % 12;
-    
-    return noteNames[noteIndex] + octave;
-  };
-  
-  // Calculate the angle at which a planet is at its average distance
-  const getAverageDistanceAngle = (eccentricity) => {
-    // For an ellipse, the average distance occurs at an angle where r = a
-    // Using the polar equation of an ellipse: r = a(1-e²)/(1+e·cos(θ))
-    // Setting r = a and solving for θ:
-    // a = a(1-e²)/(1+e·cos(θ))
-    // 1 = (1-e²)/(1+e·cos(θ))
-    // 1+e·cos(θ) = 1-e²
-    // e·cos(θ) = -e²
-    // cos(θ) = -e
-    // θ = arccos(-e)
-    return Math.acos(-eccentricity);
-  };
-  
-  // Calculate the angle at which a planet is at its aphelion
-  const getAphelionAngle = () => {
-    // Aphelion occurs at angle π (180 degrees) in our coordinate system
-    return Math.PI;
-  };
-  
-  // Calculate the angle at which a planet is at its perihelion
-  const getPerihelionAngle = () => {
-    // Perihelion occurs at angle 0 (0 degrees) in our coordinate system
-    return 0;
-  };
-  
-  // Add effect to handle position jumps
-  useEffect(() => {
-    if (setToAverageDistance || setToAphelion || setToPerihelion) {
-      setPlanetAngles(prevAngles => {
-        const newAngles = { ...prevAngles };
-        orbitData.forEach(planet => {
-          if (planet.enabled) {
-            if (setToAverageDistance) {
-              newAngles[planet.name] = getAverageDistanceAngle(planet.eccentricity);
-            } else if (setToAphelion) {
-              newAngles[planet.name] = getAphelionAngle();
-            } else if (setToPerihelion) {
-              newAngles[planet.name] = getPerihelionAngle();
-            }
-          }
-        });
-        return newAngles;
-      });
-    }
-  }, [setToAverageDistance, setToAphelion, setToPerihelion, orbitData, distanceMode]);
   
   // Animation loop - updates planet positions over time
   const animate = useCallback((time) => {
@@ -376,19 +128,6 @@ const PlanetarySystem = ({
     requestRef.current = requestAnimationFrame(animate);
   }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, distanceMode]);
   
-  // Start/stop animation loop based on component lifecycle
-  useEffect(() => {
-    // Start animation loop
-    requestRef.current = requestAnimationFrame(animate);
-    
-    // Clean up on unmount
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-    };
-  }, [animate]);
-  
   // Function to notify frequency changes to the parent component
   // Throttled to avoid excessive updates
   const notifyFrequencyChanges = useCallback(() => {
@@ -396,6 +135,118 @@ const PlanetarySystem = ({
       onFrequencyChange(frequenciesRef.current);
     }
   }, [onFrequencyChange]);
+  
+  // Handle mouse wheel zoom
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY;
+    const zoomSpeed = 0.1;
+    
+    // Calculate new zoom level
+    const newZoom = zoomLevel * (1 + (delta > 0 ? -zoomSpeed : zoomSpeed));
+    
+    // Clamp zoom level between 1 and 20
+    const clampedZoom = Math.max(1, Math.min(20, newZoom));
+    
+    // Update zoom level through prop
+    if (setZoomLevel) {
+      setZoomLevel(clampedZoom);
+    }
+  }, [zoomLevel, setZoomLevel]);
+  
+  // Effect to update calculations when distance mode changes
+  useEffect(() => {
+    if (distanceModeRef.current !== distanceMode) {
+      // Distance mode changed, update reference
+      distanceModeRef.current = distanceMode;
+      
+      // Recalculate frequencies if callback is provided
+      if (onFrequencyChange && !isPaused) {
+        const updatedFrequencies = {};
+        
+        orbitData.forEach((planet) => {
+          if (planet.enabled) {
+            const angle = planetAngles[planet.name] || 0;
+            const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
+            
+            // Calculate base frequency based on distance mode
+            let baseFreq;
+            if (distanceMode === 'titiusBode') {
+              // Use Titius-Bode law formula
+              const n = index - 2; // Adjust so Earth is index 0
+              baseFreq = (1 + Math.pow(2, n)) * 3 * (baseFrequency || 220);
+            } else {
+              // Use actual distances - with Sun as base frequency (position 0)
+              // Using a square root relationship as it's more musical
+              baseFreq = (baseFrequency || 220) * Math.sqrt(1 + planet.actualDistance);
+            }
+            
+            // Modulate frequency based on current distance
+            const avgDistance = getDistance(planet);
+            const ratio = currentDistance / avgDistance;
+            const modifiedFreq = baseFreq * Math.sqrt(ratio);
+            
+            updatedFrequencies[planet.name] = modifiedFreq;
+          }
+        });
+        
+        onFrequencyChange(updatedFrequencies);
+      }
+    }
+  }, [distanceMode, orbitData, planetAngles, onFrequencyChange, isPaused, baseFrequency]);
+  
+  // Initialize planet angles when orbitData changes
+  useEffect(() => {
+    if (!orbitData || orbitData.length === 0) return;
+    
+    // Initialize angles for all planets - all at 0 for a straight line
+    const initialAngles = {};
+    orbitData.forEach(planet => {
+      // Set all planets at angle 0 for straight line to the right
+      initialAngles[planet.name] = 0;
+    });
+    
+    setPlanetAngles(initialAngles);
+  }, [orbitData]);
+  
+  // Initialize frequencies when component mounts or baseFrequency changes
+  useEffect(() => {
+    if (initializedRef.current) return;
+    
+    const initialFrequencies = {};
+    orbitData.forEach((planet, index) => {
+      if (planet.enabled) {
+        const baseFreq = calculateFrequencies(baseFrequency, planet, index);
+        initialFrequencies[planet.name] = baseFreq;
+      }
+    });
+    
+    setCurrentFrequencies(initialFrequencies);
+    frequenciesRef.current = initialFrequencies;
+    if (onFrequencyChange) {
+      onFrequencyChange(initialFrequencies);
+    }
+    
+    initializedRef.current = true;
+  }, [baseFrequency, orbitData, onFrequencyChange, distanceMode]);
+  
+  // Add wheel event listener with non-passive option
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      return () => {
+        container.removeEventListener('wheel', handleWheel);
+      };
+    }
+  }, [handleWheel]);
+  
+  // Reset pan offset when zoom level changes to 1
+  useEffect(() => {
+    if (zoomLevel <= 1.1) {
+      setPanOffset({ x: 0, y: 0 });
+    }
+  }, [zoomLevel]);
   
   // Set up a notification interval
   useEffect(() => {
@@ -415,6 +266,91 @@ const PlanetarySystem = ({
       lastBaseFrequencyRef.current = baseFrequency;
     }
   }, [baseFrequency]);
+  
+  // Add effect to handle position jumps
+  useEffect(() => {
+    if (setToAverageDistance || setToAphelion || setToPerihelion) {
+      setPlanetAngles(prevAngles => {
+        const newAngles = { ...prevAngles };
+        orbitData.forEach(planet => {
+          if (planet.enabled) {
+            if (setToAverageDistance) {
+              newAngles[planet.name] = getAverageDistanceAngle(planet.eccentricity);
+            } else if (setToAphelion) {
+              newAngles[planet.name] = getAphelionAngle();
+            } else if (setToPerihelion) {
+              newAngles[planet.name] = getPerihelionAngle();
+            }
+          }
+        });
+        return newAngles;
+      });
+    }
+  }, [setToAverageDistance, setToAphelion, setToPerihelion, orbitData, distanceMode]);
+  
+  // Start/stop animation loop based on component lifecycle
+  useEffect(() => {
+    // Start animation loop
+    requestRef.current = requestAnimationFrame(animate);
+    
+    // Clean up on unmount
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [animate]);
+  
+  // Calculate frequency based on the distance mode and planet properties
+  const calculateFrequencies = (baseFreq, planet, index) => {
+    return calculatePlanetaryFrequency(baseFreq, planet, distanceMode);
+  };
+  
+  // Utility function to convert frequency to closest musical note
+  const frequencyToNote = (frequency) => {
+    if (!frequency) return "";
+    
+    // A4 is 440Hz, which is the reference
+    const A4 = 440.0;
+    // C0 is the 0th note in our system (by convention)
+    const C0 = A4 * Math.pow(2, -4.75);
+    
+    // Calculate how many half steps from C0
+    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
+    
+    // Convert to note
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const octave = Math.floor(halfStepsFromC0 / 12);
+    const noteIndex = halfStepsFromC0 % 12;
+    
+    return noteNames[noteIndex] + octave;
+  };
+  
+  // Calculate the angle at which a planet is at its average distance
+  const getAverageDistanceAngle = (eccentricity) => {
+    // For an ellipse, the average distance occurs at an angle where r = a
+    // Using the polar equation of an ellipse: r = a(1-e²)/(1+e·cos(θ))
+    // Setting r = a and solving for θ:
+    // a = a(1-e²)/(1+e·cos(θ))
+    // 1 = (1-e²)/(1+e·cos(θ))
+    // 1+e·cos(θ) = 1-e²
+    // e·cos(θ) = -e²
+    // cos(θ) = -e
+    // θ = arccos(-e)
+    return Math.acos(-eccentricity);
+  };
+  
+  // Calculate the angle at which a planet is at its aphelion
+  const getAphelionAngle = () => {
+    // Aphelion occurs at angle π (180 degrees) in our coordinate system
+    return Math.PI;
+  };
+  
+  // Calculate the angle at which a planet is at its perihelion
+  const getPerihelionAngle = () => {
+    // Perihelion occurs at angle 0 (0 degrees) in our coordinate system
+    return 0;
+  };
   
   // Calculate current distance using the polar equation of an ellipse
   // r = a(1-e²)/(1+e·cos(θ))
@@ -503,6 +439,40 @@ const PlanetarySystem = ({
   // Calculate orbital period using Kepler's Third Law
   const getOrbitalPeriod = (distance) => {
     return Math.pow(distance, 1.5);
+  };
+  
+  // Mouse event handlers for panning
+  const handleMouseDown = (e) => {
+    // Only enable dragging if zoomed in
+    if (zoomLevel > 1.1) {
+      setIsDragging(true);
+      setDragStart({ 
+        x: e.clientX - panOffset.x, 
+        y: e.clientY - panOffset.y 
+      });
+    }
+  };
+  
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      const dx = e.clientX - dragStart.x;
+      const dy = e.clientY - dragStart.y;
+      
+      // Limit panning based on zoom level - the more zoomed in, the more you can pan
+      const maxPan = (zoomLevel - 1) * svgSize / 2;
+      const newX = Math.max(-maxPan, Math.min(maxPan, dx));
+      const newY = Math.max(-maxPan, Math.min(maxPan, dy));
+      
+      setPanOffset({ x: newX, y: newY });
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  const handleMouseLeave = () => {
+    setIsDragging(false);
   };
   
   return (
@@ -740,32 +710,9 @@ const PlanetarySystem = ({
         ))}
       </div>
       <style>
-        {`
-          .orbital-visualization {
-            background-color: #111;
-            border-radius: 8px;
-            overflow: hidden;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-          }
-          
+        {`          
           .svg-container {
             cursor: ${zoomLevel > 1.1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 550px;
-            position: relative;
-          }
-          
-          svg {
-            max-width: 100%;
-            height: auto;
-            aspect-ratio: 1 / 1;
-            display: block;
           }
         `}
       </style>

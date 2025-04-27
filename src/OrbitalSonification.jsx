@@ -1155,7 +1155,6 @@ const OrbitalSonification = () => {
           <PlanetarySystem 
             orbitData={orbitData} 
             animationSpeed={animationSpeed} 
-            setAnimationSpeed={setAnimationSpeed}
             baseFrequency={baseFrequency}
             onFrequencyChange={handleFrequencyChange}
             isPaused={isPaused}
