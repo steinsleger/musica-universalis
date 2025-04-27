@@ -66,16 +66,8 @@ const OrbitalSonification = () => {
     return defaultFrequencies;
   }, [orbitData, baseFrequency, calculateBaseFrequencies]);
 
-  // Handle frequency changes from visualization - improved to actually apply the changes
-  const handleFrequencyChange = useCallback((frequencies) => {
-    // Log frequency changes from animation occasionally
-    /*if (debug.current && Math.random() < 0.01) {
-      const freqSample = Object.entries(frequencies).map(
-        ([name, freq]) => `${name}: ${freq.toFixed(2)}`
-      ).join(', ');
-      debugAudio(`Animation frequency update: ${freqSample}`);
-    }*/
-    
+  // Handle frequency changes from visualization
+  const handleFrequencyChange = useCallback((frequencies) => {    
     const updatedFrequencies = { ...currentFrequencies, ...frequencies };
     
     // Store the new frequencies in state
@@ -192,6 +184,13 @@ const OrbitalSonification = () => {
     prevPositionMode.current = positionMode;
   }, [liveMode, isPaused, positionMode]);
   
+  // Effect to force position mode to normal so when the animation is playing,
+  // a user can click back on the same button and reset that position mode
+  useEffect(() => {
+    if (positionMode !== 'normal') {
+      setPositionMode('normal');
+    }
+  }, [positionMode]);
   
   // Now let's update the continuous audio update effect to properly check enabled status
   useEffect(() => {
