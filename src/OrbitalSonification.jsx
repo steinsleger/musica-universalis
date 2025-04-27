@@ -237,10 +237,10 @@ const OrbitalSonification = () => {
         const enabledPlanetNames = new Set(enabledPlanets.map(p => p.name));
         
         // Log status for debugging
-        if (debug.current && Math.random() < 0.05) { // Only log 5% of the time to prevent console spam
+        /*if (debug.current && Math.random() < 0.05) { // Only log 5% of the time to prevent console spam
           debugAudio(`Enabled planets: ${Array.from(enabledPlanetNames).join(', ')}`);
           debugAudio(`Active synths: ${Array.from(activeSynthsRef.current).join(', ')}`);
-        }
+        }*/
         
         // Emergency recovery if no sounds are working but should be
         const shouldHaveSounds = enabledPlanets.length > 0;
@@ -791,7 +791,7 @@ const OrbitalSonification = () => {
           // Was disabled, now enabled - start sound for THIS PLANET ONLY
           const freq = currentFrequencies[planet.name];
           if (freq) {
-            debugAudio(`Starting sound for ${planet.name} at ${freq}Hz`);
+            // debugAudio(`Starting sound for ${planet.name} at ${freq}Hz`);
             try {
               // Ensure we have a fresh synth
               createIsolatedSynth(planet.name);
@@ -918,7 +918,7 @@ const OrbitalSonification = () => {
 
   // Function to create or recreate a single synth - with complete isolation
   const createIsolatedSynth = (planetName) => {
-    debugAudio(`Creating completely isolated synth for ${planetName}`);
+    // debugAudio(`Creating completely isolated synth for ${planetName}`);
     
     try {
       // First clean up old synth if it exists
@@ -968,7 +968,7 @@ const OrbitalSonification = () => {
 
   // Safe method to start a planet's sound
   const startPlanetSound = (planetName, frequency) => {
-    debugAudio(`Starting sound for ${planetName} at ${frequency}Hz`);
+    // debugAudio(`Starting sound for ${planetName} at ${frequency}Hz`);
     
     try {
       // Skip if we're already playing this planet
@@ -997,7 +997,7 @@ const OrbitalSonification = () => {
 
   // Safe method to stop a planet's sound
   const stopPlanetSound = (planetName) => {
-    debugAudio(`Stopping sound for ${planetName}`);
+    //debugAudio(`Stopping sound for ${planetName}`);
     
     try {
       const synthObj = synthsRef.current[planetName];
