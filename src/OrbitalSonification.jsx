@@ -34,6 +34,8 @@ const OrbitalSonification = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('controls'); // 'controls' o 'planets'
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [loopSequence, setLoopSequence] = useState(false);
+  const [sequenceBPM, setSequenceBPM] = useState(60); // Default to 60 BPM
   
   const audioContextStarted = useRef(false);
   const gainNodeRef = useRef(null);
@@ -441,7 +443,7 @@ const OrbitalSonification = () => {
     };
   }, []);
 
-  // Completely rebuilt orbital sequence player
+  // Orbital sequence player
   const playOrbitalSequence = async () => {
     try {
       const audioStarted = await initializeAudioContext();
@@ -449,16 +451,16 @@ const OrbitalSonification = () => {
         debugAudio("Audio context couldn't be started");
         return;
       }
-      
+  
       if (isPlaying) {
         debugAudio("Stopping orbital sequence");
-        
+  
         // Stop sequence
         if (sequenceTimeoutRef.current) {
           clearTimeout(sequenceTimeoutRef.current);
           sequenceTimeoutRef.current = null;
         }
-        
+  
         // Safely dispose the main synth
         if (mainSynthRef.current) {
           try {
@@ -467,29 +469,29 @@ const OrbitalSonification = () => {
           } catch (err) {
             console.error("Error disposing main synth:", err);
           }
-          
+  
           // Create a new clean synth
           const newMainSynth = new Tone.PolySynth(Tone.Synth, {
             envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
             oscillator: { type: 'sine' }
           });
-          
+  
           // Connect to master gain or destination
           if (gainNodeRef.current && !gainNodeRef.current.disposed) {
             newMainSynth.connect(gainNodeRef.current);
           } else {
             newMainSynth.toDestination();
           }
-          
+  
           mainSynthRef.current = newMainSynth;
         }
-        
+  
         setIsPlaying(false);
         return;
       }
-      
+  
       debugAudio("Starting orbital sequence");
-      
+  
       // Create a fresh synth for the sequence
       if (mainSynthRef.current) {
         try {
@@ -498,48 +500,60 @@ const OrbitalSonification = () => {
           // Ignore disposal errors
         }
       }
-      
+  
       const mainSynth = new Tone.PolySynth(Tone.Synth, {
         envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
         oscillator: { type: 'sine' }
       });
-      
+  
       // Connect to master gain or destination
       if (gainNodeRef.current && !gainNodeRef.current.disposed) {
         mainSynth.connect(gainNodeRef.current);
       } else {
         mainSynth.toDestination();
       }
-      
+  
       mainSynthRef.current = mainSynth;
-      
+  
       setIsPlaying(true);
-      
-      const now = Tone.now();
+  
       const enabledPlanets = orbitData.filter(planet => planet.enabled);
-      
+  
       debugAudio(`Playing sequence with ${enabledPlanets.length} planets`);
-      
+  
+      // Calculate note duration and interval based on BPM
+      const beatDuration = 60 / sequenceBPM; // seconds per beat
+      const noteDuration = beatDuration; // 1 beat per note
+      const interval = beatDuration; // time between notes
+  
       // Schedule notes for each planet
+      const now = Tone.now();
       enabledPlanets.forEach((planet, index) => {
         const originalIndex = orbitData.findIndex(p => p.name === planet.name);
         const freq = calculateBaseFrequencies(baseFrequency, planet, originalIndex);
-        const time = now + index * 0.75;
-        
+        const time = now + index * interval;
+  
         try {
-          mainSynth.triggerAttackRelease(freq, "1n", time, 0.3);
+          mainSynth.triggerAttackRelease(freq, noteDuration, time, 0.3);
           debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
         } catch (err) {
           console.error(`Error scheduling note for ${planet.name}:`, err);
         }
       });
-      
-      // Set timeout to end playing state
+  
+      // Calculate total sequence duration
+      const sequenceDuration = enabledPlanets.length * interval;
+  
+      // Set timeout to end playing state or loop
       sequenceTimeoutRef.current = setTimeout(() => {
-        setIsPlaying(false);
-        sequenceTimeoutRef.current = null;
-        debugAudio("Sequence playback complete");
-      }, enabledPlanets.length * 750 + 500);
+        if (loopSequence) {
+          playOrbitalSequence();
+        } else {
+          setIsPlaying(false);
+          sequenceTimeoutRef.current = null;
+          debugAudio("Sequence playback complete");
+        }
+      }, sequenceDuration * 1000 + 100); // Convert to ms, add a small buffer
     } catch (error) {
       console.error("Error playing orbital sequence:", error);
       setIsPlaying(false);
@@ -858,6 +872,16 @@ const OrbitalSonification = () => {
     } catch (error) {
       console.error("Error toggling live mode:", error);
     }
+  };
+
+  // Handle BPM change
+  const handleBPMChange = (e) => {
+    setSequenceBPM(parseInt(e.target.value, 10));
+  };
+
+  // Toggle loop setting
+  const toggleLoopSequence = () => {
+    setLoopSequence(!loopSequence);
   };
 
   // Convert volume to decibels for display
@@ -1357,6 +1381,37 @@ const OrbitalSonification = () => {
                 >
                   {isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
                 </button>
+              </div>
+                
+              {/* Loop checkbox */}
+              <div className="loop-control">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={loopSequence}
+                    onChange={toggleLoopSequence}
+                    disabled={liveMode || isPlaying}
+                  />
+                  Loop Sequence
+                </label>
+              </div>
+                
+              {/* BPM control */}
+              <div className="bpm-control">
+                <label htmlFor="bpm-slider" className="label">
+                  Tempo: {sequenceBPM} BPM
+                </label>
+                <input 
+                  id="bpm-slider"
+                  type="range" 
+                  value={sequenceBPM}
+                  min={30}
+                  max={240}
+                  step={1}
+                  className="slider"
+                  onChange={handleBPMChange}
+                  disabled={liveMode || isPlaying}
+                />
               </div>
 
               <div className="master-toggle">
