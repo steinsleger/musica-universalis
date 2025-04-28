@@ -80,20 +80,18 @@ const PlanetarySystem = ({
         const newAngles = { ...prevAngles };
         
         orbitData.forEach(planet => {
-          if (planet.enabled) {
-            // Calculate orbital period (Kepler's Third Law)
-            const period = getOrbitalPeriod(getDistance(planet));
-            
-            // Convert period to radians per millisecond, scale by animation speed
-            const angularVelocity = (2 * Math.PI / (period * 20000)) * animationSpeed;
-            
-            // Update the angle
-            newAngles[planet.name] = (prevAngles[planet.name] || 0) + angularVelocity * deltaTime;
-            
-            // Normalize angle to keep within 0-2π range
-            while (newAngles[planet.name] >= 2 * Math.PI) {
-              newAngles[planet.name] -= 2 * Math.PI;
-            }
+          // Calculate orbital period (Kepler's Third Law)
+          const period = getOrbitalPeriod(getDistance(planet));
+          
+          // Convert period to radians per millisecond, scale by animation speed
+          const angularVelocity = (2 * Math.PI / (period * 20000)) * animationSpeed;
+          
+          // Update the angle
+          newAngles[planet.name] = (prevAngles[planet.name] || 0) + angularVelocity * deltaTime;
+          
+          // Normalize angle to keep within 0-2π range
+          while (newAngles[planet.name] >= 2 * Math.PI) {
+            newAngles[planet.name] -= 2 * Math.PI;
           }
         });
         
@@ -104,20 +102,18 @@ const PlanetarySystem = ({
     // Calculate and update frequencies based on current positions
     const newFrequencies = {};
     orbitData.forEach((planet, index) => {
-      if (planet.enabled) {
-        const angle = planetAngles[planet.name] || 0;
-        const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
-        
-        // Calculate base frequency for this planet based on distance mode
-        const baseFreq = calculateFrequencies(baseFrequency, planet, index);
-        
-        // Modulate frequency based on current distance
-        const avgDistance = getDistance(planet);
-        const ratio = currentDistance / avgDistance;
-        const modifiedFreq = baseFreq * Math.sqrt(ratio);
-        
-        newFrequencies[planet.name] = modifiedFreq;
-      }
+      const angle = planetAngles[planet.name] || 0;
+      const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
+      
+      // Calculate base frequency for this planet based on distance mode
+      const baseFreq = calculateFrequencies(baseFrequency, planet, index);
+      
+      // Modulate frequency based on current distance
+      const avgDistance = getDistance(planet);
+      const ratio = currentDistance / avgDistance;
+      const modifiedFreq = baseFreq * Math.sqrt(ratio);
+      
+      newFrequencies[planet.name] = modifiedFreq;
     });
     
     // Store frequencies for parent component
@@ -165,20 +161,18 @@ const PlanetarySystem = ({
         const updatedFrequencies = {};
         
         orbitData.forEach((planet, index) => {
-          if (planet.enabled) {
-            const angle = planetAngles[planet.name] || 0;
-            const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
-            
-            // Calculate base frequency based on distance mode
-            const baseFreq = calculateFrequencies(baseFrequency, planet, index);
-            
-            // Modulate frequency based on current distance
-            const avgDistance = getDistance(planet);
-            const ratio = currentDistance / avgDistance;
-            const modifiedFreq = baseFreq * Math.sqrt(ratio);
-            
-            updatedFrequencies[planet.name] = modifiedFreq;
-          }
+          const angle = planetAngles[planet.name] || 0;
+          const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
+          
+          // Calculate base frequency based on distance mode
+          const baseFreq = calculateFrequencies(baseFrequency, planet, index);
+          
+          // Modulate frequency based on current distance
+          const avgDistance = getDistance(planet);
+          const ratio = currentDistance / avgDistance;
+          const modifiedFreq = baseFreq * Math.sqrt(ratio);
+          
+          updatedFrequencies[planet.name] = modifiedFreq;
         });
         
         onFrequencyChange(updatedFrequencies);
@@ -189,6 +183,7 @@ const PlanetarySystem = ({
   // Initialize planet angles when orbitData changes
   useEffect(() => {
     if (!orbitData || orbitData.length === 0) return;
+    if (Object.keys(planetAngles).length > 0) return; // Don't reset if already set
     
     // Initialize angles for all planets - all at 0 for a straight line
     const initialAngles = {};
@@ -206,10 +201,8 @@ const PlanetarySystem = ({
     
     const initialFrequencies = {};
     orbitData.forEach((planet, index) => {
-      if (planet.enabled) {
-        const baseFreq = calculateFrequencies(baseFrequency, planet, index);
-        initialFrequencies[planet.name] = baseFreq;
-      }
+      const baseFreq = calculateFrequencies(baseFrequency, planet, index);
+      initialFrequencies[planet.name] = baseFreq;
     });
     
     setCurrentFrequencies(initialFrequencies);
@@ -264,14 +257,12 @@ const PlanetarySystem = ({
       setPlanetAngles(prevAngles => {
         const newAngles = { ...prevAngles };
         orbitData.forEach(planet => {
-          if (planet.enabled) {
-            if (setToAverageDistance) {
-              newAngles[planet.name] = getAverageDistanceAngle(planet.eccentricity);
-            } else if (setToAphelion) {
-              newAngles[planet.name] = getAphelionAngle();
-            } else if (setToPerihelion) {
-              newAngles[planet.name] = getPerihelionAngle();
-            }
+          if (setToAverageDistance) {
+            newAngles[planet.name] = getAverageDistanceAngle(planet.eccentricity);
+          } else if (setToAphelion) {
+            newAngles[planet.name] = getAphelionAngle();
+          } else if (setToPerihelion) {
+            newAngles[planet.name] = getPerihelionAngle();
           }
         });
         return newAngles;
