@@ -1304,6 +1304,7 @@ const OrbitalSonification = () => {
                   value={distanceMode}
                   onChange={handleDistanceModeChange}
                   className="select-dropdown"
+                  disabled={!isPaused}
                 >
                   <option value="titiusBode">Modified Titius-Bode Law</option>
                   <option value="actual">Actual Distances</option>
