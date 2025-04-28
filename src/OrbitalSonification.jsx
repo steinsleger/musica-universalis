@@ -35,7 +35,7 @@ const OrbitalSonification = () => {
   const [positionMode, setPositionMode] = useState('normal'); // 'normal', 'average', 'aphelion', 'perihelion'
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
-  const [zoomLevel, setZoomLevel] = useState(1); // Added zoomLevel state
+  const [zoomLevel, setZoomLevel] = useState(20); // Added zoomLevel state
   const [distanceMode, setDistanceMode] = useState('titiusBode'); // 'titiusBode' or 'actual'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('controls'); // 'controls' o 'planets'
