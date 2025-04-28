@@ -459,6 +459,36 @@ const OrbitalSonification = () => {
     };
   }, []);
 
+  // When Fletcher, reference frequency, or scaling factor changes, update all gains
+  useEffect(() => {
+    if (!liveMode) return; // Only update if in live mode
+  
+    Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
+      const planet = orbitData.find(p => p.name === planetName);
+      if (planet && planet.enabled) {
+        const synthObj = synthsRef.current[planetName];
+        if (synthObj && synthObj.gain && freq) {
+          const gain = useFletcher
+            ? calculateAdvancedFrequencyGain(freq, audioScalingConfig.current)
+            : calculateFrequencyGain(freq, audioScalingConfig.current);
+  
+          // Apply gain with smooth transition
+          const now = Tone.now();
+          synthObj.gain.gain.cancelScheduledValues(now);
+          synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
+          synthObj.gain.gain.exponentialRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+        }
+      }
+    });
+  }, [
+    useFletcher,
+    audioScalingConfig.current.referenceFrequency,
+    audioScalingConfig.current.scalingFactor,
+    liveMode,
+    orbitData,
+    currentFrequencies
+  ]);
+
   // Orbital sequence player
   const playOrbitalSequence = async () => {
     try {
