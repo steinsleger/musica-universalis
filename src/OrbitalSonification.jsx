@@ -4,6 +4,12 @@ import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
 import InfoModal from './components/InfoModal';
 import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
+import { 
+  calculateFrequencyGain, 
+  safelyTriggerNote, 
+  calculateAdvancedFrequencyGain,
+  getHumanHearingSensitivity
+} from './utils/audioScaling';
 
 const OrbitalSonification = () => {
   // State for planetary orbit data - with Titius-Bode law distances and actual distances in AU
@@ -36,6 +42,7 @@ const OrbitalSonification = () => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [loopSequence, setLoopSequence] = useState(false);
   const [sequenceBPM, setSequenceBPM] = useState(60); // Default to 60 BPM
+  const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
   
   const audioContextStarted = useRef(false);
   const gainNodeRef = useRef(null);
@@ -48,6 +55,15 @@ const OrbitalSonification = () => {
   const activeSynthsRef = useRef(new Set());
   const audioInitializedRef = useRef(false);
   const prevPositionMode = useRef(positionMode);
+  const gainNodesRef = useRef({});
+  const audioScalingConfig = useRef({
+    referenceFrequency: 55,
+    scalingFactor: 0.4,
+    minimumGain: 0.05,
+    maximumGain: 1.2,
+    highFrequencyCutoff: 2000,
+    highFrequencyScalingFactor: 0.6,
+  });
 
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
@@ -942,8 +958,6 @@ const OrbitalSonification = () => {
 
   // Function to create or recreate a single synth - with complete isolation
   const createIsolatedSynth = (planetName) => {
-    // debugAudio(`Creating completely isolated synth for ${planetName}`);
-    
     try {
       // First clean up old synth if it exists
       if (synthsRef.current[planetName]) {
@@ -963,12 +977,19 @@ const OrbitalSonification = () => {
       }
       
       // Create a fresh planet-specific gain node for complete isolation
-      const planetGain = new Tone.Gain(masterVolume);
+      const planetGain = new Tone.Gain(1.0);
       
-      // Create a fresh synth
+      // Create a fresh synth with improved settings for better sound quality
       const newSynth = new Tone.Synth({
-        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-        oscillator: { type: 'sine' }
+        envelope: {
+          attack: 0.05, // Slightly softer attack to reduce clicks
+          decay: 0.1,
+          sustain: 0.4, // Increased sustain for better presence
+          release: 1.2  // Slightly longer release for smoother sound
+        },
+        oscillator: {
+          type: 'sine' // Using 'sine' for cleaner sound, especially at high frequencies
+        }
       });
       
       // Connect the synth to its own gain node
@@ -992,8 +1013,6 @@ const OrbitalSonification = () => {
 
   // Safe method to start a planet's sound
   const startPlanetSound = (planetName, frequency) => {
-    // debugAudio(`Starting sound for ${planetName} at ${frequency}Hz`);
-    
     try {
       // Skip if we're already playing this planet
       if (activeSynthsRef.current.has(planetName)) {
@@ -1009,8 +1028,26 @@ const OrbitalSonification = () => {
         if (!synthObj || !synthObj.synth) return false;
       }
       
-      // Start the sound
-      synthObj.synth.triggerAttack(frequency);
+      // Calculate gain using the selected scaling method
+      const gain = useFletcher
+        ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig.current)
+        : calculateFrequencyGain(frequency, audioScalingConfig.current);
+      
+      // Apply gain to the gain node
+      if (synthObj.gain) {
+        synthObj.gain.gain.value = gain;
+      }
+      
+      // Start the sound with safe triggering
+      safelyTriggerNote(
+        synthObj.synth,
+        frequency,
+        0.7, // Default velocity
+        null, // No duration for sustained notes
+        synthObj.gain,
+        audioScalingConfig.current
+      );
+      
       activeSynthsRef.current.add(planetName);
       return true;
     } catch (err) {
@@ -1075,7 +1112,22 @@ const OrbitalSonification = () => {
         if (debug.current && Math.random() < 0.01) { // Log only occasionally to reduce spam
           debugAudio(`${planetName} freq change: ${currentFreq.toFixed(2)} → ${frequency.toFixed(2)} Hz`);
         }
+        
+        // Calculate new gain based on frequency
+        const gain = useFletcher
+          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig.current)
+          : calculateFrequencyGain(frequency, audioScalingConfig.current);
+        
+        // Update frequency
         synthObj.synth.frequency.value = frequency;
+        
+        // Update gain with smooth transition
+        if (synthObj.gain) {
+          const now = Tone.now();
+          synthObj.gain.gain.cancelScheduledValues(now);
+          synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
+          synthObj.gain.gain.exponentialRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+        }
       }
       
       return true;
@@ -1168,6 +1220,56 @@ const OrbitalSonification = () => {
     const noteIndex = halfStepsFromC0 % 12;
     
     return noteNames[noteIndex] + octave;
+  };
+
+  // Get the current gain for each planet
+  const getFrequencyGain = (planetName) => {
+    const freq = currentFrequencies[planetName];
+    if (!freq) return "N/A";
+    
+    const gain = getAdjustedGain(freq);
+    return gain.toFixed(2);
+  };
+
+  // Get human hearing sensitivity at a given frequency - for informational display
+  const getHearingSensitivity = (planetName) => {
+    const freq = currentFrequencies[planetName];
+    if (!freq) return "N/A";
+    
+    const sensitivity = getHumanHearingSensitivity(freq);
+    return (sensitivity * 100).toFixed(0) + "%";
+  };
+
+  // Calculate gain based on frequency - using imported utility
+  const getAdjustedGain = useCallback((frequency) => {
+    if (!frequency) return 1.0;
+    
+    return useFletcher 
+      ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig.current)
+      : calculateFrequencyGain(frequency, audioScalingConfig.current);
+  }, [useFletcher]);
+
+  // Toggle advanced Fletcher-Munson curves for even better audio quality
+  const toggleFletcherCurves = () => {
+    setUseFletcher(!useFletcher);
+    
+    // Update the gains immediately when switching models
+    if (liveMode && isPaused) {
+      Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
+        const planet = orbitData.find(p => p.name === planetName);
+        if (planet && planet.enabled) {
+          const gainNode = gainNodesRef.current[planetName];
+          if (gainNode && freq) {
+            // Toggle immediately applies the new gain calculation method
+            const newGain = !useFletcher 
+              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig.current)
+              : calculateFrequencyGain(freq, audioScalingConfig.current);
+              
+            gainNode.gain.value = newGain;
+          }
+        }
+      });
+    }
   };
 
   return (
@@ -1272,6 +1374,12 @@ const OrbitalSonification = () => {
               onClick={() => setActiveTab('planets')}
             >
               Planets
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'audio' ? 'active' : ''}`}
+              onClick={() => setActiveTab('audio')}
+            >
+              Audio
             </button>
           </div>
           
@@ -1457,8 +1565,13 @@ const OrbitalSonification = () => {
                             ? `${currentFrequencies[planet.name].toFixed(1)} Hz`
                             : "Calculating..."}
                         </span>
-                      </div>
-                      <div className="planet-data">
+                      </div>                      
+                    </div>
+
+                    
+                    {/* Note info section */}
+                    <div className="planet-info">
+                      <div className="planet-data planet-data__note">
                         <span className="data-label">Note:</span>
                         <span className="data-value note-value">
                           {currentFrequencies[planet.name] 
@@ -1467,8 +1580,144 @@ const OrbitalSonification = () => {
                         </span>
                       </div>
                     </div>
+                    
+                    {/* Gain info section */}
+                    <div className="planet-gain-info">
+                      <span className="data-label">Gain:</span>
+                      <span className="data-value gain-value">
+                        {getFrequencyGain(planet.name)}
+                      </span>
+                      <div className="gain-bar-container">
+                        <div 
+                          className="gain-bar" 
+                          style={{
+                            width: `${parseFloat(getFrequencyGain(planet.name)) * 100}%`,
+                            backgroundColor: getPlanetColor(planet.name),
+                            opacity: planet.enabled ? 0.8 : 0.3
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {/* Ear sensitivity indicator */}
+                    {useFletcher && (
+                    <div className="planet-sensitivity-info">
+                      <span className="data-label">Ear Sensitivity:</span>
+                      <span className="data-value sensitivity-value">
+                        {getHearingSensitivity(planet.name)}
+                      </span>
+                      <div className="sensitivity-bar-container">
+                        <div 
+                          className="sensitivity-bar" 
+                          style={{
+                            width: `${parseFloat(getHearingSensitivity(planet.name))}%`,
+                            backgroundColor: `rgba(255, ${200 - parseInt(getHearingSensitivity(planet.name)) * 2}, 0, 0.8)`,
+                            opacity: planet.enabled ? 0.8 : 0.3
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Audio tab with advanced settings */}
+          {activeTab === 'audio' && (
+            <div className="sidebar-content audio-tab fade-in">
+              <div className="audio-info-banner">
+                <h3>Audio Safety Features</h3>
+                <p>
+                  This application includes several features to protect your hearing:
+                </p>
+                <ul>
+                  <li>Automatic frequency-dependent volume scaling</li>
+                  <li>Extra attenuation for high frequencies</li>
+                  <li>Optional Fletcher-Munson equal-loudness contour modeling</li>
+                </ul>
+              </div>
+              
+              <div className="audio-settings">
+                <h3>Advanced Settings</h3>
+                
+                <div className="fletcher-toggle">
+                  <label className="checkbox-label">
+                    <input 
+                      type="checkbox"
+                      checked={useFletcher}
+                      onChange={toggleFletcherCurves}
+                    />
+                    Use Fletcher-Munson equal-loudness curves
+                  </label>
+                  <p className="setting-description">
+                    Models how human hearing perceives different frequencies for more balanced sound
+                  </p>
+                </div>
+                
+                {/* Reference frequency setting */}
+                <div className="control-group">
+                  <label htmlFor="reference-frequency" className="label">
+                    Reference Frequency: {audioScalingConfig.current.referenceFrequency.toFixed(1)} Hz
+                  </label>
+                  <input 
+                    id="reference-frequency"
+                    type="range" 
+                    value={audioScalingConfig.current.referenceFrequency}
+                    min={27.5}
+                    max={110}
+                    step={0.5}
+                    className="slider"
+                    onChange={(e) => {
+                      audioScalingConfig.current.referenceFrequency = parseFloat(e.target.value);
+                      // Force a re-render to update the display
+                      setBaseFrequency(prev => prev + 0.001);
+                      setTimeout(() => setBaseFrequency(prev => prev - 0.001), 10);
+                    }}
+                  />
+                  <p className="setting-description">
+                    The frequency at which volume is not reduced (baseline)
+                  </p>
+                </div>
+                
+                {/* Scaling factor setting */}
+                <div className="control-group">
+                  <label htmlFor="scaling-factor" className="label">
+                    Scaling Factor: {audioScalingConfig.current.scalingFactor.toFixed(1)}
+                  </label>
+                  <input 
+                    id="scaling-factor"
+                    type="range" 
+                    value={audioScalingConfig.current.scalingFactor}
+                    min={0.1}
+                    max={1.0}
+                    step={0.1}
+                    className="slider"
+                    onChange={(e) => {
+                      audioScalingConfig.current.scalingFactor = parseFloat(e.target.value);
+                      // Force a re-render
+                      setBaseFrequency(prev => prev + 0.001);
+                      setTimeout(() => setBaseFrequency(prev => prev - 0.001), 10);
+                    }}
+                  />
+                  <p className="setting-description">
+                    How aggressively to reduce volume at higher frequencies
+                  </p>
+                </div>
+                
+                <div className="audio-explanation">
+                  <h4>Safety Measures Explained</h4>
+                  <p>
+                    Higher frequencies can be more damaging to hearing at the same volume level.
+                    Our audio engine automatically reduces volume for higher notes to create a
+                    safer and more balanced listening experience.
+                  </p>
+                  <p>
+                    The Fletcher-Munson curves model how human ears perceive loudness
+                    differently at different frequencies, providing even more natural sound.
+                  </p>
+                </div>
               </div>
             </div>
           )}
