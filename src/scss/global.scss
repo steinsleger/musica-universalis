@@ -234,6 +234,19 @@ svg text {
   padding: 20px 20px var(--space-lg) 20px;
   scrollbar-color: var(--color-accent-primary) rgba(30, 30, 53, 0.3);
   scrollbar-width: thin;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Preserve interactivity for form elements */
+.sidebar-content input,
+.sidebar-content select,
+.sidebar-content button,
+.sidebar-content [role="button"],
+.sidebar-content [role="slider"] {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
 }
 
 .sidebar-content::-webkit-scrollbar {
