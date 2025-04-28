@@ -20,6 +20,9 @@ import * as Tone from 'tone';
  * @returns {number} The calculated gain value between minimumGain and maximumGain
  */
 export const calculateFrequencyGain = (frequency, options = {}) => {
+    // Add debugging in production
+    //console.log("[GAIN CALC] calculateFrequencyGain called with:", frequency, options);
+    
     // Default configuration values
     const {
       referenceFrequency = 55,       // A1 is our reference point
@@ -45,6 +48,7 @@ export const calculateFrequencyGain = (frequency, options = {}) => {
     // Ensure gain stays within reasonable limits
     gain = Math.max(minimumGain, Math.min(maximumGain, gain));
     
+    //console.log("[GAIN CALC] Result:", gain);
     return gain;
   };
   
@@ -61,25 +65,54 @@ export const calculateFrequencyGain = (frequency, options = {}) => {
   export const safelyTriggerNote = (synth, frequency, velocity = 0.7, duration, gainNode = null, options = {}) => {
     if (!synth || !frequency) return;
     
+    //console.log("[SAFE TRIGGER] Called with:", { frequency, velocity, gainNode: !!gainNode });
+    
     // Calculate safe gain
     const gain = calculateFrequencyGain(frequency, options);
+    //console.log("[SAFE TRIGGER] Calculated gain:", gain);
     
     // Apply gain if a gain node is provided
     if (gainNode) {
-      const now = Tone.now();
-      gainNode.gain.cancelScheduledValues(now);
-      gainNode.gain.setValueAtTime(gainNode.gain.value, now);
-      gainNode.gain.exponentialRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+      try {
+        //console.log("[SAFE TRIGGER] Setting gain node value to:", gain);
+        const now = Tone.now();
+        gainNode.gain.cancelScheduledValues(now);
+        gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+        gainNode.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+        
+        // Direct set as a backup method - this seems to be needed in production builds
+        setTimeout(() => {
+          try {
+            gainNode.gain.value = gain;
+            //console.log("[SAFE TRIGGER] Direct gain set:", gain);
+          } catch (err) {
+            console.error("[SAFE TRIGGER] Error with direct gain set:", err);
+          }
+        }, 60);
+      } catch (err) {
+        console.error("[SAFE TRIGGER] Error setting gain:", err);
+        // Try direct set as a fallback
+        try {
+          gainNode.gain.value = gain;
+        } catch (directErr) {
+          console.error("[SAFE TRIGGER] Direct gain set also failed:", directErr);
+        }
+      }
     }
     
     // Adjust velocity based on frequency
     const safeVelocity = velocity * (gainNode ? 1 : gain);
     
     // Play the note
-    if (duration) {
-      synth.triggerAttackRelease(frequency, duration, undefined, safeVelocity);
-    } else {
-      synth.triggerAttack(frequency, undefined, safeVelocity);
+    try {
+      if (duration) {
+        synth.triggerAttackRelease(frequency, duration, undefined, safeVelocity);
+      } else {
+        synth.triggerAttack(frequency, undefined, safeVelocity);
+      }
+      //console.log("[SAFE TRIGGER] Note triggered successfully");
+    } catch (err) {
+      console.error("[SAFE TRIGGER] Error triggering note:", err);
     }
   };
   
@@ -91,6 +124,8 @@ export const calculateFrequencyGain = (frequency, options = {}) => {
    * @returns {number} Relative sensitivity (higher = more sensitive)
    */
   export const getHumanHearingSensitivity = (frequency) => {
+    //console.log("[HEARING] getHumanHearingSensitivity called with:", frequency);
+    
     // Simple approximation of Fletcher-Munson curves
     // Human hearing is most sensitive around 2-5kHz
     
@@ -113,7 +148,9 @@ export const calculateFrequencyGain = (frequency, options = {}) => {
       sensitivity *= frequency / 100;
     }
     
-    return Math.max(0.01, sensitivity);
+    const result = Math.max(0.01, sensitivity);
+    //console.log("[HEARING] Result:", result);
+    return result;
   };
   
   /**
@@ -125,6 +162,8 @@ export const calculateFrequencyGain = (frequency, options = {}) => {
    * @returns {number} The calculated gain value
    */
   export const calculateAdvancedFrequencyGain = (frequency, options = {}) => {
+    //console.log("[ADV GAIN] calculateAdvancedFrequencyGain called with:", frequency, options);
+    
     // Get basic logarithmic scaling
     const baseGain = calculateFrequencyGain(frequency, options);
     
@@ -143,5 +182,6 @@ export const calculateFrequencyGain = (frequency, options = {}) => {
     finalGain = Math.max(options.minimumGain || 0.05, 
                         Math.min(options.maximumGain || 1.2, finalGain));
     
+    //console.log("[ADV GAIN] Final result:", finalGain);
     return finalGain;
   };

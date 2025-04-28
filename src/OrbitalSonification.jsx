@@ -413,19 +413,6 @@ const OrbitalSonification = () => {
     }
   }, [baseFrequency, liveMode, isPaused, orbitData, calculateBaseFrequencies]);
 
-  // Add this useEffect before any audio implementation functions to log initialization
-  useEffect(() => {
-    console.log("Component initialized");
-    
-    // Set debug flag for audio diagnostics
-    debug.current = true;
-    
-    // Cleanup function
-    return () => {
-      console.log("Component unmounting");
-    };
-  }, []);
-
   // Initialize Tone.js when the component mounts - just once
   useEffect(() => {
     const initializeTone = async () => {
@@ -434,7 +421,7 @@ const OrbitalSonification = () => {
         if (Tone.context.state !== 'running') {
           try {
             await Tone.start();
-            console.log("Tone.js initialized");
+            //console.log("Tone.js initialized");
           } catch (err) {
             console.error("Failed to start Tone:", err);
           }
@@ -448,7 +435,7 @@ const OrbitalSonification = () => {
     
     // Cleanup when component unmounts
     return () => {
-      console.log("Cleaning up Tone.js");
+      //console.log("Cleaning up Tone.js");
       try {
         // Try to clean up Tone.js resources
         Tone.Transport.stop();
@@ -462,6 +449,15 @@ const OrbitalSonification = () => {
   // When Fletcher, reference frequency, or scaling factor changes, update all gains
   useEffect(() => {
     if (!liveMode) return; // Only update if in live mode
+
+    /*console.log('[DEBUG] Audio scaling update:', {
+      useFletcher,
+      audioScalingConfig,
+      activeSynths: Array.from(activeSynthsRef.current)
+    });*/
+
+    // Force a reinitialization flag on audio scaling config change
+    window.lastAudioUpdate = Date.now();
   
     Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
       const planet = orbitData.find(p => p.name === planetName);
@@ -472,11 +468,35 @@ const OrbitalSonification = () => {
             ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
             : calculateFrequencyGain(freq, audioScalingConfig);
   
-          // Apply gain with smooth transition
-          const now = Tone.now();
-          synthObj.gain.gain.cancelScheduledValues(now);
-          synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
-          synthObj.gain.gain.exponentialRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+          //console.log(`[DEBUG] Setting gain for ${planetName}: ${gain.toFixed(3)} (freq: ${freq.toFixed(1)}Hz, useFletcher: ${useFletcher})`);
+  
+          // Apply gain with both methods for maximum compatibility
+          try {
+            // Method 1: Parameter automation (works well in development)
+            const now = Tone.now();
+            synthObj.gain.gain.cancelScheduledValues(now);
+            synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
+            synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+            
+            // Method 2: Direct value setting with delay (works better in production)
+            setTimeout(() => {
+              try {
+                synthObj.gain.gain.value = gain;
+                //console.log(`[CONFIG] Direct gain set for ${planetName}: ${gain.toFixed(3)}`);
+              } catch (directErr) {
+                console.error(`[CONFIG] Error in direct gain set:`, directErr);
+              }
+            }, 60);
+          } catch (err) {
+            console.error(`[CONFIG] Error updating gain for ${planetName}:`, err);
+            
+            // Fallback: try direct value setting immediately
+            try {
+              synthObj.gain.gain.value = gain;
+            } catch (directErr) {
+              console.error(`[CONFIG] Fallback direct gain set also failed:`, directErr);
+            }
+          }
         }
       }
     });
@@ -694,6 +714,7 @@ const OrbitalSonification = () => {
       
       // 3. Clear references
       synthsRef.current = {};
+      gainNodesRef.current = {};
       activeSynthsRef.current.clear();
       
       // 4. Wait a small amount of time to allow audio system to stabilize
@@ -717,6 +738,7 @@ const OrbitalSonification = () => {
       }
       
       // 6. Create fresh synths for all planets
+      //console.log('[RECREATE] Creating synths with volume scaling applied');
       for (const planet of orbitData) {
         try {
           createIsolatedSynth(planet.name);
@@ -755,6 +777,11 @@ const OrbitalSonification = () => {
           console.error("Failed to start any planet sounds during reset");
           return false;
         }
+        
+        // Force immediate volume scaling recalculation on all active planets
+        setTimeout(() => {
+          forceRecalculateAllGains();
+        }, 100);
       }
       
       return true;
@@ -762,6 +789,44 @@ const OrbitalSonification = () => {
       console.error("Failed to recreate audio system:", err);
       return false;
     }
+  };
+  
+  // Function to force recalculation of all gain values
+  const forceRecalculateAllGains = () => {
+    //console.log("[FORCE RECALC] Recalculating all gains");
+    
+    Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
+      const planet = orbitData.find(p => p.name === planetName);
+      if (planet && planet.enabled) {
+        const synthObj = synthsRef.current[planetName];
+        if (synthObj && synthObj.gain && freq) {
+          try {
+            // Calculate gain using current settings
+            const gain = useFletcher
+              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
+              : calculateFrequencyGain(freq, audioScalingConfig);
+            
+            //console.log(`[FORCE RECALC] ${planetName}: freq=${freq.toFixed(1)}, gain=${gain.toFixed(3)}`);
+            
+            // Apply gain with both methods
+            try {
+              // Set gain immediately
+              synthObj.gain.gain.value = gain;
+              
+              // Also use parameter automation for smoothness
+              const now = Tone.now();
+              synthObj.gain.gain.cancelScheduledValues(now);
+              synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
+              synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+            } catch (err) {
+              console.error(`[FORCE RECALC] Error setting gain:`, err);
+            }
+          } catch (err) {
+            console.error(`[FORCE RECALC] Error calculating gain:`, err);
+          }
+        }
+      }
+    });
   };
 
   // Audio Context Management - Completely independent of other systems
@@ -911,6 +976,12 @@ const OrbitalSonification = () => {
           console.error("Failed to reset audio system when entering live mode");
           return;
         }
+        
+        // Force recalculation of all gains right after enabling live mode
+        // Use multiple timeouts at different intervals for maximum reliability
+        setTimeout(() => forceRecalculateAllGains(), 100);
+        setTimeout(() => forceRecalculateAllGains(), 300);
+        setTimeout(() => forceRecalculateAllGains(), 1000);
       }
       
       // Update the state last, after audio operations are complete
@@ -1006,8 +1077,28 @@ const OrbitalSonification = () => {
         }
       }
       
+      // For initial gain value, calculate based on frequency if available
+      let initialGain = 1.0;
+      
+      // Pre-calculate appropriate gain if frequency is available
+      if (currentFrequencies[planetName]) {
+        try {
+          const frequency = currentFrequencies[planetName];
+          //console.log(`[CREATE SYNTH] Pre-calculating gain for ${planetName} at ${frequency}Hz`);
+          
+          initialGain = useFletcher 
+            ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+            : calculateFrequencyGain(frequency, audioScalingConfig);
+            
+          //console.log(`[CREATE SYNTH] Initial gain will be ${initialGain.toFixed(3)}`);
+        } catch (err) {
+          console.error(`[CREATE SYNTH] Error pre-calculating gain:`, err);
+        }
+      }
+      
       // Create a fresh planet-specific gain node for complete isolation
-      const planetGain = new Tone.Gain(1.0);
+      const planetGain = new Tone.Gain(initialGain);
+      //console.log(`[CREATE SYNTH] Created gain node with initial value ${planetGain.gain.value}`);
       
       // Create a fresh synth with improved settings for better sound quality
       const newSynth = new Tone.Synth({
@@ -1034,6 +1125,9 @@ const OrbitalSonification = () => {
         gain: planetGain
       };
       
+      // Also store in gainNodesRef for consistent access
+      gainNodesRef.current[planetName] = planetGain;
+      
       return synthsRef.current[planetName];
     } catch (err) {
       console.error(`Failed to create isolated synth for ${planetName}:`, err);
@@ -1058,14 +1152,31 @@ const OrbitalSonification = () => {
         if (!synthObj || !synthObj.synth) return false;
       }
       
-      // Calculate gain using the selected scaling method
-      const gain = useFletcher
-        ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
-        : calculateFrequencyGain(frequency, audioScalingConfig);
+      // Calculate gain using the selected scaling method - with more debugging
+      //console.log(`[DEBUG startPlanetSound] Calculating gain for ${planetName} at ${frequency}Hz (useFletcher=${useFletcher})`);
+      //console.log(`[DEBUG startPlanetSound] audioScalingConfig:`, audioScalingConfig);
+      
+      let gain;
+      try {
+        gain = useFletcher
+          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+          : calculateFrequencyGain(frequency, audioScalingConfig);
+          
+        //(`[DEBUG startPlanetSound] Calculated gain: ${gain}`);
+      } catch (err) {
+        console.error(`[ERROR] Failed to calculate gain for ${planetName}:`, err);
+        gain = 0.5; // Fallback value
+      }
+      
+      // Debug log
+      //console.log(`[DEBUG] Starting ${planetName} sound at ${frequency.toFixed(1)}Hz with gain ${gain.toFixed(3)} (useFletcher: ${useFletcher})`);
       
       // Apply gain to the gain node
       if (synthObj.gain) {
         synthObj.gain.gain.value = gain;
+        
+        // Store in gainNodesRef for later access
+        gainNodesRef.current[planetName] = synthObj.gain;
       }
       
       // Start the sound with safe triggering
@@ -1143,20 +1254,43 @@ const OrbitalSonification = () => {
           debugAudio(`${planetName} freq change: ${currentFreq.toFixed(2)} → ${frequency.toFixed(2)} Hz`);
         }
         
-        // Calculate new gain based on frequency
-        const gain = useFletcher
-          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
-          : calculateFrequencyGain(frequency, audioScalingConfig);
+        // Calculate new gain based on frequency using getAdjustedGain for consistency
+        const gain = getAdjustedGain(frequency);
+        
+        // Log for debugging in production
+        //console.log(`[UPDATE FREQ] ${planetName}: freq=${frequency.toFixed(1)}, gain=${gain.toFixed(3)}, useFletcher=${useFletcher}`);
         
         // Update frequency
         synthObj.synth.frequency.value = frequency;
         
-        // Update gain with smooth transition
+        // Update gain with smooth transition AND direct value setting for production compatibility
         if (synthObj.gain) {
-          const now = Tone.now();
-          synthObj.gain.gain.cancelScheduledValues(now);
-          synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
-          synthObj.gain.gain.exponentialRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+          try {
+            // Method 1: Use parameter automation (works well in development)
+            const now = Tone.now();
+            synthObj.gain.gain.cancelScheduledValues(now);
+            synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
+            synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+            
+            // Method 2: Direct value setting with delay (works better in production)
+            setTimeout(() => {
+              try {
+                synthObj.gain.gain.value = gain;
+               //console.log(`[UPDATE FREQ] Direct gain set: ${gain.toFixed(3)}`);
+              } catch (directErr) {
+                console.error(`[UPDATE FREQ] Error in direct gain set:`, directErr);
+              }
+            }, 60);
+          } catch (err) {
+            console.error(`[UPDATE FREQ] Error updating gain:`, err);
+            
+            // Fallback: try direct value setting
+            try {
+              synthObj.gain.gain.value = gain;
+            } catch (directErr) {
+              console.error(`[UPDATE FREQ] Fallback direct gain set also failed:`, directErr);
+            }
+          }
         }
       }
       
@@ -1270,37 +1404,100 @@ const OrbitalSonification = () => {
     return (sensitivity * 100).toFixed(0) + "%";
   };
 
-  // Calculate gain based on frequency - using imported utility
+  // Calculate gain based on frequency - using imported utility with better error handling
   const getAdjustedGain = useCallback((frequency) => {
     if (!frequency) return 1.0;
     
-    return useFletcher 
-      ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
-      : calculateFrequencyGain(frequency, audioScalingConfig);
-  }, [useFletcher]);
+    // Add debugging
+    //console.log(`[DEBUG getAdjustedGain] frequency=${frequency}, useFletcher=${useFletcher}, config=`, audioScalingConfig);
+    
+    // First try the regular functions with error handling
+    try {
+      const result = useFletcher 
+        ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+        : calculateFrequencyGain(frequency, audioScalingConfig);
+      
+      //console.log(`[DEBUG getAdjustedGain] result=${result}`);
+      return result;
+    } catch (err) {
+      console.error(`[ERROR getAdjustedGain] Error using regular functions:`, err);
+      
+      // If regular functions fail, try the test functions
+      try {
+        //console.log(`[DEBUG getAdjustedGain] Falling back to test functions`);
+        const result = useFletcher 
+          ? testCalculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+          : testCalculateFrequencyGain(frequency, audioScalingConfig);
+        
+        //console.log(`[DEBUG getAdjustedGain] test result=${result}`);
+        return result;
+      } catch (testErr) {
+        console.error(`[ERROR getAdjustedGain] Error using test functions:`, testErr);
+        
+        // If all else fails, use a safe fallback
+        //console.log(`[DEBUG getAdjustedGain] Using fallback value of 1.0`);
+        return 1.0;
+      }
+    }
+  }, [useFletcher, audioScalingConfig]);
 
   // Toggle advanced Fletcher-Munson curves for even better audio quality
-  const toggleFletcherCurves = () => {
-    setUseFletcher(!useFletcher);
+  const toggleFletcherCurves = useCallback(() => {
+    //console.log(`[DEBUG] Toggling Fletcher curves from ${useFletcher} to ${!useFletcher}`);
     
-    // Update the gains immediately when switching models
-    if (liveMode && isPaused) {
-      Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
-        const planet = orbitData.find(p => p.name === planetName);
-        if (planet && planet.enabled) {
-          const gainNode = gainNodesRef.current[planetName];
-          if (gainNode && freq) {
-            // Toggle immediately applies the new gain calculation method
-            const newGain = !useFletcher 
-              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
-              : calculateFrequencyGain(freq, audioScalingConfig);
+    setUseFletcher(prev => {
+      const newValue = !prev;
+      //console.log(`[DEBUG] Fletcher toggle new value: ${newValue}`);
+      
+      // Force immediate gain recalculation for all active planets
+      if (liveMode) {
+        Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
+          const planet = orbitData.find(p => p.name === planetName);
+          if (planet && planet.enabled) {
+            const synthObj = synthsRef.current[planetName];
+            if (synthObj && synthObj.gain && freq) {
+              // Force recalculation with the new Fletcher mode value
+              const gain = newValue
+                ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
+                : calculateFrequencyGain(freq, audioScalingConfig);
               
-            gainNode.gain.value = newGain;
+              //console.log(`[DEBUG] Toggle recalculated gain for ${planetName}: ${gain.toFixed(4)}`);
+                
+              // Apply gain with both methods for maximum compatibility
+              try {
+                // Method 1: Parameter automation (works well in development)
+                const now = Tone.now();
+                synthObj.gain.gain.cancelScheduledValues(now);
+                synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
+                synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+                
+                // Method 2: Direct value setting with delay (works better in production)
+                setTimeout(() => {
+                  try {
+                    synthObj.gain.gain.value = gain;
+                    //console.log(`[FLETCHER] Direct gain set for ${planetName}: ${gain.toFixed(3)}`);
+                  } catch (directErr) {
+                    console.error(`[FLETCHER] Error in direct gain set:`, directErr);
+                  }
+                }, 60);
+              } catch (err) {
+                console.error(`[FLETCHER] Error updating gain for ${planetName}:`, err);
+                
+                // Fallback: try direct value setting immediately
+                try {
+                  synthObj.gain.gain.value = gain;
+                } catch (directErr) {
+                  console.error(`[FLETCHER] Fallback direct gain set also failed:`, directErr);
+                }
+              }
+            }
           }
-        }
-      });
-    }
-  };
+        });
+      }
+      
+      return newValue;
+    });
+  }, [liveMode, orbitData, currentFrequencies, audioScalingConfig]);
 
   return (
     <div 
@@ -1700,10 +1897,18 @@ const OrbitalSonification = () => {
                     step={0.5}
                     className="slider"
                     onChange={(e) => {
+                      const newValue = parseFloat(e.target.value);
+                      //console.log(`[REF FREQ] Changing to ${newValue}`);
+                      
                       setAudioScalingConfig(cfg => ({
                         ...cfg,
-                        referenceFrequency: parseFloat(e.target.value)
+                        referenceFrequency: newValue
                       }));
+                      
+                      // Force immediate recalculation
+                      setTimeout(() => {
+                        forceRecalculateAllGains();
+                      }, 10);
                     }}
                   />
                   <p className="setting-description">
@@ -1725,10 +1930,18 @@ const OrbitalSonification = () => {
                     step={0.1}
                     className="slider"
                     onChange={(e) => {
+                      const newValue = parseFloat(e.target.value);
+                      //console.log(`[SCALING] Changing to ${newValue}`);
+                      
                       setAudioScalingConfig(cfg => ({
                         ...cfg,
-                        scalingFactor: parseFloat(e.target.value)
+                        scalingFactor: newValue
                       }));
+                      
+                      // Force immediate recalculation
+                      setTimeout(() => {
+                        forceRecalculateAllGains();
+                      }, 10);
                     }}
                   />
                   <p className="setting-description">
@@ -1753,6 +1966,7 @@ const OrbitalSonification = () => {
           )}
         </div>
       </div>
+      
       <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
     </div>
   );
