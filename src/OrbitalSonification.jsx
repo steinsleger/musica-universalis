@@ -43,6 +43,14 @@ const OrbitalSonification = () => {
   const [loopSequence, setLoopSequence] = useState(false);
   const [sequenceBPM, setSequenceBPM] = useState(60); // Default to 60 BPM
   const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
+  const [audioScalingConfig, setAudioScalingConfig] = useState({
+    referenceFrequency: 55,
+    scalingFactor: 0.4,
+    minimumGain: 0.05,
+    maximumGain: 1.2,
+    highFrequencyCutoff: 2000,
+    highFrequencyScalingFactor: 0.6,
+  });
   
   const audioContextStarted = useRef(false);
   const gainNodeRef = useRef(null);
@@ -56,14 +64,6 @@ const OrbitalSonification = () => {
   const audioInitializedRef = useRef(false);
   const prevPositionMode = useRef(positionMode);
   const gainNodesRef = useRef({});
-  const audioScalingConfig = useRef({
-    referenceFrequency: 55,
-    scalingFactor: 0.4,
-    minimumGain: 0.05,
-    maximumGain: 1.2,
-    highFrequencyCutoff: 2000,
-    highFrequencyScalingFactor: 0.6,
-  });
 
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
@@ -469,8 +469,8 @@ const OrbitalSonification = () => {
         const synthObj = synthsRef.current[planetName];
         if (synthObj && synthObj.gain && freq) {
           const gain = useFletcher
-            ? calculateAdvancedFrequencyGain(freq, audioScalingConfig.current)
-            : calculateFrequencyGain(freq, audioScalingConfig.current);
+            ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
+            : calculateFrequencyGain(freq, audioScalingConfig);
   
           // Apply gain with smooth transition
           const now = Tone.now();
@@ -482,8 +482,8 @@ const OrbitalSonification = () => {
     });
   }, [
     useFletcher,
-    audioScalingConfig.current.referenceFrequency,
-    audioScalingConfig.current.scalingFactor,
+    audioScalingConfig.referenceFrequency,
+    audioScalingConfig.scalingFactor,
     liveMode,
     orbitData,
     currentFrequencies
@@ -1060,8 +1060,8 @@ const OrbitalSonification = () => {
       
       // Calculate gain using the selected scaling method
       const gain = useFletcher
-        ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig.current)
-        : calculateFrequencyGain(frequency, audioScalingConfig.current);
+        ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+        : calculateFrequencyGain(frequency, audioScalingConfig);
       
       // Apply gain to the gain node
       if (synthObj.gain) {
@@ -1075,7 +1075,7 @@ const OrbitalSonification = () => {
         0.7, // Default velocity
         null, // No duration for sustained notes
         synthObj.gain,
-        audioScalingConfig.current
+        audioScalingConfig
       );
       
       activeSynthsRef.current.add(planetName);
@@ -1145,8 +1145,8 @@ const OrbitalSonification = () => {
         
         // Calculate new gain based on frequency
         const gain = useFletcher
-          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig.current)
-          : calculateFrequencyGain(frequency, audioScalingConfig.current);
+          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+          : calculateFrequencyGain(frequency, audioScalingConfig);
         
         // Update frequency
         synthObj.synth.frequency.value = frequency;
@@ -1275,8 +1275,8 @@ const OrbitalSonification = () => {
     if (!frequency) return 1.0;
     
     return useFletcher 
-      ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig.current)
-      : calculateFrequencyGain(frequency, audioScalingConfig.current);
+      ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+      : calculateFrequencyGain(frequency, audioScalingConfig);
   }, [useFletcher]);
 
   // Toggle advanced Fletcher-Munson curves for even better audio quality
@@ -1292,8 +1292,8 @@ const OrbitalSonification = () => {
           if (gainNode && freq) {
             // Toggle immediately applies the new gain calculation method
             const newGain = !useFletcher 
-              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig.current)
-              : calculateFrequencyGain(freq, audioScalingConfig.current);
+              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
+              : calculateFrequencyGain(freq, audioScalingConfig);
               
             gainNode.gain.value = newGain;
           }
@@ -1689,21 +1689,21 @@ const OrbitalSonification = () => {
                 {/* Reference frequency setting */}
                 <div className="control-group">
                   <label htmlFor="reference-frequency" className="label">
-                    Reference Frequency: {audioScalingConfig.current.referenceFrequency.toFixed(1)} Hz
+                    Reference Frequency: {audioScalingConfig.referenceFrequency.toFixed(1)} Hz
                   </label>
                   <input 
                     id="reference-frequency"
                     type="range" 
-                    value={audioScalingConfig.current.referenceFrequency}
+                    value={audioScalingConfig.referenceFrequency}
                     min={27.5}
                     max={110}
                     step={0.5}
                     className="slider"
                     onChange={(e) => {
-                      audioScalingConfig.current.referenceFrequency = parseFloat(e.target.value);
-                      // Force a re-render to update the display
-                      setBaseFrequency(prev => prev + 0.001);
-                      setTimeout(() => setBaseFrequency(prev => prev - 0.001), 10);
+                      setAudioScalingConfig(cfg => ({
+                        ...cfg,
+                        referenceFrequency: parseFloat(e.target.value)
+                      }));
                     }}
                   />
                   <p className="setting-description">
@@ -1714,21 +1714,21 @@ const OrbitalSonification = () => {
                 {/* Scaling factor setting */}
                 <div className="control-group">
                   <label htmlFor="scaling-factor" className="label">
-                    Scaling Factor: {audioScalingConfig.current.scalingFactor.toFixed(1)}
+                    Scaling Factor: {audioScalingConfig.scalingFactor.toFixed(1)}
                   </label>
                   <input 
                     id="scaling-factor"
                     type="range" 
-                    value={audioScalingConfig.current.scalingFactor}
+                    value={audioScalingConfig.scalingFactor}
                     min={0.1}
                     max={1.0}
                     step={0.1}
                     className="slider"
                     onChange={(e) => {
-                      audioScalingConfig.current.scalingFactor = parseFloat(e.target.value);
-                      // Force a re-render
-                      setBaseFrequency(prev => prev + 0.001);
-                      setTimeout(() => setBaseFrequency(prev => prev - 0.001), 10);
+                      setAudioScalingConfig(cfg => ({
+                        ...cfg,
+                        scalingFactor: parseFloat(e.target.value)
+                      }));
                     }}
                   />
                   <p className="setting-description">
