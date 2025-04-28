@@ -1144,5 +1144,15 @@ input[type="checkbox"]:disabled {
       color: var(--color-text-tertiary);
       margin-top: 1.5rem;
     }
+
+    .credits__link {
+      color: var(--color-accent-primary);
+      text-decoration: none;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--color-accent-secondary);
+      }
+    }
   }
 }

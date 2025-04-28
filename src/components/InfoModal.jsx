@@ -158,7 +158,7 @@ const InfoModal = ({ isOpen, onClose }) => {
           </div>
 
           <div className="credits">
-            <p>Created by Adrián Steinsleger</p>
+            <p>Created by <a className="credits__link" href='https://www.linkedin.com/in/adriansteinsleger/'>Adrián Steinsleger</a><br />Got feedback? <a className="credits__link" href='mailto:astein@gmail.com'>Contact me</a></p>
             <ul>
               <li>Concept based on Walter Murch's research on the Titius-Bode Law</li>
               <li>Planetary data from NASA</li>
