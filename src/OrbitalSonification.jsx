@@ -1530,6 +1530,28 @@ const OrbitalSonification = () => {
           >
             {isPaused ? '▶️' : '⏸️'}
           </button>
+
+          <button 
+            onClick={playOrbitalSequence}
+            title={isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
+            disabled={liveMode}
+            className="floating-button"
+          >
+            {isPlaying ? '⏹️' : '🪐'}
+          </button>
+          
+          <button 
+            className="floating-button"
+            onClick={toggleLiveMode}
+            disabled={isPlaying}
+            title={liveMode ? "Disable Live Mode" : "Enable Live Mode"}
+            style={{
+              backgroundColor: liveMode ? 'rgba(69, 160, 73, 0.5)' : 'rgba(0, 0, 0, 0)',
+              opacity: isPlaying ? 0.5 : 1
+            }}
+          >
+            🔊
+          </button>
           
           <button 
             className="floating-button"
@@ -1553,19 +1575,6 @@ const OrbitalSonification = () => {
             title="Set to Perihelion"
           >
             ☀️
-          </button>
-          
-          <button 
-            className="floating-button"
-            onClick={toggleLiveMode}
-            disabled={isPlaying}
-            title={liveMode ? "Disable Live Mode" : "Enable Live Mode"}
-            style={{
-              backgroundColor: liveMode ? 'rgba(69, 160, 73, 0.5)' : 'rgba(0, 0, 0, 0)',
-              opacity: isPlaying ? 0.5 : 1
-            }}
-          >
-            🔊
           </button>
         </div>
         
