@@ -64,7 +64,7 @@ const OrbitalSonification = () => {
   const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
   const [loopSequence, setLoopSequence] = useState(false);
   const [sequenceBPM, setSequenceBPM] = useState(60); // Default to 60 BPM
-  const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
+  const [useFletcher, setUseFletcher] = useState(true); // Toggle for advanced gain scaling
   const [currentlyPlayingPlanet, setCurrentlyPlayingPlanet] = useState(null); // Track which planet is currently playing in the sequence
   const reverbAmount = 0.5; // Fixed 50% reverb with no slider
   const [audioScalingConfig, setAudioScalingConfig] = useState({
@@ -1919,59 +1919,16 @@ const OrbitalSonification = () => {
                             ? `${currentFrequencies[planet.name].toFixed(1)} Hz`
                             : "Calculating..."}
                         </span>
-                      </div>                      
-                    </div>
-
-                    
-                    {/* Note info section */}
-                    <div className="planet-info">
+                      </div>    
                       <div className="planet-data planet-data__note">
                         <span className="data-label">Note:</span>
                         <span className="data-value note-value">
-                          {currentFrequencies[planet.name] 
+                          ~{currentFrequencies[planet.name] 
                             ? frequencyToNote(currentFrequencies[planet.name])
                             : ""}
                         </span>
-                      </div>
+                      </div>                  
                     </div>
-                    
-                    {/* Gain info section */}
-                    <div className="planet-gain-info">
-                      <span className="data-label">Gain:</span>
-                      <span className="data-value gain-value">
-                        {getFrequencyGain(planet.name)}
-                      </span>
-                      <div className="gain-bar-container">
-                        <div 
-                          className="gain-bar" 
-                          style={{
-                            width: `${parseFloat(getFrequencyGain(planet.name)) * 100}%`,
-                            backgroundColor: getPlanetColor(planet.name),
-                            opacity: planet.enabled ? 0.8 : 0.3
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                    
-                    {/* Ear sensitivity indicator */}
-                    {useFletcher && (
-                    <div className="planet-sensitivity-info">
-                      <span className="data-label">Ear Sensitivity:</span>
-                      <span className="data-value sensitivity-value">
-                        {getHearingSensitivity(planet.name)}
-                      </span>
-                      <div className="sensitivity-bar-container">
-                        <div 
-                          className="sensitivity-bar" 
-                          style={{
-                            width: `${parseFloat(getHearingSensitivity(planet.name))}%`,
-                            backgroundColor: `rgba(255, ${200 - parseInt(getHearingSensitivity(planet.name)) * 2}, 0, 0.8)`,
-                            opacity: planet.enabled ? 0.8 : 0.3
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -1981,21 +1938,9 @@ const OrbitalSonification = () => {
           {/* Audio tab with advanced settings */}
           {activeTab === 'audio' && (
             <div className="sidebar-content audio-tab fade-in">
-              <div className="audio-info-banner">
-                <h3>Audio Safety Features</h3>
-                <p>
-                  This application includes several features to protect your hearing:
-                </p>
-                <ul>
-                  <li>Automatic frequency-dependent volume scaling</li>
-                  <li>Extra attenuation for high frequencies</li>
-                  <li>Optional Fletcher-Munson equal-loudness contour modeling</li>
-                  <li>Spatial reverb for improved sound depth</li>
-                </ul>
-              </div>
               
               <div className="audio-settings">
-                <h3>Advanced Settings</h3>
+                <h3>Advanced Audio Settings</h3>
                 
                 <div className="fletcher-toggle">
                   <label className="checkbox-label">

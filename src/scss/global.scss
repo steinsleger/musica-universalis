@@ -660,17 +660,13 @@ input[type="checkbox"]:disabled {
   display: grid;
   font-size: 0.8rem;
   gap: var(--space-sm);
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   padding-left: calc(20px + var(--space-sm));
 }
 
 .planet-data {
   display: flex;
   flex-direction: column;
-}
-
-.planet-data__note {
-  margin-top: var(--space-sm);
 }
 
 .data-label {
