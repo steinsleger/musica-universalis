@@ -401,18 +401,24 @@ const PlanetarySystem = ({
   
   // Calculate planetary size (not to scale, but preserving relative sizes)
   const getPlanetSize = (planet) => {
-    // Using a fixed mapping to make planets visible while preserving relative sizes
+    // Using a logarithmic scaling to better represent actual planet sizes
+    // Jupiter is 11.2 times larger than Earth, but we need to make sure smaller planets remain visible
+    // Actual radius ratios (Earth = 1):
+    // Mercury: 0.383, Venus: 0.949, Earth: 1, Mars: 0.532
+    // Jupiter: 11.209, Saturn: 9.449, Uranus: 4.007, Neptune: 3.883
+    // Using a logarithmic scale to compress the differences while preserving order
+    // Sun radius is fixed at 10, so all planets must be smaller
     const baseSize = {
-      "Mercury": 4,
-      "Venus": 5,
-      "Earth": 5,
-      "Mars": 4.5,
-      "Ceres": 3,
-      "Jupiter": 9,
-      "Saturn": 8,
-      "Uranus": 7,
-      "Neptune": 7,
-      "Pluto": 2.5
+      "Mercury": 2.5,
+      "Venus": 3.6,
+      "Earth": 3.8,
+      "Mars": 3.0,
+      "Ceres": 1.5,
+      "Jupiter": 8.5,
+      "Saturn": 7.8,
+      "Uranus": 5.8,
+      "Neptune": 5.6,
+      "Pluto": 1.3
     };
     
     return planet.enabled ? baseSize[planet.name] || minPlanetSize : 0;
