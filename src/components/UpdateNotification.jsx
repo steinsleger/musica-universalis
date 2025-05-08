@@ -3,9 +3,10 @@ import { registerSW } from 'virtual:pwa-register';
 
 export function UpdateNotification() {
   const [showUpdate, setShowUpdate] = useState(false);
+  const [updateSW, setUpdateSW] = useState(null);
 
   useEffect(() => {
-    const updateSW = registerSW({
+    const sw = registerSW({
       onNeedRefresh() {
         setShowUpdate(true);
       },
@@ -13,7 +14,21 @@ export function UpdateNotification() {
         console.log('App ready to work offline');
       },
     });
+    setUpdateSW(sw);
   }, []);
+
+  const handleUpdate = async () => {
+    if (updateSW) {
+      try {
+        await updateSW();
+        setShowUpdate(false);
+      } catch (error) {
+        console.error('Failed to update:', error);
+        // Fallback to regular refresh if update fails
+        window.location.reload();
+      }
+    }
+  };
 
   if (!showUpdate) return null;
 
@@ -34,7 +49,7 @@ export function UpdateNotification() {
     }}>
       <p style={{ margin: 0 }}>A new version is available!</p>
       <button 
-        onClick={() => window.location.reload()}
+        onClick={handleUpdate}
         style={{
           backgroundColor: '#4CAF50',
           color: 'white',
