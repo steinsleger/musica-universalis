@@ -1774,6 +1774,7 @@ const OrbitalSonification = () => {
                   aria-valuemax={110}
                   aria-valuenow={baseFrequency}
                   style={{ cursor: 'pointer' }}
+                  disabled={isPlaying}
                 />
               </div>
 
