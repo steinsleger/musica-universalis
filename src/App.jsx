@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import OrbitalSonification from './OrbitalSonification';
 import Preloader from './components/Preloader';
 import { UpdateNotification } from './components/UpdateNotification';
+import ScreenAlert from './components/ScreenAlert';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +41,7 @@ function App() {
       {isLoading && <Preloader />}
       <OrbitalSonification />
       <UpdateNotification />
+      <ScreenAlert />
     </>
   );
 }
