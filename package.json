@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "node scripts/update-version.js && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "release": "standard-version",
+    "commit": "cz"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -26,13 +28,21 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "commitizen": "^4.3.0",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "standard-version": "^9.5.0",
     "terser": "^5.39.0",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^0.19.0",
     "vite-plugin-remove-console": "^2.2.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
