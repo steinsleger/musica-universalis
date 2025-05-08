@@ -4,11 +4,21 @@ const InfoModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div 
+      className="modal-overlay" 
+      onClick={onClose} 
+      role="dialog" 
+      aria-modal="true" 
+      aria-labelledby="info-modal-title"
+    >
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>×</button>
+        <button 
+          className="modal-close" 
+          onClick={onClose} 
+          aria-label="Close information modal"
+        >×</button>
         <div className="modal-body">
-          <h1>Musica Universalis</h1>
+          <h1 id="info-modal-title">Musica Universalis</h1>
           <p>A web-based interactive visualization and sonification of planetary orbits using the modified Titius-Bode Law proposed by Walter Murch.</p>
           
           <h2>Overview</h2>
@@ -34,7 +44,7 @@ const InfoModal = ({ isOpen, onClose }) => {
             <li>Orbital Details with perihelion and aphelion markers with distance information</li>
             <li>Zoom and Pan to examine orbits in detail with intuitive controls</li>
             <li>Position Controls to set planets at average distance, perihelion, or aphelion</li>
-            <li>Multiple Distance Modes to switch between Titius-Bode Law and actual astronomical distances</li>
+            <li>Multiple Distance Modes to switch between Murch's Modified Titius-Bode Law and actual astronomical distances</li>
             <li>Customizable Animation Speed to observe slow or rapid motion</li>
           </ul>
 
@@ -58,16 +68,35 @@ const InfoModal = ({ isOpen, onClose }) => {
             <li>Visual Gain Indicators showing volume adjustments</li>
           </ul>
 
-          <h2>The Modified Titius-Bode Formula</h2>
+          <h2>Murch's Modified Titius-Bode Formula</h2>
           <p>This project utilizes Walter Murch's version of the Titius-Bode formula:</p>
-          <code>f(n) = (1 + 2^n) × 3 × baseFrequency</code>
+          <code>r = 1 + 2^n × 3</code>
           <p>Where:</p>
           <ul>
-            <li><code>n</code> is an integer representing the orbital position (-2 for Venus, -1 for Earth, 0 for Mars, etc.)</li>
-            <li><code>baseFrequency</code> is a user-adjustable reference frequency</li>
+            <li><code>r</code> is the distance from the Sun in units of β (the minimum stable orbit distance)</li>
+            <li><code>n</code> is an integer that can be positive or negative, representing the orbital position</li>
+            <li><code>β</code> is the reference unit, representing the theoretical minimum distance at which an object could maintain a stable orbit around the Sun</li>
           </ul>
+          
+          <p>The n-values used for the planets in our solar system are:</p>
+          <ul>
+            <li>Mercury: n = -10 (approaching the β limit)</li>
+            <li>Venus: n = -2</li>
+            <li>Earth: n = -1</li>
+            <li>Mars: n = 0</li>
+            <li>Ceres: n = 1</li>
+            <li>Jupiter: n = 2</li>
+            <li>Saturn: n = 3</li>
+            <li>Uranus: n = 4</li>
+            <li>Neptune: n = 5</li>
+            <li>Pluto: n = 6</li>
+          </ul>
+          
+          <p>For audio conversion, we map these orbital distances to frequencies using:</p>
+          <code>frequency = baseFrequency × r</code>
+          <p>Where <code>baseFrequency</code> is a user-adjustable reference frequency.</p>
 
-          <p>This formula demonstrates how orbital distances follow a mathematical pattern that, when converted to sound, creates harmonious musical relationships. Walter Murch's insight connects the mathematical logic of Johannes Kepler's "Music of the Spheres" with modern astronomical observations.</p>
+          <p>Murch's insight was to establish β as the reference point (instead of Earth's distance as in the original formulation), which considerably simplifies the mathematical expression while maintaining the same ratio relationships between orbits.</p>
 
           <h2>How to Use</h2>
 
@@ -84,7 +113,7 @@ const InfoModal = ({ isOpen, onClose }) => {
           <ul>
             <li>Adjust master volume</li>
             <li>Change base frequency</li>
-            <li>Switch between Titius-Bode and actual distances</li>
+            <li>Switch between Murch's Modified Titius-Bode Law and actual distances</li>
             <li>Control zoom level</li>
             <li>Adjust animation speed</li>
           </ul>
@@ -158,7 +187,7 @@ const InfoModal = ({ isOpen, onClose }) => {
           </div>
 
           <div className="credits">
-            <p>Created by <a className="credits__link" href='https://www.linkedin.com/in/adriansteinsleger/'>Adrián Steinsleger</a><br />Got feedback? <a className="credits__link" href='mailto:astein@gmail.com'>Contact me</a></p>
+            <p>Created by <a className="credits__link" href='https://www.linkedin.com/in/adriansteinsleger/' aria-label="Adrian Steinsleger's LinkedIn profile">Adrián Steinsleger</a><br />Got feedback? <a className="credits__link" href='mailto:astein@gmail.com' aria-label="Contact the creator via email">Contact me</a></p>
             <ul>
               <li>Concept based on Walter Murch's research on the Titius-Bode Law</li>
               <li>Planetary data from NASA</li>

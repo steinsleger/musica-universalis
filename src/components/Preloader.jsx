@@ -16,8 +16,15 @@ const Preloader = () => {
   if (!isLoading) return null;
 
   return (
-    <div className="preloader">
-      <div className="orbital-container">
+    <div 
+      className="preloader" 
+      role="status" 
+      aria-live="polite"
+    >
+      <div 
+        className="orbital-container"
+        aria-hidden="true"
+      >
         <div className="orbit orbit-1">
           <div className="planet planet-1"></div>
         </div>
@@ -29,7 +36,7 @@ const Preloader = () => {
         </div>
         <div className="sun"></div>
       </div>
-      <div className="loading-text">Loading...</div>
+      <div className="loading-text" aria-label="Loading application">Loading...</div>
     </div>
   );
 };

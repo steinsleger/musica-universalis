@@ -313,7 +313,8 @@ svg text {
   background-color: rgba(20, 20, 35, 0.6);
   box-shadow: none;
   color: var(--color-text-tertiary);
-  cursor: not-allowed;
+  cursor: default;
+  pointer-events: none;
   opacity: 0.67;
   transform: none;
 }
@@ -355,7 +356,8 @@ svg text {
 
   &:disabled {
     background-color: rgba(16, 16, 32, 0.5);
-    cursor: not-allowed;
+    cursor: default;
+    pointer-events: none;
     transform: none;
     opacity: 0.7;
     box-shadow: none;
@@ -442,6 +444,14 @@ svg text {
   touch-action: none;
   width: 100%;
   z-index: 2;
+
+  // if the slider is disabled, make it grey, non-interactive, and 0.5 opacity
+  &:disabled {
+    background: rgba(148, 163, 184, 0.2);
+    cursor: default;
+    pointer-events: none;
+    opacity: 0.5;
+  }
 }
 
 /* Checkbox Styling */
@@ -478,7 +488,8 @@ input[type="checkbox"]:checked::after {
 }
 
 input[type="checkbox"]:disabled {
-  cursor: not-allowed;
+  cursor: default;
+  pointer-events: none;
   opacity: 0.5;
 }
 
@@ -499,7 +510,8 @@ input[type="checkbox"]:disabled {
 }
 
 .checkbox-label:has(input:disabled) {
-  cursor: not-allowed;
+  cursor: default;
+  pointer-events: none;
   opacity: 0.7;
 }
 
@@ -535,7 +547,8 @@ input[type="checkbox"]:disabled {
   background-color: var(--color-bg-tertiary);
   box-shadow: none;
   color: var(--color-text-tertiary);
-  cursor: not-allowed;
+  cursor: default;
+  pointer-events: none;
   transform: none;
 }
 
@@ -660,17 +673,13 @@ input[type="checkbox"]:disabled {
   display: grid;
   font-size: 0.8rem;
   gap: var(--space-sm);
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   padding-left: calc(20px + var(--space-sm));
 }
 
 .planet-data {
   display: flex;
   flex-direction: column;
-}
-
-.planet-data__note {
-  margin-top: var(--space-sm);
 }
 
 .data-label {
