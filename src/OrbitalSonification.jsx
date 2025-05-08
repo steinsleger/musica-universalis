@@ -43,6 +43,7 @@ const OrbitalSonification = () => {
   const [loopSequence, setLoopSequence] = useState(false);
   const [sequenceBPM, setSequenceBPM] = useState(60); // Default to 60 BPM
   const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
+  const [currentlyPlayingPlanet, setCurrentlyPlayingPlanet] = useState(null); // Track which planet is currently playing in the sequence
   const [audioScalingConfig, setAudioScalingConfig] = useState({
     referenceFrequency: 55,
     scalingFactor: 0.4,
@@ -553,6 +554,7 @@ const OrbitalSonification = () => {
         }
   
         setIsPlaying(false);
+        setCurrentlyPlayingPlanet(null); // Clear the currently playing planet
         return;
       }
   
@@ -592,7 +594,7 @@ const OrbitalSonification = () => {
       const noteDuration = beatDuration; // 1 beat per note
       const interval = beatDuration; // time between notes
   
-      // Schedule notes for each planet
+      // Schedule notes and planet highlighting for each planet
       const now = Tone.now();
       enabledPlanets.forEach((planet, index) => {
         const originalIndex = orbitData.findIndex(p => p.name === planet.name);
@@ -602,6 +604,11 @@ const OrbitalSonification = () => {
         try {
           mainSynth.triggerAttackRelease(freq, noteDuration, time, 0.3);
           debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
+          
+          // Schedule the planet to highlight
+          setTimeout(() => {
+            setCurrentlyPlayingPlanet(planet.name);
+          }, index * interval * 1000);
         } catch (err) {
           console.error(`Error scheduling note for ${planet.name}:`, err);
         }
@@ -613,9 +620,12 @@ const OrbitalSonification = () => {
       // Set timeout to end playing state or loop
       sequenceTimeoutRef.current = setTimeout(() => {
         if (loopSequence) {
+          // Clear currently playing planet before restarting the sequence
+          setCurrentlyPlayingPlanet(null);
           playOrbitalSequence();
         } else {
           setIsPlaying(false);
+          setCurrentlyPlayingPlanet(null); // Clear the currently playing planet
           sequenceTimeoutRef.current = null;
           debugAudio("Sequence playback complete");
         }
@@ -623,6 +633,7 @@ const OrbitalSonification = () => {
     } catch (error) {
       console.error("Error playing orbital sequence:", error);
       setIsPlaying(false);
+      setCurrentlyPlayingPlanet(null);
     }
   };
 
@@ -1518,6 +1529,8 @@ const OrbitalSonification = () => {
             setToPerihelion={positionMode === 'perihelion'}
             setZoomLevel={setZoomLevel}
             zoomLevel={zoomLevel}
+            currentlyPlayingPlanet={currentlyPlayingPlanet}
+            sequenceBPM={sequenceBPM}
           />
         </div>
         

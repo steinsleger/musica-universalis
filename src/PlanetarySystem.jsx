@@ -13,7 +13,9 @@ const PlanetarySystem = ({
     setToPerihelion = false,
     zoomLevel = 1,
     setZoomLevel,
-    distanceMode = 'titiusBode'
+    distanceMode = 'titiusBode',
+    currentlyPlayingPlanet = null,
+    sequenceBPM = 60
   }) => {
     
   const [currentFrequencies, setCurrentFrequencies] = useState({});
@@ -21,6 +23,7 @@ const PlanetarySystem = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [planetAngles, setPlanetAngles] = useState({});
+  const [glowOpacity, setGlowOpacity] = useState(1); // Control glow animation
   
   const requestRef = useRef();
   const previousTimeRef = useRef();
@@ -30,6 +33,7 @@ const PlanetarySystem = ({
   const lastBaseFrequencyRef = useRef(baseFrequency);
   const distanceModeRef = useRef(distanceMode);
   const initializedRef = useRef(false);
+  const glowAnimationRef = useRef(null);
   
   // Constants for visualization
   const svgSize = 600;
@@ -142,7 +146,7 @@ const PlanetarySystem = ({
     const newZoom = zoomLevel * (1 + (delta > 0 ? -zoomSpeed : zoomSpeed));
     
     // Clamp zoom level between 1 and 20
-    const clampedZoom = Math.max(1, Math.min(20, newZoom));
+    const clampedZoom = Math.max(1, Math.min(40, newZoom));
     
     // Update zoom level through prop
     if (setZoomLevel) {
@@ -463,6 +467,51 @@ const PlanetarySystem = ({
     setIsDragging(false);
   };
   
+  // Glow animation effect synced with BPM
+  useEffect(() => {
+    if (currentlyPlayingPlanet) {
+      // Calculate pulse duration based on BPM
+      const pulseDuration = 60 / sequenceBPM * 1000; // Convert to ms
+      
+      // Clear any existing interval
+      if (glowAnimationRef.current) {
+        clearInterval(glowAnimationRef.current);
+      }
+      
+      // Create pulsing effect
+      let increasing = false;
+      let opacity = 0.5;
+      
+      glowAnimationRef.current = setInterval(() => {
+        if (increasing) {
+          opacity += 0.05;
+          if (opacity >= 1) {
+            opacity = 1;
+            increasing = false;
+          }
+        } else {
+          opacity -= 0.05;
+          if (opacity <= 0.5) {
+            opacity = 0.5;
+            increasing = true;
+          }
+        }
+        
+        setGlowOpacity(opacity);
+      }, pulseDuration / 20); // Adjust this for smoother or faster pulsing
+      
+      return () => {
+        if (glowAnimationRef.current) {
+          clearInterval(glowAnimationRef.current);
+          glowAnimationRef.current = null;
+        }
+      };
+    } else if (glowAnimationRef.current) {
+      clearInterval(glowAnimationRef.current);
+      glowAnimationRef.current = null;
+    }
+  }, [currentlyPlayingPlanet, sequenceBPM]);
+  
   return (
     <div className="orbital-visualization">
       <div 
@@ -644,14 +693,54 @@ const PlanetarySystem = ({
               "Pluto": "#C39BD3"
             };
             
+            // Check if this planet is currently playing in the sequence
+            const isPlaying = planet.name === currentlyPlayingPlanet;
+            
             return (
               <g key={`planet-${planet.name}`}>
+                {/* Add glow effect behind the planet when it's playing */}
+                {isPlaying && (
+                  <>
+                    {/* Outer glow */}
+                    <circle
+                      cx={position.x}
+                      cy={position.y}
+                      r={size * 3}
+                      fill={planetColors[planet.name] || "#999"}
+                      opacity={glowOpacity * 0.2}
+                      filter="blur(3px)"
+                    />
+                    {/* Middle glow */}
+                    <circle
+                      cx={position.x}
+                      cy={position.y}
+                      r={size * 2}
+                      fill={planetColors[planet.name] || "#999"}
+                      opacity={glowOpacity * 0.4}
+                      filter="blur(2px)"
+                    />
+                    {/* Inner glow */}
+                    <circle
+                      cx={position.x}
+                      cy={position.y}
+                      r={size * 1.5}
+                      fill={planetColors[planet.name] || "#999"}
+                      opacity={glowOpacity * 0.6}
+                      filter="blur(1px)"
+                    />
+                  </>
+                )}
+                
+                {/* Planet circle */}
                 <circle
                   cx={position.x}
                   cy={position.y}
                   r={size}
                   fill={planetColors[planet.name] || "#999"}
+                  stroke={isPlaying ? "white" : "none"}
+                  strokeWidth={isPlaying ? 0.5 : 0}
                 />
+                
                 <text
                   x={position.x}
                   y={position.y - size - 2}
