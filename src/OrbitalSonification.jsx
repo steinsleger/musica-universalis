@@ -44,6 +44,7 @@ const OrbitalSonification = () => {
   const [sequenceBPM, setSequenceBPM] = useState(60); // Default to 60 BPM
   const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
   const [currentlyPlayingPlanet, setCurrentlyPlayingPlanet] = useState(null); // Track which planet is currently playing in the sequence
+  const reverbAmount = 0.5; // Fixed 50% reverb with no slider
   const [audioScalingConfig, setAudioScalingConfig] = useState({
     referenceFrequency: 55,
     scalingFactor: 0.4,
@@ -66,6 +67,7 @@ const OrbitalSonification = () => {
   const prevPositionMode = useRef(positionMode);
   const gainNodesRef = useRef({});
   const planetTimeoutsRef = useRef([]); // Add ref to store individual planet timeouts
+  const reverbRef = useRef(null); // New: reference for shared reverb effect
 
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
@@ -921,9 +923,28 @@ const OrbitalSonification = () => {
         }
       }
       
-      // Create a new master gain
+      // Create reverb effect if needed
+      if (reverbRef.current) {
+        try {
+          reverbRef.current.dispose();
+        } catch (err) {
+          // Ignore disposal errors
+        }
+      }
+      
+      // Initialize shared reverb with fixed 50% wet
+      const reverb = new Tone.Reverb({
+        decay: 1.5,
+        wet: reverbAmount
+      }).toDestination();
+      
+      // Ensure reverb is ready before proceeding
+      await reverb.generate();
+      reverbRef.current = reverb;
+      
+      // Create a new master gain that connects to reverb
       try {
-        const masterGain = new Tone.Gain(masterVolume).toDestination();
+        const masterGain = new Tone.Gain(masterVolume).connect(reverb);
         gainNodeRef.current = masterGain;
         
         // Set master volume
@@ -1174,8 +1195,12 @@ const OrbitalSonification = () => {
       // Connect the synth to its own gain node
       newSynth.connect(planetGain);
       
-      // Connect the planet gain to the master destination
-      planetGain.toDestination();
+      // Connect the planet gain to reverb if available, otherwise directly to destination
+      if (reverbRef.current && !reverbRef.current.disposed) {
+        planetGain.connect(reverbRef.current);
+      } else {
+        planetGain.toDestination();
+      }
       
       // Store both the synth and its gain node for isolated control
       synthsRef.current[planetName] = {
@@ -1932,6 +1957,7 @@ const OrbitalSonification = () => {
                   <li>Automatic frequency-dependent volume scaling</li>
                   <li>Extra attenuation for high frequencies</li>
                   <li>Optional Fletcher-Munson equal-loudness contour modeling</li>
+                  <li>Spatial reverb for improved sound depth</li>
                 </ul>
               </div>
               
