@@ -339,6 +339,15 @@ svg text {
   z-index: 1002;
 }
 
+/* Add backlight effect when sidebar is open */
+.visualization-container:has(.controls-sidebar:not(.collapsed)) .more-settings-button,
+.visualization-container:has(.controls-sidebar:not(.collapsed)) .info-button {
+  background-color: rgba(24, 24, 48, 0.95);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.3),
+              0 0 30px rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
 .more-settings-button {
   bottom: var(--space-xl);
 
