@@ -46,30 +46,46 @@ const ScreenAlert = () => {
   if (dismissed || !isVisible) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '16px',
-      left: '16px',
-      right: '16px',
-      backgroundColor: 'rgba(0, 0, 0, 0.85)',
-      color: 'white',
-      padding: '16px',
-      borderRadius: '8px',
-      zIndex: 9999,
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255, 255, 255, 0.1)'
-    }}>
+    <div 
+      style={{
+        position: 'fixed',
+        top: '16px',
+        left: '16px',
+        right: '16px',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        color: 'white',
+        padding: '16px',
+        borderRadius: '8px',
+        zIndex: 9999,
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}
+      role="alert"
+      aria-live="polite"
+    >
       <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginBottom: '8px' }}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', flexShrink: 0 }}>
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="24" 
+          height="24" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          style={{ marginRight: '8px', flexShrink: 0 }}
+          aria-hidden="true"
+        >
           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
           <line x1="12" y1="9" x2="12" y2="13"></line>
           <line x1="12" y1="17" x2="12.01" y2="17"></line>
         </svg>
-        <h3 style={{ margin: '0', flexGrow: 1, fontSize: '18px' }}>Optimal Experience Alert</h3>
+        <h3 id="alert-heading" style={{ margin: '0', flexGrow: 1, fontSize: '18px' }}>Optimal Experience Alert</h3>
         <button 
           onClick={handleDismiss}
           style={{

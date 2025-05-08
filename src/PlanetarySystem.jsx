@@ -530,6 +530,8 @@ const PlanetarySystem = ({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        role="application"
+        aria-label="Solar system visualization"
       >
         <svg 
           ref={svgRef}
@@ -537,7 +539,15 @@ const PlanetarySystem = ({
           height="100%" 
           viewBox={`0 0 ${svgSize} ${svgSize}`}
           preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-labelledby="solar-system-title solar-system-desc"
         >
+          <title id="solar-system-title">Interactive Solar System Visualization</title>
+          <desc id="solar-system-desc">
+            A visualization of the planets in our solar system orbiting the sun. 
+            Each planet follows an elliptical path at varying distances.
+          </desc>
+          
           {/* Orbital paths as ellipses */}
           {orbitData.map((planet) => {
             const pathPoints = generateEllipticalPath(
@@ -589,6 +599,7 @@ const PlanetarySystem = ({
                   stroke={getOrbitColor(planet.name, planet.enabled)}
                   strokeWidth={planet.name === "Neptune" || planet.name === "Pluto" ? 0.8 : 0.5}
                   strokeDasharray={planet.enabled ? "none" : "2,2"}
+                  aria-hidden="true"
                 />
                 
                 {/* Orbit label - visible at higher zoom levels or for outer planets */}
@@ -600,6 +611,7 @@ const PlanetarySystem = ({
                     fill={getOrbitColor(planet.name, planet.enabled)}
                     opacity={planet.enabled ? 1 : 0.5}
                     textAnchor="middle"
+                    aria-hidden={!planet.enabled}
                   >
                     {planet.name} orbit
                   </text>
@@ -614,6 +626,7 @@ const PlanetarySystem = ({
                       cy={perihelion.y}
                       r={1.5}
                       fill="#f44"
+                      aria-hidden="true"
                     />
                     {zoomLevel > 4 && (
                       <text
@@ -622,6 +635,7 @@ const PlanetarySystem = ({
                         fontSize="6"
                         textAnchor="middle"
                         fill="#f88"
+                        aria-hidden="true"
                       >
                         {planet.name} perihelion
                         ({perihelionDist.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'})
@@ -634,6 +648,7 @@ const PlanetarySystem = ({
                       cy={aphelion.y}
                       r={1.5}
                       fill="#88f"
+                      aria-hidden="true"
                     />
                     {zoomLevel > 4 && (
                       <text
@@ -642,6 +657,7 @@ const PlanetarySystem = ({
                         fontSize="6"
                         textAnchor="middle"
                         fill="#88f"
+                        aria-hidden="true"
                       >
                         {planet.name} aphelion
                         ({aphelionDist.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'})
@@ -660,6 +676,7 @@ const PlanetarySystem = ({
             fontSize="10"
             textAnchor="middle"
             fill="#FDB813"
+            aria-hidden="true"
           >
             Sun
           </text>
@@ -670,6 +687,8 @@ const PlanetarySystem = ({
             cy={center + panOffset.y}
             r={sunRadius}
             fill="#FDB813"
+            role="img"
+            aria-label="Sun at the center of the solar system"
           />
           
           {/* Planets - now use dynamic angles from state */}
@@ -718,6 +737,7 @@ const PlanetarySystem = ({
                       fill={planetColors[planet.name] || "#999"}
                       opacity={glowOpacity * 0.2}
                       filter="blur(3px)"
+                      aria-hidden="true"
                     />
                     {/* Middle glow */}
                     <circle
@@ -727,6 +747,7 @@ const PlanetarySystem = ({
                       fill={planetColors[planet.name] || "#999"}
                       opacity={glowOpacity * 0.4}
                       filter="blur(2px)"
+                      aria-hidden="true"
                     />
                     {/* Inner glow */}
                     <circle
@@ -736,6 +757,7 @@ const PlanetarySystem = ({
                       fill={planetColors[planet.name] || "#999"}
                       opacity={glowOpacity * 0.6}
                       filter="blur(1px)"
+                      aria-hidden="true"
                     />
                   </>
                 )}
@@ -748,6 +770,8 @@ const PlanetarySystem = ({
                   fill={planetColors[planet.name] || "#999"}
                   stroke={isPlaying ? "white" : "none"}
                   strokeWidth={isPlaying ? 0.5 : 0}
+                  role="img"
+                  aria-label={`${planet.name} at ${currentDistance.toFixed(2)} ${distanceMode === 'titiusBode' ? 'beta' : 'astronomical units'} from sun ${isPlaying ? ', currently playing' : ''}`}
                 />
                 
                 <text
@@ -756,6 +780,7 @@ const PlanetarySystem = ({
                   fontSize="8"
                   textAnchor="middle"
                   fill="#ccc"
+                  aria-hidden="true"
                 >
                   {planet.name}
                 </text>
@@ -766,6 +791,7 @@ const PlanetarySystem = ({
                   fontSize="6"
                   textAnchor="middle"
                   fill="#aaa"
+                  aria-hidden="true"
                 >
                   {currentDistance.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'}
                 </text>
@@ -778,13 +804,14 @@ const PlanetarySystem = ({
                   stroke="#333"
                   strokeWidth="0.3"
                   strokeDasharray="1,2"
+                  aria-hidden="true"
                 />
               </g>
             );
           })}
         </svg>
       </div>
-      <div className="frequency-display">
+      <div className="frequency-display" aria-label="Current planetary frequencies" role="region">
         <div className="frequency-header">Current Frequencies:</div>
         {Object.entries(currentFrequencies).map(([planet, freq]) => {
           const planetData = orbitData.find(p => p.name === planet);

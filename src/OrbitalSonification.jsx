@@ -1604,6 +1604,22 @@ const OrbitalSonification = () => {
     });
   }, [liveMode, orbitData, currentFrequencies, audioScalingConfig]);
 
+  // Handle escape key press
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setSidebarCollapsed(true);
+        setIsInfoModalOpen(false);
+        setIsInstructionsModalOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, []);
+
   return (
     <div 
       className="container" 
@@ -1629,11 +1645,12 @@ const OrbitalSonification = () => {
         </div>
         
         {/* Floating controls */}
-        <div className="floating-controls fade-in">
+        <div className="floating-controls fade-in" role="toolbar" aria-label="Playback and visualization controls">
           <button 
             className="floating-button"
             onClick={togglePlayPause}
             title={isPaused ? "Play Animation" : "Pause Animation"}
+            aria-label={isPaused ? "Play orbital animation" : "Pause orbital animation"}
           >
             {isPaused ? '▶️' : '⏸️'}
           </button>
@@ -1643,6 +1660,8 @@ const OrbitalSonification = () => {
             title={isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
             disabled={liveMode}
             className="floating-button"
+            aria-label={isPlaying ? "Stop orbital sequence" : "Play orbital sequence"}
+            aria-disabled={liveMode}
           >
             {isPlaying ? '⏹️' : '🪐'}
           </button>
@@ -1652,6 +1671,9 @@ const OrbitalSonification = () => {
             onClick={toggleLiveMode}
             disabled={isPlaying}
             title={liveMode ? "Disable Live Mode" : "Enable Live Mode"}
+            aria-label={liveMode ? "Disable live audio mode" : "Enable live audio mode"}
+            aria-disabled={isPlaying}
+            aria-pressed={liveMode}
             style={{
               backgroundColor: liveMode ? 'rgba(69, 160, 73, 0.5)' : 'rgba(0, 0, 0, 0)',
               opacity: isPlaying ? 0.5 : 1
@@ -1664,6 +1686,8 @@ const OrbitalSonification = () => {
             className="floating-button"
             onClick={() => setPositionMode('average')}
             title="Set to Average Distance"
+            aria-label="Set planets to average orbital distance"
+            aria-pressed={positionMode === 'average'}
           >
             🔄
           </button>
@@ -1672,6 +1696,8 @@ const OrbitalSonification = () => {
             className="floating-button"
             onClick={() => setPositionMode('aphelion')}
             title="Set to Aphelion"
+            aria-label="Set planets to aphelion (farthest position from sun)"
+            aria-pressed={positionMode === 'aphelion'}
           >
             🌞
           </button>
@@ -1680,6 +1706,8 @@ const OrbitalSonification = () => {
             className="floating-button"
             onClick={() => setPositionMode('perihelion')}
             title="Set to Perihelion"
+            aria-label="Set planets to perihelion (closest position to sun)"
+            aria-pressed={positionMode === 'perihelion'}
           >
             ☀️
           </button>
@@ -1690,6 +1718,8 @@ const OrbitalSonification = () => {
           className="instructions-button" 
           onClick={() => setIsInstructionsModalOpen(!isInstructionsModalOpen)}
           title={isInstructionsModalOpen ? "Close" : "Help"}
+          aria-label="Open help instructions"
+          aria-expanded={isInstructionsModalOpen}
         >
           ❔
         </button>
@@ -1697,6 +1727,8 @@ const OrbitalSonification = () => {
           className="info-button" 
           onClick={() => setIsInfoModalOpen(!isInfoModalOpen)}
           title={isInfoModalOpen ? "Close" : "About"}
+          aria-label="Open information about the application"
+          aria-expanded={isInfoModalOpen}
         >
           ℹ️
         </button>
@@ -1704,30 +1736,50 @@ const OrbitalSonification = () => {
           className="more-settings-button" 
           onClick={toggleSidebar}
           title="More Settings"
+          aria-label="Toggle settings sidebar"
+          aria-expanded={!sidebarCollapsed}
+          aria-disabled={isInfoModalOpen || isInstructionsModalOpen}
           disabled={isInfoModalOpen || isInstructionsModalOpen}
         >
           {sidebarCollapsed ? '⚙️' : '✖️'}
         </button>
         
         {/* Advanced settings sidebar */}
-        <div className={`controls-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div 
+          className={`controls-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}
+          role="region"
+          aria-label="Advanced settings"
+          aria-hidden={sidebarCollapsed}
+        >
           {/* Navigation tabs */}
-          <div className="sidebar-tabs">
+          <div className="sidebar-tabs" role="tablist" aria-label="Settings categories">
             <button 
               className={`tab-button ${activeTab === 'controls' ? 'active' : ''}`}
               onClick={() => setActiveTab('controls')}
+              role="tab"
+              aria-selected={activeTab === 'controls'}
+              aria-controls="controls-tab-panel"
+              id="controls-tab"
             >
               Controls
             </button>
             <button 
               className={`tab-button ${activeTab === 'planets' ? 'active' : ''}`}
               onClick={() => setActiveTab('planets')}
+              role="tab"
+              aria-selected={activeTab === 'planets'}
+              aria-controls="planets-tab-panel"
+              id="planets-tab"
             >
               Planets
             </button>
             <button 
               className={`tab-button ${activeTab === 'audio' ? 'active' : ''}`}
               onClick={() => setActiveTab('audio')}
+              role="tab"
+              aria-selected={activeTab === 'audio'}
+              aria-controls="audio-tab-panel"
+              id="audio-tab"
             >
               Audio
             </button>
@@ -1735,7 +1787,12 @@ const OrbitalSonification = () => {
           
           {/* Contenido de la pestaña de controles */}
           {activeTab === 'controls' && (
-            <div className="sidebar-content fade-in">
+            <div 
+              className="sidebar-content fade-in"
+              role="tabpanel"
+              id="controls-tab-panel"
+              aria-labelledby="controls-tab"
+            >
               <div className="control-group">
                 <label htmlFor="volume-slider" className="label">
                   Master Volume: {volumeToDb(masterVolume)} dB
@@ -1751,6 +1808,10 @@ const OrbitalSonification = () => {
                   onChange={handleVolumeChange}
                   onInput={handleVolumeChange}
                   style={{ cursor: 'pointer' }}
+                  aria-valuemin={0}
+                  aria-valuemax={1}
+                  aria-valuenow={masterVolume}
+                  aria-valuetext={`${volumeToDb(masterVolume)} decibels`}
                 />
               </div>
               
@@ -1773,6 +1834,7 @@ const OrbitalSonification = () => {
                   aria-valuemin={27.5}
                   aria-valuemax={110}
                   aria-valuenow={baseFrequency}
+                  aria-valuetext={`${baseFrequency.toFixed(1)} hertz`}
                   style={{ cursor: 'pointer' }}
                   disabled={isPlaying}
                 />
@@ -1788,6 +1850,7 @@ const OrbitalSonification = () => {
                   onChange={handleDistanceModeChange}
                   className="select-dropdown"
                   disabled={!isPaused}
+                  aria-disabled={!isPaused}
                 >
                   <option value="titiusBode">Murch's Modified Titius-Bode Law</option>
                   <option value="actual">Actual Distances</option>
@@ -1808,6 +1871,10 @@ const OrbitalSonification = () => {
                   step={0.1}
                   className="slider"
                   onChange={handleZoomChange}
+                  aria-valuemin={1}
+                  aria-valuemax={40}
+                  aria-valuenow={zoomLevel}
+                  aria-valuetext={`${zoomLevel.toFixed(1)} times magnification`}
                 />
               </div>
               
@@ -1824,6 +1891,10 @@ const OrbitalSonification = () => {
                   value={animationSpeed}
                   onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
                   className="slider"
+                  aria-valuemin={1}
+                  aria-valuemax={50}
+                  aria-valuenow={animationSpeed}
+                  aria-valuetext={`${animationSpeed.toFixed(1)} times normal speed`}
                 />
               </div>
             </div>
@@ -1831,12 +1902,18 @@ const OrbitalSonification = () => {
           
           {/* Content of the planets tab */}
           {activeTab === 'planets' && (
-            <div className="sidebar-content planets-tab fade-in">
+            <div 
+              className="sidebar-content planets-tab fade-in"
+              role="tabpanel"
+              id="planets-tab-panel"
+              aria-labelledby="planets-tab"
+            >
               <div className="sequence-controls">
                 <button 
                   onClick={playOrbitalSequence}
                   disabled={liveMode}
                   className={`button ${liveMode ? 'disabled' : ''}`}
+                  aria-disabled={liveMode}
                 >
                   {isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
                 </button>
@@ -1844,12 +1921,14 @@ const OrbitalSonification = () => {
                 
               {/* Loop checkbox */}
               <div className="loop-control">
-                <label className="checkbox-label">
+                <label className="checkbox-label" htmlFor="loop-checkbox">
                   <input 
+                    id="loop-checkbox"
                     type="checkbox" 
                     checked={loopSequence}
                     onChange={toggleLoopSequence}
                     disabled={liveMode || isPlaying}
+                    aria-disabled={liveMode || isPlaying}
                   />
                   Loop Sequence
                 </label>
@@ -1870,22 +1949,29 @@ const OrbitalSonification = () => {
                   className="slider"
                   onChange={handleBPMChange}
                   disabled={liveMode || isPlaying}
+                  aria-disabled={liveMode || isPlaying}
+                  aria-valuemin={30}
+                  aria-valuemax={240}
+                  aria-valuenow={sequenceBPM}
+                  aria-valuetext={`${sequenceBPM} beats per minute`}
                 />
               </div>
 
               <div className="master-toggle">
-                <label className="checkbox-label">
+                <label className="checkbox-label" htmlFor="toggle-all-planets">
                   <input 
+                    id="toggle-all-planets"
                     type="checkbox" 
                     checked={orbitData.every(planet => planet.enabled)}
                     onChange={() => toggleAllPlanets(!orbitData.every(planet => planet.enabled))}
                     disabled={isPlaying}
+                    aria-disabled={isPlaying}
                   />
                   {orbitData.every(planet => planet.enabled) ? 'Disable All' : 'Enable All'}
                 </label>
               </div>
               
-              <div className="planets-list">
+              <div className="planets-list" role="group" aria-label="Planet toggles">
                 {orbitData.map((planet, index) => (
                   <div 
                     key={planet.name} 
@@ -1894,17 +1980,20 @@ const OrbitalSonification = () => {
                       borderLeft: `4px solid ${getPlanetColor(planet.name)}`
                     }}
                   >
-                    <label className="planet-toggle-label">
+                    <label className="planet-toggle-label" htmlFor={`planet-toggle-${index}`}>
                       <input 
+                        id={`planet-toggle-${index}`}
                         type="checkbox" 
                         checked={planet.enabled}
                         onChange={() => togglePlanet(index)}
                         disabled={isPlaying}
+                        aria-disabled={isPlaying}
+                        aria-label={`Enable ${planet.name}`}
                       />
                       <span className="planet-name">{planet.name}</span>
                     </label>
                     
-                    <div className="planet-info">
+                    <div className="planet-info" aria-live="polite">
                       <div className="planet-data">
                         <span className="data-label">Dist:</span>
                         <span className="data-value">
@@ -1938,17 +2027,24 @@ const OrbitalSonification = () => {
           
           {/* Audio tab with advanced settings */}
           {activeTab === 'audio' && (
-            <div className="sidebar-content audio-tab fade-in">
+            <div 
+              className="sidebar-content audio-tab fade-in"
+              role="tabpanel"
+              id="audio-tab-panel"
+              aria-labelledby="audio-tab"
+            >
               
               <div className="audio-settings">
                 <h3>Advanced Audio Settings</h3>
                 
                 <div className="fletcher-toggle">
-                  <label className="checkbox-label">
+                  <label className="checkbox-label" htmlFor="fletcher-toggle">
                     <input 
+                      id="fletcher-toggle"
                       type="checkbox"
                       checked={useFletcher}
                       onChange={toggleFletcherCurves}
+                      aria-label="Enable Fletcher-Munson equal-loudness curves"
                     />
                     Use Fletcher-Munson equal-loudness curves
                   </label>
@@ -1970,6 +2066,10 @@ const OrbitalSonification = () => {
                     max={110}
                     step={0.5}
                     className="slider"
+                    aria-valuemin={27.5}
+                    aria-valuemax={110}
+                    aria-valuenow={audioScalingConfig.referenceFrequency}
+                    aria-valuetext={`${audioScalingConfig.referenceFrequency.toFixed(1)} hertz`}
                     onChange={(e) => {
                       const newValue = parseFloat(e.target.value);
                       //console.log(`[REF FREQ] Changing to ${newValue}`);
@@ -2003,6 +2103,10 @@ const OrbitalSonification = () => {
                     max={1.0}
                     step={0.1}
                     className="slider"
+                    aria-valuemin={0.1}
+                    aria-valuemax={1.0}
+                    aria-valuenow={audioScalingConfig.scalingFactor}
+                    aria-valuetext={`${audioScalingConfig.scalingFactor.toFixed(1)}`}
                     onChange={(e) => {
                       const newValue = parseFloat(e.target.value);
                       //console.log(`[SCALING] Changing to ${newValue}`);

@@ -4,11 +4,21 @@ const InfoModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div 
+      className="modal-overlay" 
+      onClick={onClose} 
+      role="dialog" 
+      aria-modal="true" 
+      aria-labelledby="info-modal-title"
+    >
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>×</button>
+        <button 
+          className="modal-close" 
+          onClick={onClose} 
+          aria-label="Close information modal"
+        >×</button>
         <div className="modal-body">
-          <h1>Musica Universalis</h1>
+          <h1 id="info-modal-title">Musica Universalis</h1>
           <p>A web-based interactive visualization and sonification of planetary orbits using the modified Titius-Bode Law proposed by Walter Murch.</p>
           
           <h2>Overview</h2>
@@ -177,7 +187,7 @@ const InfoModal = ({ isOpen, onClose }) => {
           </div>
 
           <div className="credits">
-            <p>Created by <a className="credits__link" href='https://www.linkedin.com/in/adriansteinsleger/'>Adrián Steinsleger</a><br />Got feedback? <a className="credits__link" href='mailto:astein@gmail.com'>Contact me</a></p>
+            <p>Created by <a className="credits__link" href='https://www.linkedin.com/in/adriansteinsleger/' aria-label="Adrian Steinsleger's LinkedIn profile">Adrián Steinsleger</a><br />Got feedback? <a className="credits__link" href='mailto:astein@gmail.com' aria-label="Contact the creator via email">Contact me</a></p>
             <ul>
               <li>Concept based on Walter Murch's research on the Titius-Bode Law</li>
               <li>Planetary data from NASA</li>

@@ -4,11 +4,21 @@ const InstructionsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div 
+      className="modal-overlay" 
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="instructions-modal-title"
+    >
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>×</button>
+        <button 
+          className="modal-close" 
+          onClick={onClose}
+          aria-label="Close help instructions"
+        >×</button>
         <div className="modal-body">
-          <h1>Help</h1>
+          <h1 id="instructions-modal-title">Help</h1>
           
           <h2>Getting Started</h2>
           <p>Welcome to Musica Universalis. Here's how to get started exploring the musical harmonies of our solar system:</p>

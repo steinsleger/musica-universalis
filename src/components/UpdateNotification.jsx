@@ -41,20 +41,25 @@ export function UpdateNotification() {
   if (!showUpdate) return null;
 
   return (
-    <div className="update-notification" style={{
-      position: 'fixed',
-      bottom: '20px',
-      left: '20px',  // Changed from right to left
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      color: 'white',
-      padding: '15px',
-      borderRadius: '8px',
-      zIndex: 1000,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '10px',
-      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
-    }}>
+    <div 
+      className="update-notification" 
+      style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '20px',  // Changed from right to left
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        color: 'white',
+        padding: '15px',
+        borderRadius: '8px',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
+      }}
+      role="alert"
+      aria-live="polite"
+    >
       {/* Add dismiss button */}
       <button 
         onClick={handleDismiss} 
@@ -70,7 +75,7 @@ export function UpdateNotification() {
           padding: '2px 6px',
           lineHeight: '1'
         }}
-        aria-label="Dismiss notification"
+        aria-label="Dismiss update notification"
       >
         ✕
       </button>
@@ -86,6 +91,7 @@ export function UpdateNotification() {
           cursor: 'pointer',
           fontWeight: 'bold'
         }}
+        aria-label="Update application to new version"
       >
         Update Now
       </button>
