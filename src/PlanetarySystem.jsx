@@ -44,19 +44,28 @@ const PlanetarySystem = ({
     return distanceMode === 'titiusBode' ? planet.distance : planet.actualDistance;
   };
   
-  // Max distance to calculate scaling
-  const maxDistance = Math.max(...orbitData.map(planet => getDistance(planet) * (1 + planet.eccentricity)));
+  // Max distance to calculate scaling - consider both distance modes
+  const maxDistance = Math.max(...orbitData.map(planet => 
+    Math.max(
+      // For Murch's formula, we need to consider the larger distances
+      getDistance(planet) * (1 + planet.eccentricity),
+      // Also consider actual distances to ensure consistent zoom when changing modes
+      planet.actualDistance * (1 + planet.eccentricity)
+    )
+  ));
   
   // Apply a non-linear zoom scaling for better orbit separation at low zoom values
   const getEffectiveZoom = (baseZoom) => {
-    // This function makes zoom more aggressive for outer planets
-    // which helps distinguish Neptune and Pluto orbits even at low zoom settings
+    // Enhanced function for handling Murch's formula which can produce larger distances
     if (baseZoom <= 1) {
-      // At zoom level 1, use a fixed value to ensure entire system is visible
-      return 0.45;  // Reduced from 0.75 to ensure we see the full system
+      // At zoom level 1, ensure the entire system is visible including Pluto with Murch's formula
+      return 0.25;  // Reduced value to accommodate larger Murch distances
     } else if (baseZoom <= 2) {
       // Apply non-linear scaling for low zoom values to better separate outer orbits
       return baseZoom * (1 + (baseZoom - 1) * 0.2);
+    } else if (baseZoom <= 10) {
+      // For medium zoom, provide better visibility for the outer planets
+      return baseZoom * 1.1;
     }
     return baseZoom;
   };
@@ -615,7 +624,7 @@ const PlanetarySystem = ({
                         fill="#f88"
                       >
                         {planet.name} perihelion
-                        ({perihelionDist.toFixed(2)} AU)
+                        ({perihelionDist.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'})
                       </text>
                     )}
                     
@@ -635,7 +644,7 @@ const PlanetarySystem = ({
                         fill="#88f"
                       >
                         {planet.name} aphelion
-                        ({aphelionDist.toFixed(2)} AU)
+                        ({aphelionDist.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'})
                       </text>
                     )}
                   </>
@@ -758,7 +767,7 @@ const PlanetarySystem = ({
                   textAnchor="middle"
                   fill="#aaa"
                 >
-                  {currentDistance.toFixed(2)} AU
+                  {currentDistance.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'}
                 </text>
                 {/* Line from sun to planet */}
                 <line
@@ -777,14 +786,19 @@ const PlanetarySystem = ({
       </div>
       <div className="frequency-display">
         <div className="frequency-header">Current Frequencies:</div>
-        {Object.entries(currentFrequencies).map(([planet, freq]) => (
-          <div key={planet} className="planet-frequency">
-            <span className="planet-name">{planet}:</span>
-            <span className="frequency-value">
-              {freq.toFixed(1)} Hz <small>({frequencyToNote(freq)})</small>
-            </span>
-          </div>
-        ))}
+        {Object.entries(currentFrequencies).map(([planet, freq]) => {
+          const planetData = orbitData.find(p => p.name === planet);
+          if (!planetData) return null;
+          
+          return (
+            <div key={planet} className="planet-frequency">
+              <span className="planet-name">{planet}:</span>
+              <span className="frequency-value">
+                {freq.toFixed(1)} Hz <small>(~{frequencyToNote(freq)})</small>
+              </span>
+            </div>
+          );
+        })}
       </div>
       <style>
         {`          

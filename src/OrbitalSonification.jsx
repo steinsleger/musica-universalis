@@ -12,19 +12,39 @@ import {
   getHumanHearingSensitivity
 } from './utils/audioScaling';
 
+// Utility function to calculate distance using Murch's formula
+const calculateMurchDistance = (n) => {
+  // Murch's formula: r = 1 + 2^n * 3
+  return 1 + Math.pow(2, n) * 3;
+};
+
+// Planet to n-value mapping for Murch's formula (matching the values in calculatePlanetaryFrequency.js)
+const murchNValues = {
+  "Mercury": -10, // Very negative n value (approaching Beta limit)
+  "Venus": -2,
+  "Earth": -1,
+  "Mars": 0,
+  "Ceres": 1,
+  "Jupiter": 2,
+  "Saturn": 3,
+  "Uranus": 4,
+  "Neptune": 5,
+  "Pluto": 6
+};
+
 const OrbitalSonification = () => {
-  // State for planetary orbit data - with Titius-Bode law distances and actual distances in AU
+  // State for planetary orbit data - with Murch's modified Bode law distances and actual distances in AU
   const [orbitData, setOrbitData] = useState([
-    { name: "Mercury", distance: 0.4, actualDistance: 0.39, eccentricity: 0.2056, enabled: true },
-    { name: "Venus", distance: 0.7, actualDistance: 0.72, eccentricity: 0.0068, enabled: true },
-    { name: "Earth", distance: 1.0, actualDistance: 1.00, eccentricity: 0.0167, enabled: true },
-    { name: "Mars", distance: 1.6, actualDistance: 1.52, eccentricity: 0.0934, enabled: true },
-    { name: "Ceres", distance: 2.8, actualDistance: 2.77, eccentricity: 0.0758, enabled: true },
-    { name: "Jupiter", distance: 5.2, actualDistance: 5.20, eccentricity: 0.0484, enabled: true },
-    { name: "Saturn", distance: 10.0, actualDistance: 9.58, eccentricity: 0.0539, enabled: true },
-    { name: "Uranus", distance: 19.6, actualDistance: 19.20, eccentricity: 0.0473, enabled: true },
-    { name: "Neptune", distance: 38.8, actualDistance: 30.05, eccentricity: 0.0086, enabled: true },
-    { name: "Pluto", distance: 77.2, actualDistance: 39.48, eccentricity: 0.2488, enabled: true }
+    { name: "Mercury", distance: calculateMurchDistance(murchNValues["Mercury"]), actualDistance: 0.39, eccentricity: 0.2056, enabled: true },
+    { name: "Venus", distance: calculateMurchDistance(murchNValues["Venus"]), actualDistance: 0.72, eccentricity: 0.0068, enabled: true },
+    { name: "Earth", distance: calculateMurchDistance(murchNValues["Earth"]), actualDistance: 1.00, eccentricity: 0.0167, enabled: true },
+    { name: "Mars", distance: calculateMurchDistance(murchNValues["Mars"]), actualDistance: 1.52, eccentricity: 0.0934, enabled: true },
+    { name: "Ceres", distance: calculateMurchDistance(murchNValues["Ceres"]), actualDistance: 2.77, eccentricity: 0.0758, enabled: true },
+    { name: "Jupiter", distance: calculateMurchDistance(murchNValues["Jupiter"]), actualDistance: 5.20, eccentricity: 0.0484, enabled: true },
+    { name: "Saturn", distance: calculateMurchDistance(murchNValues["Saturn"]), actualDistance: 9.58, eccentricity: 0.0539, enabled: true },
+    { name: "Uranus", distance: calculateMurchDistance(murchNValues["Uranus"]), actualDistance: 19.20, eccentricity: 0.0473, enabled: true },
+    { name: "Neptune", distance: calculateMurchDistance(murchNValues["Neptune"]), actualDistance: 30.05, eccentricity: 0.0086, enabled: true },
+    { name: "Pluto", distance: calculateMurchDistance(murchNValues["Pluto"]), actualDistance: 39.48, eccentricity: 0.2488, enabled: true }
   ]);
 
   const [baseFrequency, setBaseFrequency] = useState(110);
@@ -1768,7 +1788,7 @@ const OrbitalSonification = () => {
                   className="select-dropdown"
                   disabled={!isPaused}
                 >
-                  <option value="titiusBode">Modified Titius-Bode Law</option>
+                  <option value="titiusBode">Murch's Modified Titius-Bode Law</option>
                   <option value="actual">Actual Distances</option>
                 </select>
               </div>
@@ -1886,7 +1906,11 @@ const OrbitalSonification = () => {
                     <div className="planet-info">
                       <div className="planet-data">
                         <span className="data-label">Dist:</span>
-                        <span className="data-value">{planet.distance.toFixed(2)} AU</span>
+                        <span className="data-value">
+                          {distanceMode === 'titiusBode' 
+                            ? `${planet.distance.toFixed(2)} β` 
+                            : `${planet.actualDistance.toFixed(2)} AU`}
+                        </span>
                       </div>
                       <div className="planet-data">
                         <span className="data-label">Freq:</span>
