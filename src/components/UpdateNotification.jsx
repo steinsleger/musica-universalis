@@ -20,14 +20,22 @@ export function UpdateNotification() {
   const handleUpdate = async () => {
     if (updateSW) {
       try {
-        await updateSW();
+        await updateSW(true); // Pass true to force skip waiting
         setShowUpdate(false);
       } catch (error) {
         console.error('Failed to update:', error);
-        // Fallback to regular refresh if update fails
-        window.location.reload();
+        // Send the SKIP_WAITING message directly to the service worker
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+        }
+        // Give the service worker time to activate, then reload
+        setTimeout(() => window.location.reload(), 500);
       }
     }
+  };
+  
+  const handleDismiss = () => {
+    setShowUpdate(false);
   };
 
   if (!showUpdate) return null;
@@ -36,7 +44,7 @@ export function UpdateNotification() {
     <div className="update-notification" style={{
       position: 'fixed',
       bottom: '20px',
-      right: '20px',
+      left: '20px',  // Changed from right to left
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       color: 'white',
       padding: '15px',
@@ -47,6 +55,25 @@ export function UpdateNotification() {
       gap: '10px',
       boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
     }}>
+      {/* Add dismiss button */}
+      <button 
+        onClick={handleDismiss} 
+        style={{
+          position: 'absolute',
+          top: '5px',
+          right: '5px',
+          backgroundColor: 'transparent',
+          color: 'white',
+          border: 'none',
+          fontSize: '16px',
+          cursor: 'pointer',
+          padding: '2px 6px',
+          lineHeight: '1'
+        }}
+        aria-label="Dismiss notification"
+      >
+        ✕
+      </button>
       <p style={{ margin: 0 }}>A new version is available!</p>
       <button 
         onClick={handleUpdate}
