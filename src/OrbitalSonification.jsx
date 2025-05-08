@@ -32,7 +32,7 @@ const OrbitalSonification = () => {
   const [liveMode, setLiveMode] = useState(false);
   const [currentFrequencies, setCurrentFrequencies] = useState({});
   const [isPaused, setIsPaused] = useState(true);
-  const [positionMode, setPositionMode] = useState('normal'); // 'normal', 'average', 'aphelion', 'perihelion'
+  const [positionMode, setPositionMode] = useState('average'); // Changed from 'normal' to 'average'
   const [masterVolume, setMasterVolume] = useState(0.35); // -9dB approximately
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(20); // Added zoomLevel state
