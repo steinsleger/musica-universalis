@@ -65,6 +65,7 @@ const OrbitalSonification = () => {
   const audioInitializedRef = useRef(false);
   const prevPositionMode = useRef(positionMode);
   const gainNodesRef = useRef({});
+  const planetTimeoutsRef = useRef([]); // Add ref to store individual planet timeouts
 
   // Calculate frequencies based on the modified Bode law or actual distances
   const calculateBaseFrequencies = useCallback((baseFreq, planet, index) => {
@@ -522,6 +523,15 @@ const OrbitalSonification = () => {
       if (isPlaying) {
         debugAudio("Stopping orbital sequence");
   
+        // Clear the currently playing planet immediately to stop the glow effect
+        setCurrentlyPlayingPlanet(null);
+        
+        // Clear any planet-specific timeouts
+        planetTimeoutsRef.current.forEach(timeoutId => {
+          clearTimeout(timeoutId);
+        });
+        planetTimeoutsRef.current = [];
+        
         // Stop sequence
         if (sequenceTimeoutRef.current) {
           clearTimeout(sequenceTimeoutRef.current);
@@ -554,7 +564,6 @@ const OrbitalSonification = () => {
         }
   
         setIsPlaying(false);
-        setCurrentlyPlayingPlanet(null); // Clear the currently playing planet
         return;
       }
   
@@ -596,6 +605,13 @@ const OrbitalSonification = () => {
   
       // Schedule notes and planet highlighting for each planet
       const now = Tone.now();
+      
+      // Clear previous timeouts first
+      planetTimeoutsRef.current.forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+      planetTimeoutsRef.current = [];
+      
       enabledPlanets.forEach((planet, index) => {
         const originalIndex = orbitData.findIndex(p => p.name === planet.name);
         const freq = calculateBaseFrequencies(baseFrequency, planet, originalIndex);
@@ -606,9 +622,13 @@ const OrbitalSonification = () => {
           debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
           
           // Schedule the planet to highlight
-          setTimeout(() => {
+          const timeoutId = setTimeout(() => {
             setCurrentlyPlayingPlanet(planet.name);
           }, index * interval * 1000);
+          
+          // Store timeout ID to be able to clear it later
+          planetTimeoutsRef.current.push(timeoutId);
+          
         } catch (err) {
           console.error(`Error scheduling note for ${planet.name}:`, err);
         }
@@ -622,18 +642,45 @@ const OrbitalSonification = () => {
         if (loopSequence) {
           // Clear currently playing planet before restarting the sequence
           setCurrentlyPlayingPlanet(null);
+          
+          // Clear any remaining planet-specific timeouts before restarting
+          planetTimeoutsRef.current.forEach(timeoutId => {
+            clearTimeout(timeoutId);
+          });
+          planetTimeoutsRef.current = [];
+          
           playOrbitalSequence();
         } else {
+          // Clear the currently playing planet first to ensure glow effect stops
+          setCurrentlyPlayingPlanet(null);
+          
+          // Clear any remaining planet-specific timeouts
+          planetTimeoutsRef.current.forEach(timeoutId => {
+            clearTimeout(timeoutId);
+          });
+          planetTimeoutsRef.current = [];
+          
           setIsPlaying(false);
-          setCurrentlyPlayingPlanet(null); // Clear the currently playing planet
           sequenceTimeoutRef.current = null;
           debugAudio("Sequence playback complete");
         }
       }, sequenceDuration * 1000 + 100); // Convert to ms, add a small buffer
     } catch (error) {
       console.error("Error playing orbital sequence:", error);
-      setIsPlaying(false);
+      
+      // Clear all timeouts on error
+      planetTimeoutsRef.current.forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+      planetTimeoutsRef.current = [];
+      
+      if (sequenceTimeoutRef.current) {
+        clearTimeout(sequenceTimeoutRef.current);
+        sequenceTimeoutRef.current = null;
+      }
+      
       setCurrentlyPlayingPlanet(null);
+      setIsPlaying(false);
     }
   };
 
