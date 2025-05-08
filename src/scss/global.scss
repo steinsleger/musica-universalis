@@ -320,7 +320,8 @@ svg text {
 
 /* Settings and Info Buttons */
 .more-settings-button,
-.info-button {
+.info-button,
+.instructions-button {
   align-items: center;
   background-color: rgba(16, 16, 32, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -341,7 +342,8 @@ svg text {
 
 /* Add backlight effect when sidebar is open */
 .visualization-container:has(.controls-sidebar:not(.collapsed)) .more-settings-button,
-.visualization-container:has(.controls-sidebar:not(.collapsed)) .info-button {
+.visualization-container:has(.controls-sidebar:not(.collapsed)) .info-button,
+.visualization-container:has(.controls-sidebar:not(.collapsed)) .instructions-button {
   background-color: rgba(24, 24, 48, 0.95);
   box-shadow: 0 0 15px rgba(99, 102, 241, 0.3),
               0 0 30px rgba(99, 102, 241, 0.15);
@@ -364,28 +366,22 @@ svg text {
   bottom: calc(var(--space-xl) + 60px);
 }
 
+.instructions-button {
+  bottom: calc(var(--space-xl) + 120px);
+}
+
 .more-settings-button:hover:not(:disabled),
-.info-button:hover {
+.info-button:hover,
+.instructions-button:hover {
   background-color: rgba(24, 24, 48, 0.95);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
 .more-settings-button:active:not(:disabled),
-.info-button:active {
+.info-button:active,
+.instructions-button:active {
   transform: translateY(0);
-}
-
-@media (max-width: 768px) {
-  .more-settings-button {
-    bottom: var(--space-lg);
-    right: var(--space-lg);
-  }
-  
-  .info-button {
-    bottom: calc(var(--space-lg) + 60px);
-    right: var(--space-lg);
-  }
 }
 
 /* Control Groups */
@@ -911,8 +907,13 @@ input[type="checkbox"]:disabled {
   }
   
   .info-button {
-    bottom: var(--space-lg);
-    right: calc(var(--space-lg) + 60px);
+    bottom: calc(var(--space-lg) + 60px);
+    right: var(--space-lg);
+  }
+  
+  .instructions-button {
+    bottom: calc(var(--space-lg) + 120px);
+    right: var(--space-lg);
   }
   
   .modal-content {

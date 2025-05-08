@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
 import InfoModal from './components/InfoModal';
+import InstructionsModal from './components/InstructionsModal';
 import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
 import { 
   calculateFrequencyGain, 
@@ -40,6 +41,7 @@ const OrbitalSonification = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('controls'); // 'controls' o 'planets'
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
   const [loopSequence, setLoopSequence] = useState(false);
   const [sequenceBPM, setSequenceBPM] = useState(60); // Default to 60 BPM
   const [useFletcher, setUseFletcher] = useState(false); // Toggle for advanced gain scaling
@@ -1663,7 +1665,14 @@ const OrbitalSonification = () => {
           </button>
         </div>
         
-        {/* Info and Settings buttons */}
+        {/* Info, Instructions, and Settings buttons */}
+        <button 
+          className="instructions-button" 
+          onClick={() => setIsInstructionsModalOpen(!isInstructionsModalOpen)}
+          title={isInstructionsModalOpen ? "Close" : "Help"}
+        >
+          ❔
+        </button>
         <button 
           className="info-button" 
           onClick={() => setIsInfoModalOpen(!isInfoModalOpen)}
@@ -1675,7 +1684,7 @@ const OrbitalSonification = () => {
           className="more-settings-button" 
           onClick={toggleSidebar}
           title="More Settings"
-          disabled={isInfoModalOpen}
+          disabled={isInfoModalOpen || isInstructionsModalOpen}
         >
           {sidebarCollapsed ? '⚙️' : '✖️'}
         </button>
@@ -2063,6 +2072,7 @@ const OrbitalSonification = () => {
       </div>
       
       <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
+      <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
     </div>
   );
 };
