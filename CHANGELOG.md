@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.3](https://github.com/steinsleger/musica-universalis/compare/v0.1.2...v0.1.3) (2025-05-08)
+
+
+### Features
+
+* add accessibility features ([a4dad9b](https://github.com/steinsleger/musica-universalis/commit/a4dad9b8e031443ce394bcf1c51d8098ae26aedb))
+* add optimal experience alert ([19a8c90](https://github.com/steinsleger/musica-universalis/commit/19a8c90051e08e0d7c4ed069a9493b0c503feebc))
+
+
+### Code Refactoring
+
+* refactor Titius-Bode implementation ([c5b07ca](https://github.com/steinsleger/musica-universalis/commit/c5b07ca04fd79a0093d528d21df54d9e8d3062e1))
+
+
+### Styling
+
+* improve disabled styles ([7a8df1b](https://github.com/steinsleger/musica-universalis/commit/7a8df1bc1fcf06edabbde70aceba92b6a694f429))
+* minor UI tweaks ([748b202](https://github.com/steinsleger/musica-universalis/commit/748b20232eec3b7895fbc7e088d559e5d07f46b3))
+
 ### [0.1.2](https://github.com/steinsleger/musica-universalis/compare/v0.1.1...v0.1.2) (2025-05-08)
 
 ### 0.1.1 (2025-05-08)
