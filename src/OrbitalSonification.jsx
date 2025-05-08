@@ -26,7 +26,7 @@ const OrbitalSonification = () => {
     { name: "Pluto", distance: 77.2, actualDistance: 39.48, eccentricity: 0.2488, enabled: true }
   ]);
 
-  const [baseFrequency, setBaseFrequency] = useState(27.5);
+  const [baseFrequency, setBaseFrequency] = useState(110);
   const [isPlaying, setIsPlaying] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(1);
   const [liveMode, setLiveMode] = useState(false);
@@ -1689,7 +1689,7 @@ const OrbitalSonification = () => {
                   type="range" 
                   value={zoomLevel}
                   min={1}
-                  max={20}
+                  max={40}
                   step={0.1}
                   className="slider"
                   onChange={handleZoomChange}
