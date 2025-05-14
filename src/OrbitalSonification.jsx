@@ -1825,7 +1825,7 @@ const OrbitalSonification = () => {
                   value={baseFrequency}
                   min={27.5}
                   max={110}
-                  step={0.5}
+                  step={0.1}
                   className="slider"
                   onChange={handleBaseFrequencyChange}
                   onInput={handleBaseFrequencyChange}
