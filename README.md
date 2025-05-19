@@ -136,7 +136,7 @@ His work suggests that there may be deeper underlying patterns in the structure 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/musica-universalis.git
+git clone https://github.com/steinsleger/musica-universalis.git
 
 # Navigate to the project directory
 cd musica-universalis
