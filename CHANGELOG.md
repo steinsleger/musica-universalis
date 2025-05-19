@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.4](https://github.com/steinsleger/musica-universalis/compare/v0.1.3...v0.1.4) (2025-05-19)
+
+
+### Code Refactoring
+
+* reduce base frequency slider step to 0.1 ([1f58dac](https://github.com/steinsleger/musica-universalis/commit/1f58dac29f94d4df14e592d4996f021ed2d78733))
+
+
+### Documentation
+
+* update readme ([541d3df](https://github.com/steinsleger/musica-universalis/commit/541d3df016829737e5544896bf946ee5ca409be2))
+
 ### [0.1.3](https://github.com/steinsleger/musica-universalis/compare/v0.1.2...v0.1.3) (2025-05-08)
 
 
