@@ -35,15 +35,15 @@ const murchNValues = {
 const OrbitalSonification = () => {
   // State for planetary orbit data - with Murch's modified Bode law distances and actual distances in AU
   const [orbitData, setOrbitData] = useState([
-    { name: "Mercury", distance: calculateMurchDistance(murchNValues["Mercury"]), actualDistance: 0.39, eccentricity: 0.2056, enabled: true },
-    { name: "Venus", distance: calculateMurchDistance(murchNValues["Venus"]), actualDistance: 0.72, eccentricity: 0.0068, enabled: true },
+    { name: "Mercury", distance: calculateMurchDistance(murchNValues["Mercury"]), actualDistance: 0.3870, eccentricity: 0.2056, enabled: true },
+    { name: "Venus", distance: calculateMurchDistance(murchNValues["Venus"]), actualDistance: 0.7233, eccentricity: 0.0068, enabled: true },
     { name: "Earth", distance: calculateMurchDistance(murchNValues["Earth"]), actualDistance: 1.00, eccentricity: 0.0167, enabled: true },
-    { name: "Mars", distance: calculateMurchDistance(murchNValues["Mars"]), actualDistance: 1.52, eccentricity: 0.0934, enabled: true },
+    { name: "Mars", distance: calculateMurchDistance(murchNValues["Mars"]), actualDistance: 1.5237, eccentricity: 0.0934, enabled: true },
     { name: "Ceres", distance: calculateMurchDistance(murchNValues["Ceres"]), actualDistance: 2.77, eccentricity: 0.0758, enabled: true },
-    { name: "Jupiter", distance: calculateMurchDistance(murchNValues["Jupiter"]), actualDistance: 5.20, eccentricity: 0.0484, enabled: true },
-    { name: "Saturn", distance: calculateMurchDistance(murchNValues["Saturn"]), actualDistance: 9.58, eccentricity: 0.0539, enabled: true },
-    { name: "Uranus", distance: calculateMurchDistance(murchNValues["Uranus"]), actualDistance: 19.20, eccentricity: 0.0473, enabled: true },
-    { name: "Neptune", distance: calculateMurchDistance(murchNValues["Neptune"]), actualDistance: 30.05, eccentricity: 0.0086, enabled: true },
+    { name: "Jupiter", distance: calculateMurchDistance(murchNValues["Jupiter"]), actualDistance: 5.2029, eccentricity: 0.0484, enabled: true },
+    { name: "Saturn", distance: calculateMurchDistance(murchNValues["Saturn"]), actualDistance: 9.5367, eccentricity: 0.0539, enabled: true },
+    { name: "Uranus", distance: calculateMurchDistance(murchNValues["Uranus"]), actualDistance: 19.1892, eccentricity: 0.0473, enabled: true },
+    { name: "Neptune", distance: calculateMurchDistance(murchNValues["Neptune"]), actualDistance: 30.07, eccentricity: 0.0086, enabled: true },
     { name: "Pluto", distance: calculateMurchDistance(murchNValues["Pluto"]), actualDistance: 39.48, eccentricity: 0.2488, enabled: true }
   ]);
 
