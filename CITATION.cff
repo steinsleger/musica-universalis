@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Musica Universalis"
+abstract: "Interactive visualization and sonification of planetary orbits using the modified Titius-Bode Law proposed by Walter Murch"
+authors:
+  - family-names: "Steinsleger"
+    given-names: "Adrián"
+    orcid: "https://orcid.org/0009-0008-0435-4056"
+version: 0.1.4
+date-released: 2025-05-19
+url: "https://musica-universalis-pi.vercel.app/"
+repository-code: "https://github.com/steinsleger/musica-universalis"
+license: CC-BY-NC-SA-4.0
+type: software
+keywords:
+  - "astronomical sonification"
+  - "Titius-Bode law"
+  - "music of the spheres"
+  - "planetary orbits"
+  - "data sonification"
+  - "interactive visualization"
+  - "Walter Murch"
