@@ -1,32 +1,25 @@
 import React, { useState, useEffect } from 'react';
 
-const ScreenAlert = () => {
+const ScreenAlert: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Function to check if screen is portrait or small
-    const checkScreenOrientation = () => {
-      // Check if user has already dismissed the alert
+    const checkScreenOrientation = (): void => {
       if (localStorage.getItem('screenAlertDismissed') === 'true') {
         setDismissed(true);
         return;
       }
 
-      // Check if portrait (height > width) or small screen (width < 768px - typical tablet breakpoint)
       const isPortrait = window.innerHeight > window.innerWidth;
       const isSmallScreen = window.innerWidth < 768;
-      
+
       setIsVisible(isPortrait || isSmallScreen);
     };
 
-    // Check on initial load
     checkScreenOrientation();
 
-    // Check on resize
     window.addEventListener('resize', checkScreenOrientation);
-    
-    // Check on orientation change for mobile devices
     window.addEventListener('orientationchange', checkScreenOrientation);
 
     return () => {
@@ -35,18 +28,16 @@ const ScreenAlert = () => {
     };
   }, []);
 
-  // Handle dismissal of alert
-  const handleDismiss = () => {
+  const handleDismiss = (): void => {
     setIsVisible(false);
     setDismissed(true);
     localStorage.setItem('screenAlertDismissed', 'true');
   };
 
-  // Don't render anything if alert is dismissed or should not be visible
   if (dismissed || !isVisible) return null;
 
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
         top: '16px',
@@ -67,17 +58,23 @@ const ScreenAlert = () => {
       role="alert"
       aria-live="polite"
     >
-      <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginBottom: '8px' }}>
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="24" 
-          height="24" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: '8px'
+      }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           style={{ marginRight: '8px', flexShrink: 0 }}
           aria-hidden="true"
         >
@@ -85,8 +82,15 @@ const ScreenAlert = () => {
           <line x1="12" y1="9" x2="12" y2="13"></line>
           <line x1="12" y1="17" x2="12.01" y2="17"></line>
         </svg>
-        <h3 id="alert-heading" style={{ margin: '0', flexGrow: 1, fontSize: '18px' }}>Optimal Experience Alert</h3>
-        <button 
+        <h3 id="alert-heading" style={{
+          margin: '0',
+          flexGrow: 1,
+          fontSize: '18px'
+        }}
+        >
+          Optimal Experience Alert
+        </h3>
+        <button
           onClick={handleDismiss}
           style={{
             background: 'transparent',
@@ -104,10 +108,12 @@ const ScreenAlert = () => {
         </button>
       </div>
       <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.5' }}>
-        For the best experience with Musica Universalis, we recommend using a landscape orientation and a larger screen size. The current view may limit some functionality.
+        For the best experience with Musica Universalis, we recommend using a
+        landscape orientation and a larger screen size. The current view may
+        limit some functionality.
       </p>
     </div>
   );
 };
 
-export default ScreenAlert; 
+export default ScreenAlert;

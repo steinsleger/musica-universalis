@@ -1,24 +1,20 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import OrbitalSonification from './OrbitalSonification';
 import Preloader from './components/Preloader';
 import { UpdateNotification } from './components/UpdateNotification';
 import ScreenAlert from './components/ScreenAlert';
 
-function App() {
+const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Wait for all resources to load
     window.addEventListener('load', () => {
       setIsLoading(false);
     });
   }, []);
 
-  // Add version check effect
   useEffect(() => {
-    // Check for updates every hour
-    const checkForUpdates = async () => {
+    const checkForUpdates = async (): Promise<void> => {
       try {
         const registration = await navigator.serviceWorker.getRegistration();
         if (registration) {
@@ -29,7 +25,6 @@ function App() {
       }
     };
 
-    // Check immediately and then every hour
     checkForUpdates();
     const interval = setInterval(checkForUpdates, 60 * 60 * 1000);
 
@@ -44,6 +39,6 @@ function App() {
       <ScreenAlert />
     </>
   );
-}
+};
 
 export default App;

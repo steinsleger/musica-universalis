@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import '../scss/preloader.scss';
 
-const Preloader = () => {
+const Preloader: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading time or wait for actual resources to load
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 2000);
@@ -16,12 +15,12 @@ const Preloader = () => {
   if (!isLoading) return null;
 
   return (
-    <div 
-      className="preloader" 
-      role="status" 
+    <div
+      className="preloader"
+      role="status"
       aria-live="polite"
     >
-      <div 
+      <div
         className="orbital-container"
         aria-hidden="true"
       >
@@ -36,9 +35,11 @@ const Preloader = () => {
         </div>
         <div className="sun"></div>
       </div>
-      <div className="loading-text" aria-label="Loading application">Loading...</div>
+      <div className="loading-text" aria-label="Loading application">
+        Loading...
+      </div>
     </div>
   );
 };
 
-export default Preloader; 
+export default Preloader;

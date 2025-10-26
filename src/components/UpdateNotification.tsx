@@ -1,52 +1,55 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { registerSW } from 'virtual:pwa-register';
 
-export function UpdateNotification() {
+type RegisterSWFunction = (options: {
+  onNeedRefresh: () => void;
+  onOfflineReady: () => void;
+}) => (skipWaiting?: boolean) => Promise<void>;
+
+export const UpdateNotification: React.FC = () => {
   const [showUpdate, setShowUpdate] = useState(false);
-  const [updateSW, setUpdateSW] = useState(null);
+  const [updateSW, setUpdateSW] = useState<((skipWaiting?: boolean) => Promise<void>) | null>(null);
 
   useEffect(() => {
-    const sw = registerSW({
+    const sw = (registerSW as RegisterSWFunction)({
       onNeedRefresh() {
         setShowUpdate(true);
       },
       onOfflineReady() {
         console.log('App ready to work offline');
-      },
+      }
     });
-    setUpdateSW(sw);
+    setUpdateSW(() => sw);
   }, []);
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (): Promise<void> => {
     if (updateSW) {
       try {
-        await updateSW(true); // Pass true to force skip waiting
+        await updateSW(true);
         setShowUpdate(false);
       } catch (error) {
         console.error('Failed to update:', error);
-        // Send the SKIP_WAITING message directly to the service worker
         if (navigator.serviceWorker.controller) {
           navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
         }
-        // Give the service worker time to activate, then reload
         setTimeout(() => window.location.reload(), 500);
       }
     }
   };
-  
-  const handleDismiss = () => {
+
+  const handleDismiss = (): void => {
     setShowUpdate(false);
   };
 
   if (!showUpdate) return null;
 
   return (
-    <div 
-      className="update-notification" 
+    <div
+      className="update-notification"
       style={{
         position: 'fixed',
         bottom: '20px',
-        left: '20px',  // Changed from right to left
+        left: '20px',
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         color: 'white',
         padding: '15px',
@@ -60,9 +63,8 @@ export function UpdateNotification() {
       role="alert"
       aria-live="polite"
     >
-      {/* Add dismiss button */}
-      <button 
-        onClick={handleDismiss} 
+      <button
+        onClick={handleDismiss}
         style={{
           position: 'absolute',
           top: '5px',
@@ -80,7 +82,7 @@ export function UpdateNotification() {
         ✕
       </button>
       <p style={{ margin: 0 }}>A new version is available!</p>
-      <button 
+      <button
         onClick={handleUpdate}
         style={{
           backgroundColor: '#4CAF50',
@@ -97,4 +99,4 @@ export function UpdateNotification() {
       </button>
     </div>
   );
-} 
+};

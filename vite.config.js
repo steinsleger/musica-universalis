@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import removeConsole from 'vite-plugin-remove-console'
-import { VERSION } from './src/version.js'
+import { VERSION } from './src/version'
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production'
