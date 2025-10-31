@@ -3,6 +3,7 @@
  */
 
 import * as Tone from 'tone';
+import { MURCH_N_VALUES } from './constants';
 
 export type FrequencyMode = 'titiusBode' | 'actual';
 export type PositionMode = 'average' | 'aphelion' | 'perihelion' | 'normal';
@@ -64,23 +65,10 @@ export interface PlanetarySystemProps {
   sequenceBPM?: number;
 }
 
-export const murchNValues: Record<string, number> = {
-  Mercury: -10,
-  Venus: -2,
-  Earth: -1,
-  Mars: 0,
-  Ceres: 1,
-  Jupiter: 2,
-  Saturn: 3,
-  Uranus: 4,
-  Neptune: 5,
-  Pluto: 6
-};
-
 /**
  * Calculate distance using Murch's formula: r = 1 + 2^n × 3
  */
-export const calculateMurchDistance = (n: number): number => {
+const calculateMurchDistance = (n: number): number => {
   return 1 + Math.pow(2, n) * 3;
 };
 
@@ -91,70 +79,70 @@ export const getDefaultOrbitData = (): Planet[] => {
   return [
     {
       name: 'Mercury',
-      distance: calculateMurchDistance(murchNValues.Mercury),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Mercury),
       actualDistance: 0.3870,
       eccentricity: 0.2056,
       enabled: true
     },
     {
       name: 'Venus',
-      distance: calculateMurchDistance(murchNValues.Venus),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Venus),
       actualDistance: 0.7233,
       eccentricity: 0.0068,
       enabled: true
     },
     {
       name: 'Earth',
-      distance: calculateMurchDistance(murchNValues.Earth),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Earth),
       actualDistance: 1.00,
       eccentricity: 0.0167,
       enabled: true
     },
     {
       name: 'Mars',
-      distance: calculateMurchDistance(murchNValues.Mars),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Mars),
       actualDistance: 1.5237,
       eccentricity: 0.0934,
       enabled: true
     },
     {
       name: 'Ceres',
-      distance: calculateMurchDistance(murchNValues.Ceres),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Ceres),
       actualDistance: 2.77,
       eccentricity: 0.0758,
       enabled: true
     },
     {
       name: 'Jupiter',
-      distance: calculateMurchDistance(murchNValues.Jupiter),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Jupiter),
       actualDistance: 5.2029,
       eccentricity: 0.0484,
       enabled: true
     },
     {
       name: 'Saturn',
-      distance: calculateMurchDistance(murchNValues.Saturn),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Saturn),
       actualDistance: 9.5367,
       eccentricity: 0.0539,
       enabled: true
     },
     {
       name: 'Uranus',
-      distance: calculateMurchDistance(murchNValues.Uranus),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Uranus),
       actualDistance: 19.1892,
       eccentricity: 0.0473,
       enabled: true
     },
     {
       name: 'Neptune',
-      distance: calculateMurchDistance(murchNValues.Neptune),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Neptune),
       actualDistance: 30.07,
       eccentricity: 0.0086,
       enabled: true
     },
     {
       name: 'Pluto',
-      distance: calculateMurchDistance(murchNValues.Pluto),
+      distance: calculateMurchDistance(MURCH_N_VALUES.Pluto),
       actualDistance: 39.48,
       eccentricity: 0.2488,
       enabled: true

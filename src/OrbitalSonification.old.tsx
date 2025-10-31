@@ -4,9 +4,6 @@ import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
 import InfoModal from './components/InfoModal';
 import InstructionsModal from './components/InstructionsModal';
-import { AudioConfigProvider, useAudioConfig } from './context/AudioConfigContext';
-import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
-import { useAudioContext } from './hooks/useAudioContext';
 import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
 import {
   calculateFrequencyGain,
@@ -32,25 +29,29 @@ declare global {
   }
 }
 
-const OrbitalSonificationContent: React.FC = () => {
-  // Context state
-  const { baseFrequency, setBaseFrequency, masterVolume, setMasterVolume, sequenceBPM, setSequenceBPM, useFletcher, setUseFletcher, audioScalingConfig, setAudioScalingConfig } = useAudioConfig();
-  const { orbitData, setOrbitData, animationSpeed, setAnimationSpeed, isPaused, setIsPaused, distanceMode, setDistanceMode, positionMode, setPositionMode, zoomLevel, setZoomLevel } = useOrbitState();
-
-  // Hooks
-  const { needsUserInteraction, startAudio, audioContextReady } = useAudioContext();
-
-  // Local state
+const OrbitalSonification: React.FC = () => {
+  const [orbitData, setOrbitData] = useState<Planet[]>(getDefaultOrbitData());
+  const [baseFrequency, setBaseFrequency] = useState<number>(110);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [animationSpeed, setAnimationSpeed] = useState<number>(1);
   const [liveMode, setLiveMode] = useState<boolean>(false);
   const [currentFrequencies, setCurrentFrequencies] = useState<CurrentFrequencies>({});
+  const [isPaused, setIsPaused] = useState<boolean>(true);
+  const [positionMode, setPositionMode] = useState<PositionMode>('average');
+  const [masterVolume, setMasterVolume] = useState<number>(0.35);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState<boolean>(true);
+  const [zoomLevel, setZoomLevel] = useState<number>(20);
+  const [distanceMode, setDistanceMode] = useState<FrequencyMode>('titiusBode');
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('controls');
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
   const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState<boolean>(false);
   const [loopSequence, setLoopSequence] = useState<boolean>(false);
+  const [sequenceBPM, setSequenceBPM] = useState<number>(60);
+  const [useFletcher, setUseFletcher] = useState<boolean>(true);
   const [currentlyPlayingPlanet, setCurrentlyPlayingPlanet] = useState<string | null>(null);
   const reverbAmount: number = 0.5;
+  const [audioScalingConfig, setAudioScalingConfig] = useState<AudioScalingConfig>(getDefaultAudioScalingConfig());
 
   const audioContextStarted = useRef<boolean>(false);
   const gainNodeRef = useRef<Tone.Gain | null>(null);
@@ -605,17 +606,22 @@ const OrbitalSonificationContent: React.FC = () => {
           await Tone.context.resume();
         }
 
+        setNeedsUserInteraction(false);
+
         return true;
       } catch (error) {
         console.error('Could not start AudioContext:', error);
+        setNeedsUserInteraction(true);
         return false;
       }
     } else if (Tone.context.state !== 'running') {
       try {
         await Tone.context.resume();
+        setNeedsUserInteraction(false);
         return true;
       } catch (error) {
         console.error('Could not resume AudioContext:', error);
+        setNeedsUserInteraction(true);
         return false;
       }
     }
@@ -626,8 +632,8 @@ const OrbitalSonificationContent: React.FC = () => {
     if (needsUserInteraction) {
       try {
         const started = await startAudioContext();
-        if (!started) {
-          console.error('Failed to start audio context on user interaction');
+        if (started) {
+          setNeedsUserInteraction(false);
         }
       } catch (error) {
         console.error('Error initializing audio on user interaction:', error);
@@ -1273,47 +1279,49 @@ const OrbitalSonificationContent: React.FC = () => {
   }, [useFletcher, audioScalingConfig]);
 
   const toggleFletcherCurves = useCallback((): void => {
-    const newValue = !useFletcher;
+    setUseFletcher(prev => {
+      const newValue = !prev;
 
-    if (liveMode) {
-      Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
-        const planet = orbitData.find(p => p.name === planetName);
-        if (planet && planet.enabled) {
-          const synthObj = synthsRef.current[planetName];
-          if (synthObj && synthObj.gain && freq) {
-            const gain = newValue
-              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
-              : calculateFrequencyGain(freq, audioScalingConfig);
+      if (liveMode) {
+        Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
+          const planet = orbitData.find(p => p.name === planetName);
+          if (planet && planet.enabled) {
+            const synthObj = synthsRef.current[planetName];
+            if (synthObj && synthObj.gain && freq) {
+              const gain = newValue
+                ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
+                : calculateFrequencyGain(freq, audioScalingConfig);
 
-            try {
-              const now = Tone.now();
-              synthObj.gain.gain.cancelScheduledValues(now);
-              synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
-              synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+              try {
+                const now = Tone.now();
+                synthObj.gain.gain.cancelScheduledValues(now);
+                synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
+                synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
 
-              setTimeout(() => {
+                setTimeout(() => {
+                  try {
+                    synthObj.gain.gain.value = gain;
+                  } catch (directErr) {
+                    console.error('[FLETCHER] Error in direct gain set:', directErr);
+                  }
+                }, 60);
+              } catch {
+                console.error(`[FLETCHER] Error updating gain for ${planetName}:`);
+
                 try {
                   synthObj.gain.gain.value = gain;
                 } catch (directErr) {
-                  console.error('[FLETCHER] Error in direct gain set:', directErr);
+                  console.error('[FLETCHER] Fallback direct gain set also failed:', directErr);
                 }
-              }, 60);
-            } catch {
-              console.error(`[FLETCHER] Error updating gain for ${planetName}:`);
-
-              try {
-                synthObj.gain.gain.value = gain;
-              } catch (directErr) {
-                console.error('[FLETCHER] Fallback direct gain set also failed:', directErr);
               }
             }
           }
-        }
-      });
-    }
+        });
+      }
 
-    setUseFletcher(newValue);
-  }, [liveMode, orbitData, currentFrequencies, audioScalingConfig, useFletcher]);
+      return newValue;
+    });
+  }, [liveMode, orbitData, currentFrequencies, audioScalingConfig]);
 
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent): void => {
@@ -1772,10 +1780,10 @@ const OrbitalSonificationContent: React.FC = () => {
                     onChange={(e) => {
                       const newValue = parseFloat(e.target.value);
 
-                      setAudioScalingConfig({
-                        ...audioScalingConfig,
+                      setAudioScalingConfig(cfg => ({
+                        ...cfg,
                         referenceFrequency: newValue
-                      });
+                      }));
 
                       setTimeout(() => {
                         forceRecalculateAllGains();
@@ -1806,10 +1814,10 @@ const OrbitalSonificationContent: React.FC = () => {
                     onChange={(e) => {
                       const newValue = parseFloat(e.target.value);
 
-                      setAudioScalingConfig({
-                        ...audioScalingConfig,
+                      setAudioScalingConfig(cfg => ({
+                        ...cfg,
                         scalingFactor: newValue
-                      });
+                      }));
 
                       setTimeout(() => {
                         forceRecalculateAllGains();
@@ -1844,13 +1852,5 @@ const OrbitalSonificationContent: React.FC = () => {
     </div>
   );
 };
-
-const OrbitalSonification: React.FC = () => (
-  <AudioConfigProvider>
-    <OrbitStateProvider>
-      <OrbitalSonificationContent />
-    </OrbitStateProvider>
-  </AudioConfigProvider>
-);
 
 export default OrbitalSonification;

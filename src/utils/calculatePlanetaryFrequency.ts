@@ -1,29 +1,10 @@
 /**
  * Calculates frequencies based on the modified Titius-Bode law for solar system bodies
+ * Uses centralized constants from utils/constants.ts
  */
 
-type FrequencyMode = 'titiusBode' | 'actual';
-
-interface Planet {
-  name: string;
-  distance: number;
-  actualDistance: number;
-  eccentricity: number;
-  enabled: boolean;
-}
-
-const murchNValues: Record<string, number> = {
-  Mercury: -10,
-  Venus: -2,
-  Earth: -1,
-  Mars: 0,
-  Ceres: 1,
-  Jupiter: 2,
-  Saturn: 3,
-  Uranus: 4,
-  Neptune: 5,
-  Pluto: 6
-};
+import { Planet, FrequencyMode } from './types';
+import { MURCH_N_VALUES } from './constants';
 
 /**
  * Calculates frequency using the modified Titius-Bode law for a given planet
@@ -38,11 +19,9 @@ export const calculatePlanetaryFrequency = (
   distanceMode: FrequencyMode = 'titiusBode'
 ): number => {
   if (distanceMode === 'titiusBode') {
-    const n = murchNValues[planet.name];
+    const n = MURCH_N_VALUES[planet.name];
     return baseFrequency * (1 + Math.pow(2, n) * 3);
   } else {
     return baseFrequency * (5 * planet.actualDistance + 1);
   }
 };
-
-export type { FrequencyMode, Planet };
