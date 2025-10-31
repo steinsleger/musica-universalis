@@ -205,7 +205,7 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
             const showOrbitExtremes = planet.eccentricity > 0.1;
             const { perihelion, aphelion } = showOrbitExtremes ?
               getExtremePositions(getDistance(planet), planet.eccentricity) :
-              { perihelion: null, aphelion: null };
+              { perihelion: undefined, aphelion: undefined };
 
             const { perihelion: perihelionDist, aphelion: aphelionDist } =
               calculateOrbitalExtremes(getDistance(planet), planet.eccentricity);
