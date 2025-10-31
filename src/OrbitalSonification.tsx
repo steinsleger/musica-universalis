@@ -14,6 +14,7 @@ import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
 import { useModals } from './hooks/useModals';
 import { usePlaybackState } from './hooks/usePlaybackState';
 import { useUIState } from './hooks/useUIState';
+import { useAudioReferences } from './hooks/useAudioReferences';
 import {
   calculateFrequencyGain,
   safelyTriggerNote,
@@ -22,6 +23,12 @@ import {
 } from './utils/audioScaling';
 import { SynthManager } from './utils/synthManager';
 import { volumeToDb, getPlanetColor } from './utils/visualizationHelpers';
+import {
+  disposeSynthAndCreateNew,
+  clearPlanetTimeouts,
+  calculateSequenceTiming,
+  createSequenceSynth
+} from './utils/audioUtils';
 import {
   Planet,
   CurrentFrequencies,
@@ -80,21 +87,24 @@ const OrbitalSonificationContent: React.FC = () => {
   });
   const reverbAmount: number = 0.5;
 
-  const audioContextStarted = useRef<boolean>(false);
-  const gainNodeRef = useRef<Tone.Gain | null>(null);
-  const initFrequenciesRef = useRef<boolean>(false);
-  const synthsRef = useRef<Record<string, SynthObject>>({});
-  const mainSynthRef = useRef<Tone.PolySynth<Tone.Synth> | null>(null);
-  const lastFrequenciesRef = useRef<CurrentFrequencies>({});
-  const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const debug = useRef<boolean>(true);
-  const activeSynthsRef = useRef<Set<string>>(new Set());
-  const audioInitializedRef = useRef<boolean>(false);
   const prevPositionMode = useRef<PositionMode>(positionMode);
-  const gainNodesRef = useRef<Record<string, Tone.Gain>>({});
-  const planetTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
-  const reverbRef = useRef<Tone.Reverb | null>(null);
-  const synthManagerRef = useRef<SynthManager>(new SynthManager(null));
+
+  const {
+    audioContextStarted,
+    gainNode: gainNodeRef,
+    initFrequencies: initFrequenciesRef,
+    synths: synthsRef,
+    mainSynth: mainSynthRef,
+    lastFrequencies: lastFrequenciesRef,
+    sequenceTimeout: sequenceTimeoutRef,
+    debug,
+    activeSynths: activeSynthsRef,
+    audioInitialized: audioInitializedRef,
+    gainNodes: gainNodesRef,
+    planetTimeouts: planetTimeoutsRef,
+    reverb: reverbRef,
+    synthManager: synthManagerRef
+  } = useAudioReferences();
 
   const calculateBaseFrequencies = useCallback((baseFreq: number, planet: Planet, _index: number): number => {
     return calculateFrequency(baseFreq, planet, distanceMode);
@@ -489,26 +499,7 @@ const OrbitalSonificationContent: React.FC = () => {
 
       debugAudio('Starting orbital sequence');
 
-      if (mainSynthRef.current) {
-        try {
-          mainSynthRef.current.dispose();
-        } catch {
-          // Ignore disposal errors
-        }
-      }
-
-      const mainSynth = new Tone.PolySynth(Tone.Synth, {
-        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-        oscillator: { type: 'sine' }
-      });
-
-      if (gainNodeRef.current && !gainNodeRef.current.disposed) {
-        mainSynth.connect(gainNodeRef.current);
-      } else {
-        mainSynth.toDestination();
-      }
-
-      mainSynthRef.current = mainSynth;
+      mainSynthRef.current = disposeSynthAndCreateNew(mainSynthRef.current, gainNodeRef.current);
 
       setIsPlaying(true);
 
@@ -516,9 +507,7 @@ const OrbitalSonificationContent: React.FC = () => {
 
       debugAudio(`Playing sequence with ${enabledPlanets.length} planets`);
 
-      const beatDuration = 60 / sequenceBPM;
-      const noteDuration = beatDuration;
-      const interval = beatDuration;
+      const { beatDuration, noteDuration, interval } = calculateSequenceTiming(sequenceBPM);
 
       const now = Tone.now();
 
@@ -533,7 +522,7 @@ const OrbitalSonificationContent: React.FC = () => {
         const time = now + index * interval;
 
         try {
-          mainSynth.triggerAttackRelease(freq, noteDuration, time, 0.3);
+          mainSynthRef.current!.triggerAttackRelease(freq, noteDuration, time, 0.3);
           debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
 
           const timeoutId = setTimeout(() => {
