@@ -17,6 +17,7 @@ import {
   calculateAdvancedFrequencyGain,
   getHumanHearingSensitivity
 } from './utils/audioScaling';
+import { SynthManager } from './utils/synthManager';
 import {
   Planet,
   CurrentFrequencies,
@@ -70,6 +71,7 @@ const OrbitalSonificationContent: React.FC = () => {
   const gainNodesRef = useRef<Record<string, Tone.Gain>>({});
   const planetTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
   const reverbRef = useRef<Tone.Reverb | null>(null);
+  const synthManagerRef = useRef<SynthManager>(new SynthManager(null));
 
   const calculateBaseFrequencies = useCallback((baseFreq: number, planet: Planet, _index: number): number => {
     return calculateFrequency(baseFreq, planet, distanceMode);
@@ -118,22 +120,8 @@ const OrbitalSonificationContent: React.FC = () => {
     return () => {
       debugAudio('Component unmounting, cleaning up audio');
 
-      Object.values(synthsRef.current).forEach(synthObj => {
-        if (synthObj && synthObj.synth) {
-          try {
-            synthObj.synth.dispose();
-          } catch {
-            // Ignore disposal errors
-          }
-        }
-        if (synthObj && synthObj.gain) {
-          try {
-            synthObj.gain.dispose();
-          } catch {
-            // Ignore disposal errors
-          }
-        }
-      });
+      // Use SynthManager to dispose all synths
+      synthManagerRef.current.disposeAll();
 
       if (mainSynthRef.current) {
         try {
@@ -811,6 +799,7 @@ const OrbitalSonificationContent: React.FC = () => {
 
       await reverb.generate();
       reverbRef.current = reverb;
+      synthManagerRef.current.setReverbNode(reverb);
 
       try {
         const masterGain = new Tone.Gain(masterVolume).connect(reverb);
@@ -976,70 +965,21 @@ const OrbitalSonificationContent: React.FC = () => {
   };
 
   const createIsolatedSynth = (planetName: string): SynthObject | null => {
-    try {
-      if (synthsRef.current[planetName]) {
-        try {
-          if (activeSynthsRef.current.has(planetName)) {
-            synthsRef.current[planetName].synth.triggerRelease();
-            activeSynthsRef.current.delete(planetName);
-          }
-          synthsRef.current[planetName].synth.dispose();
-          if (synthsRef.current[planetName].gain) {
-            synthsRef.current[planetName].gain.dispose();
-          }
-        } catch {
-          debugAudio(`Error cleaning up old synth for ${planetName}`);
-        }
-      }
+    // Use SynthManager to create the synth
+    const synthObj = synthManagerRef.current.createSynth(
+      planetName,
+      currentFrequencies[planetName],
+      audioScalingConfig,
+      useFletcher
+    );
 
-      let initialGain = 1.0;
-
-      if (currentFrequencies[planetName]) {
-        try {
-          const frequency = currentFrequencies[planetName];
-
-          initialGain = useFletcher
-            ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
-            : calculateFrequencyGain(frequency, audioScalingConfig);
-        } catch {
-          console.error('[CREATE SYNTH] Error pre-calculating gain:');
-        }
-      }
-
-      const planetGain = new Tone.Gain(initialGain);
-
-      const newSynth = new Tone.Synth({
-        envelope: {
-          attack: 0.05,
-          decay: 0.1,
-          sustain: 0.4,
-          release: 1.2
-        },
-        oscillator: {
-          type: 'sine'
-        }
-      });
-
-      newSynth.connect(planetGain);
-
-      if (reverbRef.current && !reverbRef.current.disposed) {
-        planetGain.connect(reverbRef.current);
-      } else {
-        planetGain.toDestination();
-      }
-
-      synthsRef.current[planetName] = {
-        synth: newSynth,
-        gain: planetGain
-      };
-
-      gainNodesRef.current[planetName] = planetGain;
-
-      return synthsRef.current[planetName];
-    } catch {
-      console.error(`Failed to create isolated synth for ${planetName}:`);
-      return null;
+    // Keep old refs in sync for backward compatibility
+    if (synthObj) {
+      synthsRef.current[planetName] = synthObj;
+      gainNodesRef.current[planetName] = synthObj.gain;
     }
+
+    return synthObj;
   };
 
   const startPlanetSound = (planetName: string, frequency: number): boolean => {
