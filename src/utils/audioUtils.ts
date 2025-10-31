@@ -151,3 +151,96 @@ export const calculateSequenceTiming = (bpm: number): {
     interval: beatDuration
   };
 };
+
+/**
+ * Check if audio context needs resuming and attempt to resume it
+ */
+export const resumeAudioContextIfNeeded = async (): Promise<void> => {
+  if (Tone.context.state !== 'running') {
+    try {
+      await Tone.context.resume();
+    } catch (error) {
+      console.error('Failed to resume audio context:', error);
+    }
+  }
+};
+
+/**
+ * Check if a gain node is missing or disposed
+ */
+export const isGainNodeInvalid = (gainNode: Tone.Gain | null): boolean => {
+  return !gainNode || gainNode.disposed;
+};
+
+/**
+ * Parameters for sound state mismatch recovery
+ */
+export interface RecoveryParams {
+  enabledPlanetNames: Set<string>;
+  activeSynths: Set<string>;
+  currentFrequencies: CurrentFrequencies;
+  debugAudio: (msg: string) => void;
+  onStopPlanet: (planetName: string) => void;
+  onStartPlanet: (planetName: string, freq: number) => void;
+  onFullReset: () => Promise<void>;
+}
+
+/**
+ * Perform emergency recovery when sound state mismatches are detected
+ */
+export const performEmergencyRecovery = async (
+  params: RecoveryParams
+): Promise<{ succeeded: boolean; planetsFixed: number }> => {
+  const {
+    enabledPlanetNames,
+    activeSynths,
+    currentFrequencies,
+    debugAudio,
+    onStopPlanet,
+    onStartPlanet,
+    onFullReset
+  } = params;
+
+  params.debugAudio('EMERGENCY RECOVERY: Sound state mismatch detected');
+
+  let recoverySucceeded = true;
+  let planetsFixed = 0;
+
+  // Stop planets that shouldn't be playing
+  for (const name of Array.from(activeSynths)) {
+    if (!enabledPlanetNames.has(name)) {
+      try {
+        onStopPlanet(name);
+        planetsFixed++;
+      } catch {
+        console.error(`Error stopping ${name} during recovery:`);
+        recoverySucceeded = false;
+      }
+    }
+  }
+
+  // Start planets that should be playing
+  for (const planetName of Array.from(enabledPlanetNames)) {
+    if (!activeSynths.has(planetName) && currentFrequencies[planetName]) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        onStartPlanet(planetName, currentFrequencies[planetName]);
+        planetsFixed++;
+        debugAudio(`Recovery: Started sound for ${planetName}`);
+      } catch {
+        console.error(`Error starting ${planetName} during recovery:`);
+        recoverySucceeded = false;
+      }
+    }
+  }
+
+  // If targeted recovery failed, attempt full reset
+  if (!recoverySucceeded && planetsFixed === 0) {
+    debugAudio('Targeted recovery failed completely, attempting full audio system reset');
+    await onFullReset();
+  } else {
+    debugAudio(`Recovery fixed ${planetsFixed} planets`);
+  }
+
+  return { succeeded: recoverySucceeded || planetsFixed > 0, planetsFixed };
+};
