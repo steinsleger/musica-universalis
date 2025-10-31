@@ -65,51 +65,6 @@ export const usePlanetAudioManagement = ({
     }
   }, [useFletcher, audioScalingConfig]);
 
-  const startPlanetSound = useCallback((planetName: string, frequency: number): boolean => {
-    try {
-      if (synthManagerRef.current.isPlaying(planetName)) {
-        updatePlanetFrequency(planetName, frequency);
-        return true;
-      }
-
-      let synthObj = synthManagerRef.current.getSynth(planetName);
-      if (!synthObj || !synthObj.synth || synthObj.synth.disposed) {
-        synthObj = createIsolatedSynth(planetName);
-        if (!synthObj || !synthObj.synth) return false;
-      }
-
-      let gain: number;
-      try {
-        gain = useFletcher
-          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
-          : calculateFrequencyGain(frequency, audioScalingConfig);
-      } catch {
-        console.error(`[ERROR] Failed to calculate gain for ${planetName}:`);
-        gain = 0.5;
-      }
-
-      if (synthObj.gain) {
-        synthManagerRef.current.updateGain(planetName, gain);
-        gainNodesRef.current[planetName] = synthObj.gain;
-      }
-
-      safelyTriggerNote(
-        synthObj.synth,
-        frequency,
-        0.7,
-        null,
-        synthObj.gain,
-        audioScalingConfig
-      );
-
-      activeSynthsRef.current.add(planetName);
-      return true;
-    } catch {
-      console.error(`Failed to start sound for ${planetName}:`);
-      return false;
-    }
-  }, [synthManagerRef, createIsolatedSynth, updatePlanetFrequency, useFletcher, audioScalingConfig]);
-
   const stopPlanetSound = useCallback((planetName: string): boolean => {
     try {
       const success = synthManagerRef.current.stopSound(planetName);
@@ -155,12 +110,58 @@ export const usePlanetAudioManagement = ({
         stopPlanetSound(planetName);
         const synthObj = createIsolatedSynth(planetName);
         if (synthObj && synthObj.synth) {
-          startPlanetSound(planetName, frequency);
+          // Update frequency without starting a new sound
+          synthObj.synth.frequency.value = frequency;
         }
       }
       return false;
     }
-  }, [synthManagerRef, getAdjustedGain, activeSynthsRef, stopPlanetSound, createIsolatedSynth, startPlanetSound]);
+  }, [synthManagerRef, getAdjustedGain, activeSynthsRef, stopPlanetSound, createIsolatedSynth]);
+
+  const startPlanetSound = useCallback((planetName: string, frequency: number): boolean => {
+    try {
+      if (synthManagerRef.current.isPlaying(planetName)) {
+        updatePlanetFrequency(planetName, frequency);
+        return true;
+      }
+
+      let synthObj = synthManagerRef.current.getSynth(planetName);
+      if (!synthObj || !synthObj.synth || synthObj.synth.disposed) {
+        synthObj = createIsolatedSynth(planetName);
+        if (!synthObj || !synthObj.synth) return false;
+      }
+
+      let gain: number;
+      try {
+        gain = useFletcher
+          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+          : calculateFrequencyGain(frequency, audioScalingConfig);
+      } catch {
+        console.error(`[ERROR] Failed to calculate gain for ${planetName}:`);
+        gain = 0.5;
+      }
+
+      if (synthObj.gain) {
+        synthManagerRef.current.updateGain(planetName, gain);
+        gainNodesRef.current[planetName] = synthObj.gain;
+      }
+
+      safelyTriggerNote(
+        synthObj.synth,
+        frequency,
+        0.7,
+        null,
+        synthObj.gain,
+        audioScalingConfig
+      );
+
+      activeSynthsRef.current.add(planetName);
+      return true;
+    } catch {
+      console.error(`Failed to start sound for ${planetName}:`);
+      return false;
+    }
+  }, [synthManagerRef, createIsolatedSynth, updatePlanetFrequency, useFletcher, audioScalingConfig]);
 
   return {
     createIsolatedSynth,

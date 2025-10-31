@@ -107,6 +107,17 @@ const OrbitalSonificationContent: React.FC = () => {
     synthManager: synthManagerRef
   } = useAudioReferences();
 
+  // Debug function - declare early for use in hooks
+  const debugAudio = (message: string, obj: unknown = null): void => {
+    if (debug.current) {
+      if (obj) {
+        console.log(`[AUDIO DEBUG] ${message}`, obj);
+      } else {
+        console.log(`[AUDIO DEBUG] ${message}`);
+      }
+    }
+  };
+
   // Planet audio management hook
   const {
     createIsolatedSynth,
@@ -923,16 +934,6 @@ const OrbitalSonificationContent: React.FC = () => {
 
   const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setZoomLevel(parseFloat(e.target.value));
-  };
-
-  const debugAudio = (message: string, obj: unknown = null): void => {
-    if (debug.current) {
-      if (obj) {
-        console.log(`[AUDIO DEBUG] ${message}`, obj);
-      } else {
-        console.log(`[AUDIO DEBUG] ${message}`);
-      }
-    }
   };
 
   const updateMasterVolume = (newVolume: number): boolean => {
