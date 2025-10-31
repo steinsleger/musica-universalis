@@ -1,6 +1,11 @@
 import { useRef, useCallback, useState } from 'react';
 import * as Tone from 'tone';
 import { Planet } from '../utils/types';
+import {
+  disposeSynthAndCreateNew,
+  calculateSequenceTiming,
+  clearPlanetTimeouts
+} from '../utils/audioUtils';
 
 interface UseSequencePlaybackParams {
   isPlaying: boolean;
@@ -82,41 +87,17 @@ export const useSequencePlayback = ({
 
       debugAudio('Starting orbital sequence');
 
-      if (mainSynthRef.current) {
-        try {
-          mainSynthRef.current.dispose();
-        } catch {
-          // Ignore disposal errors
-        }
-      }
-
-      const mainSynth = new Tone.PolySynth(Tone.Synth, {
-        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-        oscillator: { type: 'sine' }
-      });
-
-      if (gainNodeRef.current && !gainNodeRef.current.disposed) {
-        mainSynth.connect(gainNodeRef.current);
-      } else {
-        mainSynth.toDestination();
-      }
-
-      mainSynthRef.current = mainSynth;
+      mainSynthRef.current = disposeSynthAndCreateNew(mainSynthRef.current, gainNodeRef.current);
 
       const enabledPlanets = orbitData.filter(planet => planet.enabled);
 
       debugAudio(`Playing sequence with ${enabledPlanets.length} planets`);
 
-      const beatDuration = 60 / sequenceBPM;
-      const noteDuration = beatDuration;
-      const interval = beatDuration;
+      const { beatDuration, noteDuration, interval } = calculateSequenceTiming(sequenceBPM);
 
       const now = Tone.now();
 
-      planetTimeoutsRef.current.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-      planetTimeoutsRef.current = [];
+      clearPlanetTimeouts(planetTimeoutsRef.current);
 
       enabledPlanets.forEach((planet, index) => {
         const originalIndex = orbitData.findIndex(p => p.name === planet.name);
@@ -124,7 +105,7 @@ export const useSequencePlayback = ({
         const time = now + index * interval;
 
         try {
-          mainSynth.triggerAttackRelease(freq, noteDuration, time, 0.3);
+          mainSynthRef.current!.triggerAttackRelease(freq, noteDuration, time, 0.3);
           debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
 
           const timeoutId = setTimeout(() => {
@@ -142,32 +123,18 @@ export const useSequencePlayback = ({
       sequenceTimeoutRef.current = setTimeout(() => {
         if (loopSequence) {
           setCurrentlyPlayingPlanet(null);
-
-          planetTimeoutsRef.current.forEach(timeoutId => {
-            clearTimeout(timeoutId);
-          });
-          planetTimeoutsRef.current = [];
-
-          // Re-trigger sequence
+          clearPlanetTimeouts(planetTimeoutsRef.current);
           playOrbitalSequence();
         } else {
           setCurrentlyPlayingPlanet(null);
-
-          planetTimeoutsRef.current.forEach(timeoutId => {
-            clearTimeout(timeoutId);
-          });
-          planetTimeoutsRef.current = [];
-
+          clearPlanetTimeouts(planetTimeoutsRef.current);
           debugAudio('Sequence playback complete');
         }
       }, sequenceDuration * 1000 + 100);
     } catch (error) {
       console.error('Error playing orbital sequence:', error);
 
-      planetTimeoutsRef.current.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-      planetTimeoutsRef.current = [];
+      clearPlanetTimeouts(planetTimeoutsRef.current);
 
       if (sequenceTimeoutRef.current) {
         clearTimeout(sequenceTimeoutRef.current);
@@ -179,10 +146,7 @@ export const useSequencePlayback = ({
   }, [isPlaying, initializeAudioContext, sequenceBPM, orbitData, baseFrequency, loopSequence, calculateBaseFrequencies, debugAudio, gainNodeRef, mainSynthRef]);
 
   const cleanupSequence = useCallback(() => {
-    planetTimeoutsRef.current.forEach(timeoutId => {
-      clearTimeout(timeoutId);
-    });
-    planetTimeoutsRef.current = [];
+    clearPlanetTimeouts(planetTimeoutsRef.current);
 
     if (sequenceTimeoutRef.current) {
       clearTimeout(sequenceTimeoutRef.current);
