@@ -1,5 +1,5 @@
 // src/OrbitalSonification.tsx
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
 import PlanetarySystem from './PlanetarySystem';
 import InfoModal from './components/InfoModal';
@@ -12,6 +12,8 @@ import { useAudioContext } from './hooks/useAudioContext';
 import { useSynthManager } from './hooks/useSynthManager';
 import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
 import { useModals } from './hooks/useModals';
+import { usePlaybackState } from './hooks/usePlaybackState';
+import { useUIState } from './hooks/useUIState';
 import {
   calculateFrequencyGain,
   safelyTriggerNote,
@@ -24,7 +26,6 @@ import {
   Planet,
   CurrentFrequencies,
   PositionMode,
-  TabType,
   FrequencyMode,
   SynthObject,
   AudioScalingConfig,
@@ -48,13 +49,25 @@ const OrbitalSonificationContent: React.FC = () => {
   const { calculateFrequency, calculateAllFrequencies, frequencyToNote: hookFrequencyToNote } = useFrequencyCalculation();
 
   // Local state
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [liveMode, setLiveMode] = useState<boolean>(false);
-  const [currentFrequencies, setCurrentFrequencies] = useState<CurrentFrequencies>({});
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<TabType>('controls');
-  const [loopSequence, setLoopSequence] = useState<boolean>(false);
-  const [currentlyPlayingPlanet, setCurrentlyPlayingPlanet] = useState<string | null>(null);
+  const {
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    activeTab,
+    setActiveTab
+  } = useUIState();
+
+  const {
+    isPlaying,
+    setIsPlaying,
+    liveMode,
+    setLiveMode,
+    currentFrequencies,
+    setCurrentFrequencies,
+    loopSequence,
+    setLoopSequence,
+    currentlyPlayingPlanet,
+    setCurrentlyPlayingPlanet
+  } = usePlaybackState();
 
   // Modal state management
   const {
