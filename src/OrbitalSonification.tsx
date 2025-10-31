@@ -15,6 +15,7 @@ import { useModals } from './hooks/useModals';
 import { usePlaybackState } from './hooks/usePlaybackState';
 import { useUIState } from './hooks/useUIState';
 import { useAudioReferences } from './hooks/useAudioReferences';
+import { usePlanetAudioManagement } from './hooks/usePlanetAudioManagement';
 import {
   calculateFrequencyGain,
   safelyTriggerNote,
@@ -105,6 +106,24 @@ const OrbitalSonificationContent: React.FC = () => {
     reverb: reverbRef,
     synthManager: synthManagerRef
   } = useAudioReferences();
+
+  // Planet audio management hook
+  const {
+    createIsolatedSynth,
+    startPlanetSound,
+    stopPlanetSound,
+    updatePlanetFrequency,
+    getAdjustedGain
+  } = usePlanetAudioManagement({
+    synthManagerRef,
+    synthsRef,
+    gainNodesRef,
+    activeSynthsRef,
+    currentFrequencies,
+    audioScalingConfig,
+    useFletcher,
+    debugAudio
+  });
 
   const calculateBaseFrequencies = useCallback((baseFreq: number, planet: Planet, _index: number): number => {
     return calculateFrequency(baseFreq, planet, distanceMode);
@@ -916,138 +935,6 @@ const OrbitalSonificationContent: React.FC = () => {
     }
   };
 
-  const createIsolatedSynth = (planetName: string): SynthObject | null => {
-    // Use SynthManager to create the synth
-    const synthObj = synthManagerRef.current.createSynth(
-      planetName,
-      currentFrequencies[planetName],
-      audioScalingConfig,
-      useFletcher
-    );
-
-    // Keep old refs in sync for backward compatibility
-    if (synthObj) {
-      synthsRef.current[planetName] = synthObj;
-      gainNodesRef.current[planetName] = synthObj.gain;
-    }
-
-    return synthObj;
-  };
-
-  const startPlanetSound = (planetName: string, frequency: number): boolean => {
-    try {
-      // Check if already playing using SynthManager
-      if (synthManagerRef.current.isPlaying(planetName)) {
-        updatePlanetFrequency(planetName, frequency);
-        return true;
-      }
-
-      // Get or create synth
-      let synthObj = synthManagerRef.current.getSynth(planetName);
-      if (!synthObj || !synthObj.synth || synthObj.synth.disposed) {
-        synthObj = createIsolatedSynth(planetName);
-        if (!synthObj || !synthObj.synth) return false;
-      }
-
-      // Calculate and apply gain
-      let gain: number;
-      try {
-        gain = useFletcher
-          ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
-          : calculateFrequencyGain(frequency, audioScalingConfig);
-      } catch {
-        console.error(`[ERROR] Failed to calculate gain for ${planetName}:`);
-        gain = 0.5;
-      }
-
-      if (synthObj.gain) {
-        synthManagerRef.current.updateGain(planetName, gain);
-        gainNodesRef.current[planetName] = synthObj.gain;
-      }
-
-      safelyTriggerNote(
-        synthObj.synth,
-        frequency,
-        0.7,
-        null,
-        synthObj.gain,
-        audioScalingConfig
-      );
-
-      // Track as active in both managers
-      activeSynthsRef.current.add(planetName);
-      return true;
-    } catch {
-      console.error(`Failed to start sound for ${planetName}:`);
-      return false;
-    }
-  };
-
-  const stopPlanetSound = (planetName: string): boolean => {
-    try {
-      // Use SynthManager to stop sound
-      const success = synthManagerRef.current.stopSound(planetName);
-
-      // Remove from legacy tracking
-      activeSynthsRef.current.delete(planetName);
-
-      return success;
-    } catch {
-      console.error(`Failed to stop sound for ${planetName}:`);
-      activeSynthsRef.current.delete(planetName);
-
-      try {
-        // Recreate synth on failure
-        createIsolatedSynth(planetName);
-      } catch (recreateErr) {
-        console.error(`Failed to recreate synth for ${planetName}:`, recreateErr);
-      }
-
-      return false;
-    }
-  };
-
-  const updatePlanetFrequency = (planetName: string, frequency: number): boolean => {
-    try {
-      const synthObj = synthManagerRef.current.getSynth(planetName);
-      if (!synthObj || !synthObj.synth || synthObj.synth.disposed) return false;
-
-      const currentFreq = Number(synthObj.synth.frequency.value);
-      const freqDiff = Math.abs(currentFreq - frequency);
-      const freqRatio = frequency / currentFreq;
-
-      // Only update if frequency change is significant
-      if (freqDiff > 1 || freqRatio < 0.98 || freqRatio > 1.02) {
-        if (debug.current && Math.random() < 0.01) {
-          debugAudio(`${planetName} freq change: ${currentFreq.toFixed(2)} → ${frequency.toFixed(2)} Hz`);
-        }
-
-        const gain = getAdjustedGain(frequency);
-
-        // Update frequency directly
-        synthObj.synth.frequency.value = frequency;
-
-        // Use SynthManager to update gain
-        if (synthObj.gain) {
-          synthManagerRef.current.updateGain(planetName, gain);
-        }
-      }
-
-      return true;
-    } catch {
-      console.error(`Error updating frequency for ${planetName}:`);
-      const wasActive = activeSynthsRef.current.has(planetName);
-      if (wasActive) {
-        stopPlanetSound(planetName);
-        const synthObj = createIsolatedSynth(planetName);
-        if (synthObj && synthObj.synth) {
-          startPlanetSound(planetName, frequency);
-        }
-      }
-      return false;
-    }
-  };
-
   const updateMasterVolume = (newVolume: number): boolean => {
     debugAudio(`Updating master volume to ${newVolume}`);
 
@@ -1109,21 +996,6 @@ const OrbitalSonificationContent: React.FC = () => {
     const sensitivity = getHumanHearingSensitivity(freq);
     return (sensitivity * 100).toFixed(0) + '%';
   };
-
-  const getAdjustedGain = useCallback((frequency: number): number => {
-    if (!frequency) return 1.0;
-
-    try {
-      const result = useFletcher
-        ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
-        : calculateFrequencyGain(frequency, audioScalingConfig);
-
-      return result;
-    } catch {
-      console.error('[ERROR getAdjustedGain] Error calculating gain:');
-      return 1.0;
-    }
-  }, [useFletcher, audioScalingConfig]);
 
   const toggleFletcherCurves = useCallback((): void => {
     const newValue = !useFletcher;
