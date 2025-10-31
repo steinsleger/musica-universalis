@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Planet, CurrentFrequencies, PlanetarySystemProps } from './utils/types';
 import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
+import { useOrbitalAnimation } from './hooks/useOrbitalAnimation';
+import { useGlowEffect } from './hooks/useGlowEffect';
 import OrbitPath from './components/OrbitPath';
 import PlanetNode from './components/PlanetNode';
 import { getOrbitColor } from './utils/visualizationHelpers';
@@ -22,22 +24,13 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
   sequenceBPM = 60
 }) => {
 
-  const [currentFrequencies, setCurrentFrequencies] = useState<CurrentFrequencies>({});
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [planetAngles, setPlanetAngles] = useState<Record<string, number>>({});
-  const [glowOpacity, setGlowOpacity] = useState<number>(1);
 
-  const requestRef = useRef<number | undefined>(undefined);
-  const previousTimeRef = useRef<number | undefined>(undefined);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const frequenciesRef = useRef<Record<string, number>>({});
   const lastBaseFrequencyRef = useRef<number>(baseFrequency);
-  const distanceModeRef = useRef<'titiusBode' | 'actual'>(distanceMode);
-  const initializedRef = useRef<boolean>(false);
-  const glowAnimationRef = useRef<NodeJS.Timeout | null>(null);
 
   // Constants for visualization
   const svgSize = 600;
@@ -74,74 +67,31 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
     baseFrequency
   });
 
-  // Animation loop - updates planet positions over time
-  const animate = useCallback((time: number): void => {
-    if (previousTimeRef.current === undefined) {
-      previousTimeRef.current = time;
-    }
+  // Use orbital animation hook for animation logic
+  const { planetAngles, currentFrequencies } = useOrbitalAnimation({
+    orbitData,
+    animationSpeed,
+    baseFrequency,
+    isPaused,
+    distanceMode,
+    setToAverageDistance,
+    setToAphelion,
+    setToPerihelion,
+    onFrequencyChange,
+    getDistance,
+    getOrbitalPeriod,
+    getCurrentDistance,
+    calculateFrequencies,
+    getAverageDistanceAngle,
+    getAphelionAngle,
+    getPerihelionAngle
+  });
 
-    // Calculate elapsed time since last frame
-    const deltaTime = time - previousTimeRef.current;
-    previousTimeRef.current = time;
-
-    // Always update positions if not paused
-    if (!isPaused) {
-      // Update planet angles based on animation speed and orbital periods
-      setPlanetAngles(prevAngles => {
-        const newAngles = { ...prevAngles };
-
-        orbitData.forEach(planet => {
-          // Calculate orbital period (Kepler's Third Law)
-          const period = getOrbitalPeriod(getDistance(planet));
-
-          // Convert period to radians per millisecond, scale by animation speed
-          const angularVelocity = (2 * Math.PI / (period * 20000)) * animationSpeed;
-
-          // Update the angle
-          newAngles[planet.name] = (prevAngles[planet.name] || 0) + angularVelocity * deltaTime;
-
-          // Normalize angle to keep within 0-2π range
-          while (newAngles[planet.name] >= 2 * Math.PI) {
-            newAngles[planet.name] -= 2 * Math.PI;
-          }
-        });
-
-        return newAngles;
-      });
-    }
-
-    // Calculate and update frequencies based on current positions
-    const newFrequencies: Record<string, number> = {};
-    orbitData.forEach((planet, index) => {
-      const angle = planetAngles[planet.name] || 0;
-      const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
-
-      // Calculate base frequency for this planet based on distance mode
-      const baseFreq = calculateFrequencies(baseFrequency, planet, index);
-
-      // Modulate frequency based on current distance
-      const avgDistance = getDistance(planet);
-      const ratio = currentDistance / avgDistance;
-      const modifiedFreq = baseFreq * Math.sqrt(ratio);
-
-      newFrequencies[planet.name] = modifiedFreq;
-    });
-
-    // Store frequencies for parent component
-    setCurrentFrequencies(newFrequencies);
-    frequenciesRef.current = newFrequencies;
-
-    // Request next frame
-    requestRef.current = requestAnimationFrame(animate);
-  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, distanceMode]);
-
-  // Function to notify frequency changes to the parent component
-  // Throttled to avoid excessive updates
-  const notifyFrequencyChanges = useCallback((): void => {
-    if (onFrequencyChange) {
-      onFrequencyChange(frequenciesRef.current);
-    }
-  }, [onFrequencyChange]);
+  // Use glow effect hook for glow animation
+  const glowOpacity = useGlowEffect({
+    currentlyPlayingPlanet,
+    sequenceBPM
+  });
 
   // Handle mouse wheel zoom
   const handleWheel = useCallback((e: WheelEvent): void => {
@@ -161,70 +111,6 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
     }
   }, [zoomLevel, setZoomLevel]);
 
-  // Effect to update calculations when distance mode changes
-  useEffect(() => {
-    if (distanceModeRef.current !== distanceMode) {
-      // Distance mode changed, update reference
-      distanceModeRef.current = distanceMode;
-
-      // Recalculate frequencies if callback is provided
-      if (onFrequencyChange && !isPaused) {
-        const updatedFrequencies: Record<string, number> = {};
-
-        orbitData.forEach((planet, index) => {
-          const angle = planetAngles[planet.name] || 0;
-          const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
-
-          // Calculate base frequency based on distance mode
-          const baseFreq = calculateFrequencies(baseFrequency, planet, index);
-
-          // Modulate frequency based on current distance
-          const avgDistance = getDistance(planet);
-          const ratio = currentDistance / avgDistance;
-          const modifiedFreq = baseFreq * Math.sqrt(ratio);
-
-          updatedFrequencies[planet.name] = modifiedFreq;
-        });
-
-        onFrequencyChange(updatedFrequencies);
-      }
-    }
-  }, [distanceMode, orbitData, planetAngles, onFrequencyChange, isPaused, baseFrequency]);
-
-  // Initialize planet angles when orbitData changes
-  useEffect(() => {
-    if (!orbitData || orbitData.length === 0) return;
-    if (Object.keys(planetAngles).length > 0) return; // Don't reset if already set
-
-    // Initialize angles for all planets - all at 0 for a straight line
-    const initialAngles: Record<string, number> = {};
-    orbitData.forEach(planet => {
-      // Set all planets at angle 0 for straight line to the right
-      initialAngles[planet.name] = 0;
-    });
-
-    setPlanetAngles(initialAngles);
-  }, [orbitData]);
-
-  // Initialize frequencies when component mounts or baseFrequency changes
-  useEffect(() => {
-    if (initializedRef.current) return;
-
-    const initialFrequencies: Record<string, number> = {};
-    orbitData.forEach((planet, index) => {
-      const baseFreq = calculateFrequencies(baseFrequency, planet, index);
-      initialFrequencies[planet.name] = baseFreq;
-    });
-
-    setCurrentFrequencies(initialFrequencies);
-    frequenciesRef.current = initialFrequencies;
-    if (onFrequencyChange) {
-      onFrequencyChange(initialFrequencies);
-    }
-
-    initializedRef.current = true;
-  }, [baseFrequency, orbitData, onFrequencyChange, distanceMode]);
-
   // Add wheel event listener with non-passive option
   useEffect((): void | (() => void) => {
     const container = containerRef.current;
@@ -242,58 +128,6 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
       setPanOffset({ x: 0, y: 0 });
     }
   }, [zoomLevel]);
-
-  // Set up a notification interval
-  useEffect(() => {
-    const notifyInterval = setInterval(() => {
-      notifyFrequencyChanges();
-    }, 16); // Notify every 16ms
-
-    return () => {
-      clearInterval(notifyInterval);
-    };
-  }, [notifyFrequencyChanges]);
-
-  // Separate effect to update when baseFrequency changes
-  useEffect(() => {
-    // Check if baseFrequency has actually changed
-    if (lastBaseFrequencyRef.current !== baseFrequency) {
-      lastBaseFrequencyRef.current = baseFrequency;
-    }
-  }, [baseFrequency]);
-
-  // Add effect to handle position jumps
-  useEffect(() => {
-    if (setToAverageDistance || setToAphelion || setToPerihelion) {
-      setPlanetAngles(prevAngles => {
-        const newAngles = { ...prevAngles };
-        orbitData.forEach(planet => {
-          if (setToAverageDistance) {
-            newAngles[planet.name] = getAverageDistanceAngle(planet.eccentricity);
-          } else if (setToAphelion) {
-            newAngles[planet.name] = getAphelionAngle();
-          } else if (setToPerihelion) {
-            newAngles[planet.name] = getPerihelionAngle();
-          }
-        });
-        return newAngles;
-      });
-    }
-  }, [setToAverageDistance, setToAphelion, setToPerihelion, orbitData, distanceMode]);
-
-  // Start/stop animation loop based on component lifecycle
-  useEffect(() => {
-    // Start animation loop
-    requestRef.current = requestAnimationFrame(animate);
-
-    // Clean up on unmount
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-    };
-  }, [animate]);
-
 
   // Mouse event handlers for panning
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
@@ -328,51 +162,6 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
   const handleMouseLeave = (): void => {
     setIsDragging(false);
   };
-
-  // Glow animation effect synced with BPM
-  useEffect((): void | (() => void) => {
-    if (currentlyPlayingPlanet) {
-      // Calculate pulse duration based on BPM
-      const pulseDuration = 60 / sequenceBPM * 1000; // Convert to ms
-
-      // Clear any existing interval
-      if (glowAnimationRef.current) {
-        clearInterval(glowAnimationRef.current);
-      }
-
-      // Create pulsing effect
-      let increasing = false;
-      let opacity = 0.5;
-
-      glowAnimationRef.current = setInterval(() => {
-        if (increasing) {
-          opacity += 0.05;
-          if (opacity >= 1) {
-            opacity = 1;
-            increasing = false;
-          }
-        } else {
-          opacity -= 0.05;
-          if (opacity <= 0.5) {
-            opacity = 0.5;
-            increasing = true;
-          }
-        }
-
-        setGlowOpacity(opacity);
-      }, pulseDuration / 20); // Adjust this for smoother or faster pulsing
-
-      return () => {
-        if (glowAnimationRef.current) {
-          clearInterval(glowAnimationRef.current);
-          glowAnimationRef.current = null;
-        }
-      };
-    } else if (glowAnimationRef.current) {
-      clearInterval(glowAnimationRef.current);
-      glowAnimationRef.current = null;
-    }
-  }, [currentlyPlayingPlanet, sequenceBPM]);
 
   return (
     <div className="orbital-visualization">
