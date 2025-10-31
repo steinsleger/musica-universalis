@@ -9,7 +9,6 @@ import FloatingControlsBar from './components/FloatingControlsBar';
 import { AudioConfigProvider, useAudioConfig } from './context/AudioConfigContext';
 import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
 import { useAudioContext } from './hooks/useAudioContext';
-import { useSynthManager } from './hooks/useSynthManager';
 import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
 import { useModals } from './hooks/useModals';
 import { usePlaybackState } from './hooks/usePlaybackState';
@@ -18,20 +17,10 @@ import { useAudioReferences } from './hooks/useAudioReferences';
 import { usePlanetAudioManagement } from './hooks/usePlanetAudioManagement';
 import { useLiveModeAudio } from './hooks/useLiveModeAudio';
 import { useToggleControls } from './hooks/useToggleControls';
-import {
-  calculateFrequencyGain,
-  safelyTriggerNote,
-  calculateAdvancedFrequencyGain,
-  getHumanHearingSensitivity
-} from './utils/audioScaling';
+import { useAudioContextManager } from './hooks/useAudioContextManager';
+import { useSequencePlayback } from './hooks/useSequencePlayback';
 import { SynthManager } from './utils/synthManager';
 import { volumeToDb, getPlanetColor } from './utils/visualizationHelpers';
-import {
-  disposeSynthAndCreateNew,
-  clearPlanetTimeouts,
-  calculateSequenceTiming,
-  createSequenceSynth
-} from './utils/audioUtils';
 import {
   Planet,
   CurrentFrequencies,
@@ -68,15 +57,12 @@ const OrbitalSonificationContent: React.FC = () => {
 
   const {
     isPlaying,
-    setIsPlaying,
     liveMode,
     setLiveMode,
     currentFrequencies,
     setCurrentFrequencies,
     loopSequence,
-    setLoopSequence,
-    currentlyPlayingPlanet,
-    setCurrentlyPlayingPlanet
+    setLoopSequence
   } = usePlaybackState();
 
   // Modal state management
@@ -99,12 +85,10 @@ const OrbitalSonificationContent: React.FC = () => {
     synths: synthsRef,
     mainSynth: mainSynthRef,
     lastFrequencies: lastFrequenciesRef,
-    sequenceTimeout: sequenceTimeoutRef,
     debug,
     activeSynths: activeSynthsRef,
     audioInitialized: audioInitializedRef,
     gainNodes: gainNodesRef,
-    planetTimeouts: planetTimeoutsRef,
     reverb: reverbRef,
     synthManager: synthManagerRef
   } = useAudioReferences();
@@ -125,8 +109,7 @@ const OrbitalSonificationContent: React.FC = () => {
     createIsolatedSynth,
     startPlanetSound,
     stopPlanetSound,
-    updatePlanetFrequency,
-    getAdjustedGain
+    updatePlanetFrequency
   } = usePlanetAudioManagement({
     synthManagerRef,
     synthsRef,
@@ -435,6 +418,30 @@ const OrbitalSonificationContent: React.FC = () => {
     debugAudio
   });
 
+  // Use audio context manager hook
+  const { startAudioContext } = useAudioContextManager({
+    audioContextStarted,
+    gainNodeRef,
+    debugAudio
+  });
+
+  // Use sequence playback hook
+  const {
+    currentlyPlayingPlanet,
+    playOrbitalSequence
+  } = useSequencePlayback({
+    isPlaying,
+    sequenceBPM,
+    orbitData,
+    baseFrequency,
+    loopSequence,
+    gainNodeRef,
+    mainSynthRef,
+    initializeAudioContext,
+    calculateBaseFrequencies,
+    debugAudio
+  });
+
   useEffect(() => {
     if (liveMode && !isPaused) {
       const updatedFrequencies: CurrentFrequencies = {};
@@ -511,168 +518,6 @@ const OrbitalSonificationContent: React.FC = () => {
     orbitData,
     currentFrequencies
   ]);
-
-  const playOrbitalSequence = async (): Promise<void> => {
-    try {
-      const audioStarted = await initializeAudioContext();
-      if (!audioStarted) {
-        debugAudio('Audio context couldn\'t be started');
-        return;
-      }
-
-      if (isPlaying) {
-        debugAudio('Stopping orbital sequence');
-
-        setCurrentlyPlayingPlanet(null);
-
-        planetTimeoutsRef.current.forEach(timeoutId => {
-          clearTimeout(timeoutId);
-        });
-        planetTimeoutsRef.current = [];
-
-        if (sequenceTimeoutRef.current) {
-          clearTimeout(sequenceTimeoutRef.current);
-          sequenceTimeoutRef.current = null;
-        }
-
-        if (mainSynthRef.current) {
-          try {
-            mainSynthRef.current.releaseAll();
-            mainSynthRef.current.dispose();
-          } catch {
-            console.error('Error disposing main synth:');
-          }
-
-          const newMainSynth = new Tone.PolySynth(Tone.Synth, {
-            envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-            oscillator: { type: 'sine' }
-          });
-
-          if (gainNodeRef.current && !gainNodeRef.current.disposed) {
-            newMainSynth.connect(gainNodeRef.current);
-          } else {
-            newMainSynth.toDestination();
-          }
-
-          mainSynthRef.current = newMainSynth;
-        }
-
-        setIsPlaying(false);
-        return;
-      }
-
-      debugAudio('Starting orbital sequence');
-
-      mainSynthRef.current = disposeSynthAndCreateNew(mainSynthRef.current, gainNodeRef.current);
-
-      setIsPlaying(true);
-
-      const enabledPlanets = orbitData.filter(planet => planet.enabled);
-
-      debugAudio(`Playing sequence with ${enabledPlanets.length} planets`);
-
-      const { beatDuration, noteDuration, interval } = calculateSequenceTiming(sequenceBPM);
-
-      const now = Tone.now();
-
-      planetTimeoutsRef.current.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-      planetTimeoutsRef.current = [];
-
-      enabledPlanets.forEach((planet, index) => {
-        const originalIndex = orbitData.findIndex(p => p.name === planet.name);
-        const freq = calculateBaseFrequencies(baseFrequency, planet, originalIndex);
-        const time = now + index * interval;
-
-        try {
-          mainSynthRef.current!.triggerAttackRelease(freq, noteDuration, time, 0.3);
-          debugAudio(`Scheduled note for ${planet.name} at ${freq.toFixed(1)}Hz`);
-
-          const timeoutId = setTimeout(() => {
-            setCurrentlyPlayingPlanet(planet.name);
-          }, index * interval * 1000);
-
-          planetTimeoutsRef.current.push(timeoutId);
-
-        } catch {
-          console.error(`Error scheduling note for ${planet.name}:`);
-        }
-      });
-
-      const sequenceDuration = enabledPlanets.length * interval;
-
-      sequenceTimeoutRef.current = setTimeout(() => {
-        if (loopSequence) {
-          setCurrentlyPlayingPlanet(null);
-
-          planetTimeoutsRef.current.forEach(timeoutId => {
-            clearTimeout(timeoutId);
-          });
-          planetTimeoutsRef.current = [];
-
-          playOrbitalSequence();
-        } else {
-          setCurrentlyPlayingPlanet(null);
-
-          planetTimeoutsRef.current.forEach(timeoutId => {
-            clearTimeout(timeoutId);
-          });
-          planetTimeoutsRef.current = [];
-
-          setIsPlaying(false);
-          sequenceTimeoutRef.current = null;
-          debugAudio('Sequence playback complete');
-        }
-      }, sequenceDuration * 1000 + 100);
-    } catch (error) {
-      console.error('Error playing orbital sequence:', error);
-
-      planetTimeoutsRef.current.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-      planetTimeoutsRef.current = [];
-
-      if (sequenceTimeoutRef.current) {
-        clearTimeout(sequenceTimeoutRef.current);
-        sequenceTimeoutRef.current = null;
-      }
-
-      setCurrentlyPlayingPlanet(null);
-      setIsPlaying(false);
-    }
-  };
-
-  const startAudioContext = async (): Promise<boolean> => {
-    if (!audioContextStarted.current) {
-      try {
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
-        }
-
-        await Tone.start();
-        audioContextStarted.current = true;
-
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
-        }
-
-        return true;
-      } catch (error) {
-        console.error('Could not start AudioContext:', error);
-        return false;
-      }
-    } else if (Tone.context.state !== 'running') {
-      try {
-        await Tone.context.resume();
-        return true;
-      } catch (error) {
-        console.error('Could not resume AudioContext:', error);
-        return false;
-      }
-    }
-    return true;
-  };
 
   const handleUserInteraction = async (): Promise<void> => {
     if (needsUserInteraction) {
@@ -764,22 +609,6 @@ const OrbitalSonificationContent: React.FC = () => {
 
   const frequencyToNote = (frequency: number | undefined): string => {
     return frequency ? hookFrequencyToNote(frequency) : '';
-  };
-
-  const _getFrequencyGain = (planetName: string): string => {
-    const freq = currentFrequencies[planetName];
-    if (!freq) return 'N/A';
-
-    const gain = getAdjustedGain(freq);
-    return gain.toFixed(2);
-  };
-
-  const _getHearingSensitivity = (planetName: string): string => {
-    const freq = currentFrequencies[planetName];
-    if (!freq) return 'N/A';
-
-    const sensitivity = getHumanHearingSensitivity(freq);
-    return (sensitivity * 100).toFixed(0) + '%';
   };
 
   const toggleFletcherCurves = useCallback((): void => {
