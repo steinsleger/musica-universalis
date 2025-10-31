@@ -9,6 +9,7 @@ import {
 
 interface UseSequencePlaybackParams {
   isPlaying: boolean;
+  setIsPlaying: (playing: boolean) => void;
   sequenceBPM: number;
   orbitData: Planet[];
   baseFrequency: number;
@@ -22,6 +23,7 @@ interface UseSequencePlaybackParams {
 
 export const useSequencePlayback = ({
   isPlaying,
+  setIsPlaying,
   sequenceBPM,
   orbitData,
   baseFrequency,
@@ -82,12 +84,14 @@ export const useSequencePlayback = ({
           mainSynthRef.current = newMainSynth;
         }
 
+        setIsPlaying(false);
         return;
       }
 
       debugAudio('Starting orbital sequence');
 
       mainSynthRef.current = disposeSynthAndCreateNew(mainSynthRef.current, gainNodeRef.current);
+      setIsPlaying(true);
 
       const enabledPlanets = orbitData.filter(planet => planet.enabled);
 
@@ -128,6 +132,7 @@ export const useSequencePlayback = ({
         } else {
           setCurrentlyPlayingPlanet(null);
           clearPlanetTimeouts(planetTimeoutsRef.current);
+          setIsPlaying(false);
           debugAudio('Sequence playback complete');
         }
       }, sequenceDuration * 1000 + 100);
@@ -142,8 +147,9 @@ export const useSequencePlayback = ({
       }
 
       setCurrentlyPlayingPlanet(null);
+      setIsPlaying(false);
     }
-  }, [isPlaying, initializeAudioContext, sequenceBPM, orbitData, baseFrequency, loopSequence, calculateBaseFrequencies, debugAudio, gainNodeRef, mainSynthRef]);
+  }, [isPlaying, setIsPlaying, initializeAudioContext, sequenceBPM, orbitData, baseFrequency, loopSequence, calculateBaseFrequencies, debugAudio, gainNodeRef, mainSynthRef]);
 
   const cleanupSequence = useCallback(() => {
     clearPlanetTimeouts(planetTimeoutsRef.current);

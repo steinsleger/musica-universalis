@@ -58,6 +58,7 @@ const OrbitalSonificationContent: React.FC = () => {
 
   const {
     isPlaying,
+    setIsPlaying,
     liveMode,
     setLiveMode,
     currentFrequencies,
@@ -432,6 +433,7 @@ const OrbitalSonificationContent: React.FC = () => {
     playOrbitalSequence
   } = useSequencePlayback({
     isPlaying,
+    setIsPlaying,
     sequenceBPM,
     orbitData,
     baseFrequency,
@@ -659,6 +661,7 @@ const OrbitalSonificationContent: React.FC = () => {
     animationSpeed,
     setAnimationSpeed,
     isPlaying,
+    setIsPlaying,
     playOrbitalSequence,
     loopSequence,
     toggleLoopSequence,

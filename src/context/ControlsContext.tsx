@@ -25,6 +25,7 @@ interface ControlsContextType {
 
   // Playback Controls
   isPlaying: boolean;
+  setIsPlaying: (playing: boolean) => void;
   playOrbitalSequence: () => Promise<void>;
   loopSequence: boolean;
   toggleLoopSequence: () => void;
