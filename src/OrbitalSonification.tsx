@@ -18,6 +18,7 @@ import {
   getHumanHearingSensitivity
 } from './utils/audioScaling';
 import { SynthManager } from './utils/synthManager';
+import { volumeToDb, getPlanetColor } from './utils/visualizationHelpers';
 import {
   Planet,
   CurrentFrequencies,
@@ -877,30 +878,8 @@ const OrbitalSonificationContent: React.FC = () => {
     setLoopSequence(!loopSequence);
   };
 
-  const volumeToDb = (volume: number): string => {
-    if (volume <= 0.01) return '-∞';
-    return Tone.gainToDb(volume).toFixed(1);
-  };
-
   const toggleSidebar = (): void => {
     setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  const getPlanetColor = (name: string): string => {
-    const planetColors: Record<string, string> = {
-      'Mercury': '#A9A9A9',
-      'Venus': '#E6D3A3',
-      'Earth': '#1E90FF',
-      'Mars': '#CD5C5C',
-      'Ceres': '#8B8B83',
-      'Jupiter': '#E59866',
-      'Saturn': '#F4D03F',
-      'Uranus': '#73C6B6',
-      'Neptune': '#5DADE2',
-      'Pluto': '#C39BD3'
-    };
-
-    return planetColors[name] || '#999';
   };
 
   const handleDistanceModeChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
