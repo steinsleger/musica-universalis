@@ -623,24 +623,10 @@ const OrbitalSonificationContent: React.FC = () => {
     debugAudio('FULL AUDIO SYSTEM RESET');
 
     try {
-      const activeList = Array.from(activeSynthsRef.current);
-      for (const planetName of activeList) {
-        try {
-          stopPlanetSound(planetName);
-        } catch {
-          console.error(`Error stopping ${planetName} during reset:`);
-        }
-      }
+      // Use SynthManager to dispose all synths
+      synthManagerRef.current.disposeAll();
 
-      for (const [_name, synthObj] of Object.entries(synthsRef.current)) {
-        try {
-          if (synthObj && synthObj.synth) synthObj.synth.dispose();
-          if (synthObj && synthObj.gain) synthObj.gain.dispose();
-        } catch {
-          // Ignore disposal errors
-        }
-      }
-
+      // Clear old refs for backward compatibility
       synthsRef.current = {};
       gainNodesRef.current = {};
       activeSynthsRef.current.clear();

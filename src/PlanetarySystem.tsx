@@ -1,7 +1,7 @@
 // src/PlanetarySystem.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
 import { Planet, CurrentFrequencies, PlanetarySystemProps } from './utils/types';
+import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
 
 const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
   orbitData,
@@ -39,43 +39,37 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
   // Constants for visualization
   const svgSize = 600;
   const center = svgSize / 2;
+  const minPlanetSize = 3;
+  const sunRadius = 10;
 
-  // Function to get the correct distance based on the mode
-  const getDistance = (planet: Planet): number => {
-    return distanceMode === 'titiusBode' ? planet.distance : planet.actualDistance;
-  };
-
-  // Max distance to calculate scaling - consider both distance modes
-  const maxDistance = Math.max(...orbitData.map(planet =>
-    Math.max(
-      // For Murch's formula, we need to consider the larger distances
-      getDistance(planet) * (1 + planet.eccentricity),
-      // Also consider actual distances to ensure consistent zoom when changing modes
-      planet.actualDistance * (1 + planet.eccentricity)
-    )
-  ));
-
-  // Apply a non-linear zoom scaling for better orbit separation at low zoom values
-  const getEffectiveZoom = (baseZoom: number): number => {
-    // Enhanced function for handling Murch's formula which can produce larger distances
-    if (baseZoom <= 1) {
-      // At zoom level 1, ensure the entire system is visible including Pluto with Murch's formula
-      return 0.25;  // Reduced value to accommodate larger Murch distances
-    } else if (baseZoom <= 2) {
-      // Apply non-linear scaling for low zoom values to better separate outer orbits
-      return baseZoom * (1 + (baseZoom - 1) * 0.2);
-    } else if (baseZoom <= 10) {
-      // For medium zoom, provide better visibility for the outer planets
-      return baseZoom * 1.1;
-    }
-    return baseZoom;
-  };
-
-  // Scale factors - zoom handling that ensures visibility at zoom=1
-  const effectiveZoom = getEffectiveZoom(zoomLevel);
-  const orbitScaleFactor = (svgSize / 2) * 0.98 / (maxDistance / effectiveZoom);
-  const minPlanetSize = 3; // Minimum size for visibility
-  const sunRadius = 10; // Fixed size for better visualization
+  // Use orbital calculations hook
+  const {
+    getDistance,
+    maxDistance,
+    getEffectiveZoom,
+    effectiveZoom,
+    orbitScaleFactor,
+    getCurrentDistance,
+    getPlanetPosition,
+    calculateOrbitalExtremes,
+    generateEllipticalPath,
+    getExtremePositions,
+    getAverageDistanceAngle,
+    getAphelionAngle,
+    getPerihelionAngle,
+    getPlanetSize,
+    getOrbitalPeriod,
+    frequencyToNote,
+    calculateFrequencies
+  } = useOrbitalCalculations({
+    svgSize,
+    center,
+    zoomLevel,
+    panOffset,
+    orbitData,
+    distanceMode,
+    baseFrequency
+  });
 
   // Animation loop - updates planet positions over time
   const animate = useCallback((time: number): void => {
@@ -297,151 +291,6 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
     };
   }, [animate]);
 
-  // Calculate frequency based on the distance mode and planet properties
-  const calculateFrequencies = (baseFreq: number, planet: Planet, _index: number): number => {
-    return calculatePlanetaryFrequency(baseFreq, planet, distanceMode);
-  };
-
-  // Utility function to convert frequency to closest musical note
-  const frequencyToNote = (frequency: number): string => {
-    if (!frequency) return '';
-
-    // A4 is 440Hz, which is the reference
-    const A4 = 440.0;
-    // C0 is the 0th note in our system (by convention)
-    const C0 = A4 * Math.pow(2, -4.75);
-
-    // Calculate how many half steps from C0
-    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
-
-    // Convert to note
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const octave = Math.floor(halfStepsFromC0 / 12);
-    const noteIndex = halfStepsFromC0 % 12;
-
-    return noteNames[noteIndex] + octave;
-  };
-
-  // Calculate the angle at which a planet is at its average distance
-  const getAverageDistanceAngle = (eccentricity: number): number => {
-    // For an ellipse, the average distance occurs at an angle where r = a
-    // Using the polar equation of an ellipse: r = a(1-e²)/(1+e·cos(θ))
-    // Setting r = a and solving for θ:
-    // a = a(1-e²)/(1+e·cos(θ))
-    // 1 = (1-e²)/(1+e·cos(θ))
-    // 1+e·cos(θ) = 1-e²
-    // e·cos(θ) = -e²
-    // cos(θ) = -e
-    // θ = arccos(-e)
-    return Math.acos(-eccentricity);
-  };
-
-  // Calculate the angle at which a planet is at its aphelion
-  const getAphelionAngle = (): number => {
-    // Aphelion occurs at angle π (180 degrees) in our coordinate system
-    return Math.PI;
-  };
-
-  // Calculate the angle at which a planet is at its perihelion
-  const getPerihelionAngle = (): number => {
-    // Perihelion occurs at angle 0 (0 degrees) in our coordinate system
-    return 0;
-  };
-
-  // Calculate current distance using the polar equation of an ellipse
-  // r = a(1-e²)/(1+e·cos(θ))
-  const getCurrentDistance = (semiMajorAxis: number, eccentricity: number, angle: number): number => {
-    return (semiMajorAxis * (1 - Math.pow(eccentricity, 2))) /
-           (1 + eccentricity * Math.cos(angle));
-  };
-
-  // Get the x,y coordinates for a planet at a given angle in its elliptical orbit
-  const getPlanetPosition = (semiMajorAxis: number, eccentricity: number, angle: number): { x: number; y: number } => {
-    // Semi-minor axis
-    const _semiMinorAxis = semiMajorAxis * Math.sqrt(1 - Math.pow(eccentricity, 2));
-
-    // FIXED CALCULATION: Proper elliptical orbit coordinates
-    // Use the polar form of an ellipse to get the distance from the focus
-    const distance = (semiMajorAxis * (1 - Math.pow(eccentricity, 2))) /
-                     (1 + eccentricity * Math.cos(angle));
-
-    // Convert polar coordinates (distance, angle) to Cartesian (x, y)
-    const rawX = distance * Math.cos(angle);
-    const rawY = distance * Math.sin(angle);
-
-    // Translate to center of SVG and apply pan offset
-    const x = center + rawX * orbitScaleFactor + panOffset.x;
-    const y = center + rawY * orbitScaleFactor + panOffset.y;
-
-    return { x, y };
-  };
-
-  // Calculate minimum and maximum distances for a planet with given parameters
-  const calculateOrbitalExtremes = (semiMajorAxis: number, eccentricity: number): { perihelion: number; aphelion: number } => {
-    // Perihelion - closest approach to sun
-    const perihelion = semiMajorAxis * (1 - eccentricity);
-    // Aphelion - furthest distance from sun
-    const aphelion = semiMajorAxis * (1 + eccentricity);
-
-    return { perihelion, aphelion };
-  };
-
-  // Generate points for elliptical orbit path
-  const generateEllipticalPath = (semiMajorAxis: number, eccentricity: number, numPoints: number = 100): { x: number; y: number }[] => {
-    const path: { x: number; y: number }[] = [];
-
-    for (let i = 0; i < numPoints; i++) {
-      const angle = (i / numPoints) * 2 * Math.PI;
-      const position = getPlanetPosition(
-        semiMajorAxis,
-        eccentricity,
-        angle
-      );
-      path.push(position);
-    }
-
-    return path;
-  };
-
-  // Get the position for perihelion and aphelion points
-  const getExtremePositions = (semiMajorAxis: number, eccentricity: number): { perihelion: { x: number; y: number }; aphelion: { x: number; y: number } } => {
-    // Perihelion is at angle = 0 (closest to Sun)
-    const perihelion = getPlanetPosition(semiMajorAxis, eccentricity, 0);
-    // Aphelion is at angle = PI (farthest from Sun)
-    const aphelion = getPlanetPosition(semiMajorAxis, eccentricity, Math.PI);
-
-    return { perihelion, aphelion };
-  };
-
-  // Calculate planetary size (not to scale, but preserving relative sizes)
-  const getPlanetSize = (planet: Planet): number => {
-    // Using a logarithmic scaling to better represent actual planet sizes
-    // Jupiter is 11.2 times larger than Earth, but we need to make sure smaller planets remain visible
-    // Actual radius ratios (Earth = 1):
-    // Mercury: 0.383, Venus: 0.949, Earth: 1, Mars: 0.532
-    // Jupiter: 11.209, Saturn: 9.449, Uranus: 4.007, Neptune: 3.883
-    // Using a logarithmic scale to compress the differences while preserving order
-    // Sun radius is fixed at 10, so all planets must be smaller
-    const baseSize: Record<string, number> = {
-      'Mercury': 2.5,
-      'Venus': 3.6,
-      'Earth': 3.8,
-      'Mars': 3.0,
-      'Ceres': 1.5,
-      'Jupiter': 8.5,
-      'Saturn': 7.8,
-      'Uranus': 5.8,
-      'Neptune': 5.6,
-      'Pluto': 1.3
-    };
-
-    return planet.enabled ? baseSize[planet.name] || minPlanetSize : 0;
-  };
-
-  // Calculate orbital period using Kepler's Third Law
-  const getOrbitalPeriod = (distance: number): number => {
-    return Math.pow(distance, 1.5);
-  };
 
   // Mouse event handlers for panning
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
