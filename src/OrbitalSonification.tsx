@@ -7,6 +7,7 @@ import InstructionsModal from './components/InstructionsModal';
 import { AudioConfigProvider, useAudioConfig } from './context/AudioConfigContext';
 import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
 import { useAudioContext } from './hooks/useAudioContext';
+import { useSynthManager } from './hooks/useSynthManager';
 import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
 import {
   calculateFrequencyGain,
