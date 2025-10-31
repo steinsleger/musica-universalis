@@ -9,7 +9,7 @@ import { AudioConfigProvider, useAudioConfig } from './context/AudioConfigContex
 import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
 import { useAudioContext } from './hooks/useAudioContext';
 import { useSynthManager } from './hooks/useSynthManager';
-import { calculatePlanetaryFrequency } from './utils/calculatePlanetaryFrequency';
+import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
 import {
   calculateFrequencyGain,
   safelyTriggerNote,
@@ -41,6 +41,7 @@ const OrbitalSonificationContent: React.FC = () => {
 
   // Hooks
   const { needsUserInteraction, startAudio, audioContextReady } = useAudioContext();
+  const { calculateFrequency, calculateAllFrequencies, frequencyToNote: hookFrequencyToNote } = useFrequencyCalculation();
 
   // Local state
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -70,8 +71,8 @@ const OrbitalSonificationContent: React.FC = () => {
   const reverbRef = useRef<Tone.Reverb | null>(null);
 
   const calculateBaseFrequencies = useCallback((baseFreq: number, planet: Planet, _index: number): number => {
-    return calculatePlanetaryFrequency(baseFreq, planet, distanceMode);
-  }, [distanceMode]);
+    return calculateFrequency(baseFreq, planet, distanceMode);
+  }, [distanceMode, calculateFrequency]);
 
   const updateAllFrequencies = useCallback((): CurrentFrequencies => {
     const defaultFrequencies: CurrentFrequencies = {};
@@ -1229,18 +1230,7 @@ const OrbitalSonificationContent: React.FC = () => {
   };
 
   const frequencyToNote = (frequency: number | undefined): string => {
-    if (!frequency) return '';
-
-    const A4 = 440.0;
-    const C0 = A4 * Math.pow(2, -4.75);
-
-    const halfStepsFromC0 = Math.round(12 * Math.log2(frequency / C0));
-
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const octave = Math.floor(halfStepsFromC0 / 12);
-    const noteIndex = halfStepsFromC0 % 12;
-
-    return noteNames[noteIndex] + octave;
+    return frequency ? hookFrequencyToNote(frequency) : '';
   };
 
   const _getFrequencyGain = (planetName: string): string => {
