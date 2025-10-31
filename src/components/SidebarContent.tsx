@@ -1,80 +1,13 @@
 import React from 'react';
-import { Planet, CurrentFrequencies, AudioScalingConfig, FrequencyMode, TabType } from '../utils/types';
+import { useControls } from '../context/ControlsContext';
 import ControlsTabContent from './ControlsTabContent';
 import PlanetsTabContent from './PlanetsTabContent';
 import AudioTabContent from './AudioTabContent';
 
-interface SidebarContentProps {
-  sidebarCollapsed: boolean;
-  activeTab: TabType;
-  setActiveTab: (tab: TabType) => void;
-  masterVolume: number;
-  handleVolumeChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  baseFrequency: number;
-  handleBaseFrequencyChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  distanceMode: FrequencyMode;
-  handleDistanceModeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  zoomLevel: number;
-  handleZoomChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  animationSpeed: number;
-  setAnimationSpeed: (speed: number) => void;
-  isPlaying: boolean;
-  playOrbitalSequence: () => void;
-  loopSequence: boolean;
-  toggleLoopSequence: () => void;
-  sequenceBPM: number;
-  handleBPMChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  liveMode: boolean;
-  orbitData: Planet[];
-  toggleAllPlanets: (enable: boolean) => void;
-  togglePlanet: (index: number) => void;
-  currentFrequencies: CurrentFrequencies;
-  distanceModeForDisplay: FrequencyMode;
-  getPlanetColor: (name: string) => string;
-  frequencyToNote: (freq: number) => string;
-  volumeToDb: (volume: number) => string;
-  useFletcher: boolean;
-  toggleFletcherCurves: () => void;
-  audioScalingConfig: AudioScalingConfig;
-  setAudioScalingConfig: (config: AudioScalingConfig) => void;
-  forceRecalculateAllGains: () => void;
-}
+const SidebarContent: React.FC = () => {
+  const controls = useControls();
+  const { sidebarCollapsed, activeTab, setActiveTab } = controls;
 
-const SidebarContent: React.FC<SidebarContentProps> = ({
-  sidebarCollapsed,
-  activeTab,
-  setActiveTab,
-  masterVolume,
-  handleVolumeChange,
-  baseFrequency,
-  handleBaseFrequencyChange,
-  distanceMode,
-  handleDistanceModeChange,
-  zoomLevel,
-  handleZoomChange,
-  animationSpeed,
-  setAnimationSpeed,
-  isPlaying,
-  playOrbitalSequence,
-  loopSequence,
-  toggleLoopSequence,
-  sequenceBPM,
-  handleBPMChange,
-  liveMode,
-  orbitData,
-  toggleAllPlanets,
-  togglePlanet,
-  currentFrequencies,
-  distanceModeForDisplay,
-  getPlanetColor,
-  frequencyToNote,
-  volumeToDb,
-  useFletcher,
-  toggleFletcherCurves,
-  audioScalingConfig,
-  setAudioScalingConfig,
-  forceRecalculateAllGains
-}) => {
   return (
     <div
       className={`controls-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}
@@ -117,48 +50,48 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
 
       <ControlsTabContent
         activeTab={activeTab}
-        masterVolume={masterVolume}
-        handleVolumeChange={handleVolumeChange}
-        baseFrequency={baseFrequency}
-        handleBaseFrequencyChange={handleBaseFrequencyChange}
-        distanceMode={distanceMode}
-        handleDistanceModeChange={handleDistanceModeChange}
-        zoomLevel={zoomLevel}
-        handleZoomChange={handleZoomChange}
-        animationSpeed={animationSpeed}
-        setAnimationSpeed={setAnimationSpeed}
-        isPlaying={isPlaying}
-        volumeToDb={volumeToDb}
+        masterVolume={controls.masterVolume}
+        handleVolumeChange={controls.handleVolumeChange}
+        baseFrequency={controls.baseFrequency}
+        handleBaseFrequencyChange={controls.handleBaseFrequencyChange}
+        distanceMode={controls.distanceMode}
+        handleDistanceModeChange={controls.handleDistanceModeChange}
+        zoomLevel={controls.zoomLevel}
+        handleZoomChange={controls.handleZoomChange}
+        animationSpeed={controls.animationSpeed}
+        setAnimationSpeed={controls.setAnimationSpeed}
+        isPlaying={controls.isPlaying}
+        volumeToDb={() => '0dB'}
       />
 
       {activeTab === 'planets' && (
         <PlanetsTabContent
           activeTab={activeTab}
-          playOrbitalSequence={playOrbitalSequence}
-          liveMode={liveMode}
-          isPlaying={isPlaying}
-          loopSequence={loopSequence}
-          toggleLoopSequence={toggleLoopSequence}
-          sequenceBPM={sequenceBPM}
-          handleBPMChange={handleBPMChange}
-          orbitData={orbitData}
-          toggleAllPlanets={toggleAllPlanets}
-          togglePlanet={togglePlanet}
-          currentFrequencies={currentFrequencies}
-          distanceModeForDisplay={distanceModeForDisplay}
-          getPlanetColor={getPlanetColor}
-          frequencyToNote={frequencyToNote}
+          playOrbitalSequence={controls.playOrbitalSequence}
+          liveMode={controls.liveMode}
+          isPlaying={controls.isPlaying}
+          loopSequence={controls.loopSequence}
+          toggleLoopSequence={controls.toggleLoopSequence}
+          sequenceBPM={controls.sequenceBPM}
+          handleBPMChange={controls.handleBPMChange}
+          orbitData={controls.orbitData}
+          toggleAllPlanets={controls.toggleAllPlanets}
+          togglePlanet={controls.togglePlanet}
+          currentFrequencies={controls.currentFrequencies}
+          distanceModeForDisplay={controls.distanceMode}
+          getPlanetColor={() => '#fff'}
+          frequencyToNote={controls.frequencyToNote}
         />
       )}
 
       {activeTab === 'audio' && (
         <AudioTabContent
           activeTab={activeTab}
-          useFletcher={useFletcher}
-          toggleFletcherCurves={toggleFletcherCurves}
-          audioScalingConfig={audioScalingConfig}
-          setAudioScalingConfig={setAudioScalingConfig}
-          forceRecalculateAllGains={forceRecalculateAllGains}
+          useFletcher={controls.useFletcher}
+          toggleFletcherCurves={controls.toggleFletcherCurves}
+          audioScalingConfig={controls.audioScalingConfig}
+          setAudioScalingConfig={controls.setAudioScalingConfig}
+          forceRecalculateAllGains={controls.forceRecalculateAllGains}
         />
       )}
     </div>

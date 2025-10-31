@@ -8,6 +8,7 @@ import SidebarContent from './components/SidebarContent';
 import FloatingControlsBar from './components/FloatingControlsBar';
 import { AudioConfigProvider, useAudioConfig } from './context/AudioConfigContext';
 import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
+import { ControlsProvider } from './context/ControlsContext';
 import { useAudioContext } from './hooks/useAudioContext';
 import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
 import { useModals } from './hooks/useModals';
@@ -44,8 +45,8 @@ const OrbitalSonificationContent: React.FC = () => {
   const { orbitData, setOrbitData, animationSpeed, setAnimationSpeed, isPaused, setIsPaused, distanceMode, setDistanceMode, positionMode, setPositionMode, zoomLevel, setZoomLevel } = useOrbitState();
 
   // Hooks
-  const { needsUserInteraction, startAudio, audioContextReady } = useAudioContext();
-  const { calculateFrequency, calculateAllFrequencies, frequencyToNote: hookFrequencyToNote } = useFrequencyCalculation();
+  const { needsUserInteraction } = useAudioContext();
+  const { calculateFrequency, frequencyToNote: hookFrequencyToNote } = useFrequencyCalculation();
 
   // Local state
   const {
@@ -639,87 +640,93 @@ const OrbitalSonificationContent: React.FC = () => {
   }, [liveMode, orbitData, currentFrequencies, audioScalingConfig]);
 
 
+  const controlsValue = {
+    masterVolume,
+    handleVolumeChange,
+    baseFrequency,
+    handleBaseFrequencyChange,
+    sequenceBPM,
+    handleBPMChange,
+    useFletcher,
+    toggleFletcherCurves,
+    audioScalingConfig,
+    setAudioScalingConfig,
+    forceRecalculateAllGains,
+    distanceMode,
+    handleDistanceModeChange,
+    zoomLevel,
+    handleZoomChange,
+    animationSpeed,
+    setAnimationSpeed,
+    isPlaying,
+    playOrbitalSequence,
+    loopSequence,
+    toggleLoopSequence,
+    liveMode,
+    toggleLiveMode,
+    togglePlayPause,
+    orbitData,
+    togglePlanet,
+    toggleAllPlanets,
+    currentFrequencies,
+    frequencyToNote,
+    sidebarCollapsed,
+    toggleSidebar,
+    activeTab,
+    setActiveTab,
+    isPaused,
+    positionMode
+  };
+
   return (
-    <div
-      className="container"
-      onClick={needsUserInteraction ? handleUserInteraction : undefined}
-    >
-      <div className="visualization-container">
-        <div className="orbital-display">
-          <PlanetarySystem
-            animationSpeed={animationSpeed}
-            baseFrequency={baseFrequency}
-            distanceMode={distanceMode}
+    <ControlsProvider value={controlsValue}>
+      <div
+        className="container"
+        onClick={needsUserInteraction ? handleUserInteraction : undefined}
+      >
+        <div className="visualization-container">
+          <div className="orbital-display">
+            <PlanetarySystem
+              animationSpeed={animationSpeed}
+              baseFrequency={baseFrequency}
+              distanceMode={distanceMode}
+              isPaused={isPaused}
+              onFrequencyChange={handleFrequencyChange}
+              orbitData={orbitData}
+              setToAverageDistance={positionMode === 'average'}
+              setToAphelion={positionMode === 'aphelion'}
+              setToPerihelion={positionMode === 'perihelion'}
+              setZoomLevel={setZoomLevel}
+              zoomLevel={zoomLevel}
+              currentlyPlayingPlanet={currentlyPlayingPlanet}
+              sequenceBPM={sequenceBPM}
+            />
+          </div>
+
+          <FloatingControlsBar
             isPaused={isPaused}
-            onFrequencyChange={handleFrequencyChange}
-            orbitData={orbitData}
-            setToAverageDistance={positionMode === 'average'}
-            setToAphelion={positionMode === 'aphelion'}
-            setToPerihelion={positionMode === 'perihelion'}
-            setZoomLevel={setZoomLevel}
-            zoomLevel={zoomLevel}
-            currentlyPlayingPlanet={currentlyPlayingPlanet}
-            sequenceBPM={sequenceBPM}
+            onPlayPauseClick={togglePlayPause}
+            isPlaying={isPlaying}
+            liveMode={liveMode}
+            onPlaySequenceClick={playOrbitalSequence}
+            onLiveModeToggle={toggleLiveMode}
+            positionMode={positionMode}
+            onPositionModeChange={setPositionMode}
+            isInfoModalOpen={isInfoModalOpen}
+            onInfoClick={() => setIsInfoModalOpen(!isInfoModalOpen)}
+            isInstructionsModalOpen={isInstructionsModalOpen}
+            onInstructionsClick={() => setIsInstructionsModalOpen(!isInstructionsModalOpen)}
+            sidebarCollapsed={sidebarCollapsed}
+            onSidebarToggle={toggleSidebar}
           />
+
+          <SidebarContent />
         </div>
 
-        <FloatingControlsBar
-          isPaused={isPaused}
-          onPlayPauseClick={togglePlayPause}
-          isPlaying={isPlaying}
-          liveMode={liveMode}
-          onPlaySequenceClick={playOrbitalSequence}
-          onLiveModeToggle={toggleLiveMode}
-          positionMode={positionMode}
-          onPositionModeChange={setPositionMode}
-          isInfoModalOpen={isInfoModalOpen}
-          onInfoClick={() => setIsInfoModalOpen(!isInfoModalOpen)}
-          isInstructionsModalOpen={isInstructionsModalOpen}
-          onInstructionsClick={() => setIsInstructionsModalOpen(!isInstructionsModalOpen)}
-          sidebarCollapsed={sidebarCollapsed}
-          onSidebarToggle={toggleSidebar}
-        />
-
-        <SidebarContent
-          sidebarCollapsed={sidebarCollapsed}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          masterVolume={masterVolume}
-          handleVolumeChange={handleVolumeChange}
-          baseFrequency={baseFrequency}
-          handleBaseFrequencyChange={handleBaseFrequencyChange}
-          distanceMode={distanceMode}
-          handleDistanceModeChange={handleDistanceModeChange}
-          zoomLevel={zoomLevel}
-          handleZoomChange={handleZoomChange}
-          animationSpeed={animationSpeed}
-          setAnimationSpeed={setAnimationSpeed}
-          isPlaying={isPlaying}
-          playOrbitalSequence={playOrbitalSequence}
-          loopSequence={loopSequence}
-          toggleLoopSequence={toggleLoopSequence}
-          sequenceBPM={sequenceBPM}
-          handleBPMChange={handleBPMChange}
-          liveMode={liveMode}
-          orbitData={orbitData}
-          toggleAllPlanets={toggleAllPlanets}
-          togglePlanet={togglePlanet}
-          currentFrequencies={currentFrequencies}
-          distanceModeForDisplay={distanceMode}
-          getPlanetColor={getPlanetColor}
-          frequencyToNote={frequencyToNote}
-          volumeToDb={volumeToDb}
-          useFletcher={useFletcher}
-          toggleFletcherCurves={toggleFletcherCurves}
-          audioScalingConfig={audioScalingConfig}
-          setAudioScalingConfig={setAudioScalingConfig}
-          forceRecalculateAllGains={forceRecalculateAllGains}
-        />
+        <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
+        <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
       </div>
-
-      <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
-      <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
-    </div>
+    </ControlsProvider>
   );
 };
 
