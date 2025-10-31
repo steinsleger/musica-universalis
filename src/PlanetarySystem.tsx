@@ -2,6 +2,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Planet, CurrentFrequencies, PlanetarySystemProps } from './utils/types';
 import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
+import OrbitPath from './components/OrbitPath';
+import PlanetNode from './components/PlanetNode';
+import { getOrbitColor } from './utils/visualizationHelpers';
 
 const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
   orbitData,
@@ -398,7 +401,7 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
             Each planet follows an elliptical path at varying distances.
           </desc>
 
-          {/* Orbital paths as ellipses */}
+          {/* Orbital paths using OrbitPath component */}
           {orbitData.map((planet) => {
             const pathPoints = generateEllipticalPath(
               getDistance(planet),
@@ -410,29 +413,6 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
               .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
               .join(' ') + ' Z';
 
-            // Get a color based on the planet's distance from the sun
-            // This ensures visually distinct orbits, especially for outer planets
-            const getOrbitColor = (name: string, enabled: boolean): string => {
-              if (!enabled) return '#333';
-
-              // Custom colors for each planet to make orbits more distinguishable
-              const planetColors: Record<string, string> = {
-                'Mercury': '#AAA',
-                'Venus': '#DAA',
-                'Earth': '#5A5',
-                'Mars': '#A55',
-                'Ceres': '#AA8',
-                'Jupiter': '#DA8',
-                'Saturn': '#DD5',
-                'Uranus': '#8DD',
-                'Neptune': '#55D',
-                'Pluto': '#D5D'
-              };
-
-              return planetColors[name] || '#666';
-            };
-
-            // For highly eccentric orbits, mark perihelion and aphelion
             const showOrbitExtremes = planet.eccentricity > 0.1;
             const { perihelion, aphelion } = showOrbitExtremes ?
               getExtremePositions(getDistance(planet), planet.eccentricity) :
@@ -442,80 +422,23 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
               calculateOrbitalExtremes(getDistance(planet), planet.eccentricity);
 
             return (
-              <React.Fragment key={`orbit-${planet.name}`}>
-                <path
-                  d={pathData}
-                  fill="none"
-                  stroke={getOrbitColor(planet.name, planet.enabled)}
-                  strokeWidth={planet.name === 'Neptune' || planet.name === 'Pluto' ? 0.8 : 0.5}
-                  strokeDasharray={planet.enabled ? 'none' : '2,2'}
-                  aria-hidden="true"
-                />
-
-                {/* Orbit label - visible at higher zoom levels or for outer planets */}
-                {(zoomLevel > 3 || (zoomLevel > 1.5 && (planet.name === 'Neptune' || planet.name === 'Pluto' || planet.name === 'Uranus'))) && (
-                  <text
-                    x={center + (getDistance(planet) * 0.7) * orbitScaleFactor + panOffset.x}
-                    y={center - (getDistance(planet) * 0.7) * orbitScaleFactor + panOffset.y}
-                    fontSize="7"
-                    fill={getOrbitColor(planet.name, planet.enabled)}
-                    opacity={planet.enabled ? 1 : 0.5}
-                    textAnchor="middle"
-                    aria-hidden={!planet.enabled}
-                  >
-                    {planet.name} orbit
-                  </text>
-                )}
-
-                {/* Show perihelion and aphelion markers for eccentric orbits */}
-                {planet.enabled && showOrbitExtremes && perihelion && aphelion && (
-                  <>
-                    {/* Perihelion marker */}
-                    <circle
-                      cx={perihelion.x}
-                      cy={perihelion.y}
-                      r={1.5}
-                      fill="#f44"
-                      aria-hidden="true"
-                    />
-                    {zoomLevel > 4 && (
-                      <text
-                        x={perihelion.x}
-                        y={perihelion.y - 5}
-                        fontSize="6"
-                        textAnchor="middle"
-                        fill="#f88"
-                        aria-hidden="true"
-                      >
-                        {planet.name} perihelion
-                        ({perihelionDist.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'})
-                      </text>
-                    )}
-
-                    {/* Aphelion marker */}
-                    <circle
-                      cx={aphelion.x}
-                      cy={aphelion.y}
-                      r={1.5}
-                      fill="#88f"
-                      aria-hidden="true"
-                    />
-                    {zoomLevel > 4 && (
-                      <text
-                        x={aphelion.x}
-                        y={aphelion.y - 5}
-                        fontSize="6"
-                        textAnchor="middle"
-                        fill="#88f"
-                        aria-hidden="true"
-                      >
-                        {planet.name} aphelion
-                        ({aphelionDist.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'})
-                      </text>
-                    )}
-                  </>
-                )}
-              </React.Fragment>
+              <OrbitPath
+                key={`orbit-${planet.name}`}
+                planet={planet}
+                pathData={pathData}
+                orbitColor={getOrbitColor(planet.name, planet.enabled)}
+                showExtremes={showOrbitExtremes}
+                perihelionPos={perihelion}
+                perihelionDist={perihelionDist}
+                aphelionPos={aphelion}
+                aphelionDist={aphelionDist}
+                zoomLevel={zoomLevel}
+                distanceMode={distanceMode}
+                center={center}
+                orbitScaleFactor={orbitScaleFactor}
+                distance={getDistance(planet)}
+                panOffset={panOffset}
+              />
             );
           })}
 
@@ -541,7 +464,7 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
             aria-label="Sun at the center of the solar system"
           />
 
-          {/* Planets - now use dynamic angles from state */}
+          {/* Planets using PlanetNode component */}
           {orbitData.map((planet) => {
             if (!planet.enabled) return null;
 
@@ -552,12 +475,9 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
               angle
             );
 
-            // Calculate current distance for display
             const currentDistance = getCurrentDistance(getDistance(planet), planet.eccentricity, angle);
-
             const size = getPlanetSize(planet);
 
-            // Planet colors
             const planetColors: Record<string, string> = {
               'Mercury': '#A9A9A9',
               'Venus': '#E6D3A3',
@@ -571,92 +491,21 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
               'Pluto': '#C39BD3'
             };
 
-            // Check if this planet is currently playing in the sequence
-            const isPlaying = planet.name === currentlyPlayingPlanet;
-
             return (
-              <g key={`planet-${planet.name}`}>
-                {/* Add glow effect behind the planet when it's playing */}
-                {isPlaying && (
-                  <>
-                    {/* Outer glow */}
-                    <circle
-                      cx={position.x}
-                      cy={position.y}
-                      r={size * 3}
-                      fill={planetColors[planet.name] || '#999'}
-                      opacity={glowOpacity * 0.2}
-                      filter="blur(3px)"
-                      aria-hidden="true"
-                    />
-                    {/* Middle glow */}
-                    <circle
-                      cx={position.x}
-                      cy={position.y}
-                      r={size * 2}
-                      fill={planetColors[planet.name] || '#999'}
-                      opacity={glowOpacity * 0.4}
-                      filter="blur(2px)"
-                      aria-hidden="true"
-                    />
-                    {/* Inner glow */}
-                    <circle
-                      cx={position.x}
-                      cy={position.y}
-                      r={size * 1.5}
-                      fill={planetColors[planet.name] || '#999'}
-                      opacity={glowOpacity * 0.6}
-                      filter="blur(1px)"
-                      aria-hidden="true"
-                    />
-                  </>
-                )}
-
-                {/* Planet circle */}
-                <circle
-                  cx={position.x}
-                  cy={position.y}
-                  r={size}
-                  fill={planetColors[planet.name] || '#999'}
-                  stroke={isPlaying ? 'white' : 'none'}
-                  strokeWidth={isPlaying ? 0.5 : 0}
-                  role="img"
-                  aria-label={`${planet.name} at ${currentDistance.toFixed(2)} ${distanceMode === 'titiusBode' ? 'beta' : 'astronomical units'} from sun ${isPlaying ? ', currently playing' : ''}`}
-                />
-
-                <text
-                  x={position.x}
-                  y={position.y - size - 2}
-                  fontSize="8"
-                  textAnchor="middle"
-                  fill="#ccc"
-                  aria-hidden="true"
-                >
-                  {planet.name}
-                </text>
-                {/* Current distance */}
-                <text
-                  x={position.x}
-                  y={position.y + size + 8}
-                  fontSize="6"
-                  textAnchor="middle"
-                  fill="#aaa"
-                  aria-hidden="true"
-                >
-                  {currentDistance.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'}
-                </text>
-                {/* Line from sun to planet */}
-                <line
-                  x1={center + panOffset.x}
-                  y1={center + panOffset.y}
-                  x2={position.x}
-                  y2={position.y}
-                  stroke="#333"
-                  strokeWidth="0.3"
-                  strokeDasharray="1,2"
-                  aria-hidden="true"
-                />
-              </g>
+              <PlanetNode
+                key={`planet-${planet.name}`}
+                planet={planet}
+                position={position}
+                size={size}
+                planetColors={planetColors}
+                currentlyPlayingPlanet={currentlyPlayingPlanet}
+                frequencyNote={frequencyToNote(currentFrequencies[planet.name] || 0)}
+                frequencyValue={currentFrequencies[planet.name] || 0}
+                glowOpacity={glowOpacity}
+                currentDistance={currentDistance}
+                distanceMode={distanceMode}
+                sunPosition={{ x: center + panOffset.x, y: center + panOffset.y }}
+              />
             );
           })}
         </svg>

@@ -11,6 +11,7 @@ import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
 import { useAudioContext } from './hooks/useAudioContext';
 import { useSynthManager } from './hooks/useSynthManager';
 import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
+import { useModals } from './hooks/useModals';
 import {
   calculateFrequencyGain,
   safelyTriggerNote,
@@ -52,10 +53,18 @@ const OrbitalSonificationContent: React.FC = () => {
   const [currentFrequencies, setCurrentFrequencies] = useState<CurrentFrequencies>({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('controls');
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
-  const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState<boolean>(false);
   const [loopSequence, setLoopSequence] = useState<boolean>(false);
   const [currentlyPlayingPlanet, setCurrentlyPlayingPlanet] = useState<string | null>(null);
+
+  // Modal state management
+  const {
+    isInfoModalOpen,
+    setIsInfoModalOpen,
+    isInstructionsModalOpen,
+    setIsInstructionsModalOpen
+  } = useModals({
+    onEscapePressed: () => setSidebarCollapsed(true)
+  });
   const reverbAmount: number = 0.5;
 
   const audioContextStarted = useRef<boolean>(false);
@@ -1141,20 +1150,6 @@ const OrbitalSonificationContent: React.FC = () => {
     setUseFletcher(newValue);
   }, [liveMode, orbitData, currentFrequencies, audioScalingConfig]);
 
-  useEffect(() => {
-    const handleEscapeKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        setSidebarCollapsed(true);
-        setIsInfoModalOpen(false);
-        setIsInstructionsModalOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => {
-      document.removeEventListener('keydown', handleEscapeKey);
-    };
-  }, []);
 
   return (
     <div

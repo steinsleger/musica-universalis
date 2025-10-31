@@ -9,6 +9,10 @@ interface PlanetNodeProps {
   currentlyPlayingPlanet: string | null;
   frequencyNote: string;
   frequencyValue: number;
+  glowOpacity: number;
+  currentDistance: number;
+  distanceMode: 'titiusBode' | 'actual';
+  sunPosition: { x: number; y: number };
 }
 
 const PlanetNode: React.FC<PlanetNodeProps> = ({
@@ -18,7 +22,11 @@ const PlanetNode: React.FC<PlanetNodeProps> = ({
   planetColors,
   currentlyPlayingPlanet,
   frequencyNote,
-  frequencyValue
+  frequencyValue,
+  glowOpacity,
+  currentDistance,
+  distanceMode,
+  sunPosition
 }) => {
   if (!planet.enabled || size === 0) return null;
 
@@ -27,21 +35,40 @@ const PlanetNode: React.FC<PlanetNodeProps> = ({
 
   return (
     <g key={`planet-${planet.name}`}>
-      {/* Glow effect for playing planet */}
+      {/* Add glow effect behind the planet when it's playing */}
       {isPlaying && (
-        <circle
-          cx={position.x}
-          cy={position.y}
-          r={size + 8}
-          fill="none"
-          stroke={planetColor}
-          strokeWidth="2"
-          opacity="0.3"
-          className="glow-ring"
-          style={{
-            animation: 'pulse 1s infinite'
-          }}
-        />
+        <>
+          {/* Outer glow */}
+          <circle
+            cx={position.x}
+            cy={position.y}
+            r={size * 3}
+            fill={planetColor}
+            opacity={glowOpacity * 0.2}
+            filter="blur(3px)"
+            aria-hidden="true"
+          />
+          {/* Middle glow */}
+          <circle
+            cx={position.x}
+            cy={position.y}
+            r={size * 2}
+            fill={planetColor}
+            opacity={glowOpacity * 0.4}
+            filter="blur(2px)"
+            aria-hidden="true"
+          />
+          {/* Inner glow */}
+          <circle
+            cx={position.x}
+            cy={position.y}
+            r={size * 1.5}
+            fill={planetColor}
+            opacity={glowOpacity * 0.6}
+            filter="blur(1px)"
+            aria-hidden="true"
+          />
+        </>
       )}
 
       {/* Planet circle */}
@@ -50,47 +77,47 @@ const PlanetNode: React.FC<PlanetNodeProps> = ({
         cy={position.y}
         r={size}
         fill={planetColor}
-        opacity="0.9"
+        stroke={isPlaying ? 'white' : 'none'}
+        strokeWidth={isPlaying ? 0.5 : 0}
+        role="img"
+        aria-label={`${planet.name} at ${currentDistance.toFixed(2)} ${distanceMode === 'titiusBode' ? 'beta' : 'astronomical units'} from sun ${isPlaying ? ', currently playing' : ''}`}
       />
 
-      {/* Frequency label */}
+      {/* Planet name */}
       <text
         x={position.x}
-        y={position.y - size - 12}
+        y={position.y - size - 2}
+        fontSize="8"
         textAnchor="middle"
-        fontSize="11"
         fill="#ccc"
-        fontFamily="monospace"
-        opacity="0.8"
+        aria-hidden="true"
       >
         {planet.name}
       </text>
 
-      {/* Frequency note */}
+      {/* Current distance */}
       <text
         x={position.x}
-        y={position.y + size + 20}
+        y={position.y + size + 8}
+        fontSize="6"
         textAnchor="middle"
-        fontSize="9"
-        fill="#999"
-        fontFamily="monospace"
-        opacity="0.7"
+        fill="#aaa"
+        aria-hidden="true"
       >
-        {frequencyNote}
+        {currentDistance.toFixed(2)} {distanceMode === 'titiusBode' ? 'β' : 'AU'}
       </text>
 
-      {/* Frequency value */}
-      <text
-        x={position.x}
-        y={position.y + size + 32}
-        textAnchor="middle"
-        fontSize="8"
-        fill="#666"
-        fontFamily="monospace"
-        opacity="0.6"
-      >
-        {frequencyValue.toFixed(1)} Hz
-      </text>
+      {/* Line from sun to planet */}
+      <line
+        x1={sunPosition.x}
+        y1={sunPosition.y}
+        x2={position.x}
+        y2={position.y}
+        stroke="#333"
+        strokeWidth="0.3"
+        strokeDasharray="1,2"
+        aria-hidden="true"
+      />
     </g>
   );
 };
