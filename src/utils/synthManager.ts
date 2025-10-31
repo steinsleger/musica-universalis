@@ -213,6 +213,46 @@ export class SynthManager {
   }
 
   /**
+   * Update gains for all synths based on frequency data
+   * Used by forceRecalculateAllGains and toggleFletcherCurves
+   */
+  updateAllGains(
+    frequencies: Record<string, number>,
+    audioScalingConfig: AudioScalingConfig,
+    useFletcher: boolean
+  ): void {
+    Object.entries(frequencies).forEach(([planetName, frequency]) => {
+      const synthObj = this.synths[planetName];
+      if (synthObj && synthObj.gain && frequency) {
+        try {
+          const gain = useFletcher
+            ? calculateAdvancedFrequencyGain(frequency, audioScalingConfig)
+            : calculateFrequencyGain(frequency, audioScalingConfig);
+
+          this.updateGain(planetName, gain);
+        } catch (error) {
+          console.error(`[SYNTH] Error updating gain for ${planetName}:`, error);
+        }
+      }
+    });
+  }
+
+  /**
+   * Set master volume for all synths
+   */
+  setMasterVolume(volume: number): void {
+    Object.entries(this.gainNodes).forEach(([planetName, gainNode]) => {
+      if (gainNode && !gainNode.disposed) {
+        try {
+          gainNode.gain.value = volume;
+        } catch (error) {
+          console.error(`[SYNTH] Error setting master volume for ${planetName}:`, error);
+        }
+      }
+    });
+  }
+
+  /**
    * Dispose all synths
    */
   disposeAll(): void {

@@ -295,7 +295,7 @@ const OrbitalSonificationContent: React.FC = () => {
           if (now - lastFrequencyUpdate > 50) {
             Array.from(activeSynthsRef.current).forEach(planetName => {
               const freq = currentFrequencies[planetName];
-              if (freq && synthsRef.current[planetName] && synthsRef.current[planetName].synth) {
+              if (freq && synthManagerRef.current.getSynth(planetName)) {
                 updatePlanetFrequency(planetName, freq);
               }
             });
@@ -388,38 +388,22 @@ const OrbitalSonificationContent: React.FC = () => {
 
     window.lastAudioUpdate = Date.now();
 
+    const enabledFrequencies: CurrentFrequencies = {};
     Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
       const planet = orbitData.find(p => p.name === planetName);
-      if (planet && planet.enabled) {
-        const synthObj = synthsRef.current[planetName];
-        if (synthObj && synthObj.gain && freq) {
-          const gain = useFletcher
-            ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
-            : calculateFrequencyGain(freq, audioScalingConfig);
+      if (planet && planet.enabled && freq) {
+        enabledFrequencies[planetName] = freq;
+      }
+    });
 
-          try {
-            const now = Tone.now();
-            synthObj.gain.gain.cancelScheduledValues(now);
-            synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
-            synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+    synthManagerRef.current.updateAllGains(enabledFrequencies, audioScalingConfig, useFletcher);
 
-            setTimeout(() => {
-              try {
-                synthObj.gain.gain.value = gain;
-              } catch (directErr) {
-                console.error('[CONFIG] Error in direct gain set:', directErr);
-              }
-            }, 60);
-          } catch {
-            console.error(`[CONFIG] Error updating gain for ${planetName}:`);
-
-            try {
-              synthObj.gain.gain.value = gain;
-            } catch (directErr) {
-              console.error('[CONFIG] Fallback direct gain set also failed:', directErr);
-            }
-          }
-        }
+    // Sync old refs for backward compatibility
+    Object.keys(enabledFrequencies).forEach(planetName => {
+      const synthObj = synthManagerRef.current.getSynth(planetName);
+      if (synthObj) {
+        synthsRef.current[planetName] = synthObj;
+        gainNodesRef.current[planetName] = synthObj.gain;
       }
     });
   }, [
@@ -727,30 +711,22 @@ const OrbitalSonificationContent: React.FC = () => {
   };
 
   const forceRecalculateAllGains = (): void => {
+    const enabledFrequencies: CurrentFrequencies = {};
     Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
       const planet = orbitData.find(p => p.name === planetName);
-      if (planet && planet.enabled) {
-        const synthObj = synthsRef.current[planetName];
-        if (synthObj && synthObj.gain && freq) {
-          try {
-            const gain = useFletcher
-              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
-              : calculateFrequencyGain(freq, audioScalingConfig);
+      if (planet && planet.enabled && freq) {
+        enabledFrequencies[planetName] = freq;
+      }
+    });
 
-            try {
-              synthObj.gain.gain.value = gain;
+    synthManagerRef.current.updateAllGains(enabledFrequencies, audioScalingConfig, useFletcher);
 
-              const now = Tone.now();
-              synthObj.gain.gain.cancelScheduledValues(now);
-              synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
-              synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
-            } catch {
-              console.error('[FORCE RECALC] Error setting gain:');
-            }
-          } catch {
-            console.error('[FORCE RECALC] Error calculating gain:');
-          }
-        }
+    // Sync old refs for backward compatibility
+    Object.keys(enabledFrequencies).forEach(planetName => {
+      const synthObj = synthManagerRef.current.getSynth(planetName);
+      if (synthObj) {
+        synthsRef.current[planetName] = synthObj;
+        gainNodesRef.current[planetName] = synthObj.gain;
       }
     });
   };
@@ -984,17 +960,20 @@ const OrbitalSonificationContent: React.FC = () => {
 
   const startPlanetSound = (planetName: string, frequency: number): boolean => {
     try {
-      if (activeSynthsRef.current.has(planetName)) {
+      // Check if already playing using SynthManager
+      if (synthManagerRef.current.isPlaying(planetName)) {
         updatePlanetFrequency(planetName, frequency);
         return true;
       }
 
-      let synthObj: SynthObject | null = synthsRef.current[planetName];
+      // Get or create synth
+      let synthObj = synthManagerRef.current.getSynth(planetName);
       if (!synthObj || !synthObj.synth || synthObj.synth.disposed) {
         synthObj = createIsolatedSynth(planetName);
         if (!synthObj || !synthObj.synth) return false;
       }
 
+      // Calculate and apply gain
       let gain: number;
       try {
         gain = useFletcher
@@ -1006,8 +985,7 @@ const OrbitalSonificationContent: React.FC = () => {
       }
 
       if (synthObj.gain) {
-        synthObj.gain.gain.value = gain;
-
+        synthManagerRef.current.updateGain(planetName, gain);
         gainNodesRef.current[planetName] = synthObj.gain;
       }
 
@@ -1020,6 +998,7 @@ const OrbitalSonificationContent: React.FC = () => {
         audioScalingConfig
       );
 
+      // Track as active in both managers
       activeSynthsRef.current.add(planetName);
       return true;
     } catch {
@@ -1030,26 +1009,19 @@ const OrbitalSonificationContent: React.FC = () => {
 
   const stopPlanetSound = (planetName: string): boolean => {
     try {
-      const synthObj = synthsRef.current[planetName];
-      if (!synthObj || !synthObj.synth || synthObj.synth.disposed) {
-        activeSynthsRef.current.delete(planetName);
-        return true;
-      }
+      // Use SynthManager to stop sound
+      const success = synthManagerRef.current.stopSound(planetName);
 
-      try {
-        synthObj.synth.triggerRelease();
-      } catch (releaseErr) {
-        console.error(`Error releasing synth for ${planetName}:`, releaseErr);
-        createIsolatedSynth(planetName);
-      }
-
+      // Remove from legacy tracking
       activeSynthsRef.current.delete(planetName);
-      return true;
+
+      return success;
     } catch {
       console.error(`Failed to stop sound for ${planetName}:`);
       activeSynthsRef.current.delete(planetName);
 
       try {
+        // Recreate synth on failure
         createIsolatedSynth(planetName);
       } catch (recreateErr) {
         console.error(`Failed to recreate synth for ${planetName}:`, recreateErr);
@@ -1061,13 +1033,14 @@ const OrbitalSonificationContent: React.FC = () => {
 
   const updatePlanetFrequency = (planetName: string, frequency: number): boolean => {
     try {
-      const synthObj = synthsRef.current[planetName];
+      const synthObj = synthManagerRef.current.getSynth(planetName);
       if (!synthObj || !synthObj.synth || synthObj.synth.disposed) return false;
 
       const currentFreq = Number(synthObj.synth.frequency.value);
       const freqDiff = Math.abs(currentFreq - frequency);
       const freqRatio = frequency / currentFreq;
 
+      // Only update if frequency change is significant
       if (freqDiff > 1 || freqRatio < 0.98 || freqRatio > 1.02) {
         if (debug.current && Math.random() < 0.01) {
           debugAudio(`${planetName} freq change: ${currentFreq.toFixed(2)} → ${frequency.toFixed(2)} Hz`);
@@ -1075,31 +1048,12 @@ const OrbitalSonificationContent: React.FC = () => {
 
         const gain = getAdjustedGain(frequency);
 
+        // Update frequency directly
         synthObj.synth.frequency.value = frequency;
 
+        // Use SynthManager to update gain
         if (synthObj.gain) {
-          try {
-            const now = Tone.now();
-            synthObj.gain.gain.cancelScheduledValues(now);
-            synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
-            synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
-
-            setTimeout(() => {
-              try {
-                synthObj.gain.gain.value = gain;
-              } catch (directErr) {
-                console.error('[UPDATE FREQ] Error in direct gain set:', directErr);
-              }
-            }, 60);
-          } catch {
-            console.error('[UPDATE FREQ] Error updating gain:');
-
-            try {
-              synthObj.gain.gain.value = gain;
-            } catch (directErr) {
-              console.error('[UPDATE FREQ] Fallback direct gain set also failed:', directErr);
-            }
-          }
+          synthManagerRef.current.updateGain(planetName, gain);
         }
       }
 
@@ -1123,17 +1077,7 @@ const OrbitalSonificationContent: React.FC = () => {
 
     try {
       Tone.Destination.volume.value = Tone.gainToDb(newVolume);
-
-      Object.entries(synthsRef.current).forEach(([name, synthObj]) => {
-        if (synthObj && synthObj.gain && !synthObj.gain.disposed) {
-          try {
-            synthObj.gain.gain.value = newVolume;
-          } catch {
-            debugAudio(`Failed to update gain for ${name}`);
-          }
-        }
-      });
-
+      synthManagerRef.current.setMasterVolume(newVolume);
       return true;
     } catch {
       console.error('Failed to update master volume:');
@@ -1209,44 +1153,28 @@ const OrbitalSonificationContent: React.FC = () => {
     const newValue = !useFletcher;
 
     if (liveMode) {
+      const enabledFrequencies: CurrentFrequencies = {};
       Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
         const planet = orbitData.find(p => p.name === planetName);
-        if (planet && planet.enabled) {
-          const synthObj = synthsRef.current[planetName];
-          if (synthObj && synthObj.gain && freq) {
-            const gain = newValue
-              ? calculateAdvancedFrequencyGain(freq, audioScalingConfig)
-              : calculateFrequencyGain(freq, audioScalingConfig);
+        if (planet && planet.enabled && freq) {
+          enabledFrequencies[planetName] = freq;
+        }
+      });
 
-            try {
-              const now = Tone.now();
-              synthObj.gain.gain.cancelScheduledValues(now);
-              synthObj.gain.gain.setValueAtTime(synthObj.gain.gain.value, now);
-              synthObj.gain.gain.linearRampToValueAtTime(Math.max(0.001, gain), now + 0.05);
+      synthManagerRef.current.updateAllGains(enabledFrequencies, audioScalingConfig, newValue);
 
-              setTimeout(() => {
-                try {
-                  synthObj.gain.gain.value = gain;
-                } catch (directErr) {
-                  console.error('[FLETCHER] Error in direct gain set:', directErr);
-                }
-              }, 60);
-            } catch {
-              console.error(`[FLETCHER] Error updating gain for ${planetName}:`);
-
-              try {
-                synthObj.gain.gain.value = gain;
-              } catch (directErr) {
-                console.error('[FLETCHER] Fallback direct gain set also failed:', directErr);
-              }
-            }
-          }
+      // Sync old refs for backward compatibility
+      Object.keys(enabledFrequencies).forEach(planetName => {
+        const synthObj = synthManagerRef.current.getSynth(planetName);
+        if (synthObj) {
+          synthsRef.current[planetName] = synthObj;
+          gainNodesRef.current[planetName] = synthObj.gain;
         }
       });
     }
 
     setUseFletcher(newValue);
-  }, [liveMode, orbitData, currentFrequencies, audioScalingConfig, useFletcher]);
+  }, [liveMode, orbitData, currentFrequencies, audioScalingConfig]);
 
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent): void => {
