@@ -1,14 +1,8 @@
 // src/OrbitalSonification.tsx
 import React, { useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
-import PlanetarySystem from './PlanetarySystem';
-import InfoModal from './components/InfoModal';
-import InstructionsModal from './components/InstructionsModal';
-import SidebarContent from './components/SidebarContent';
-import FloatingControlsBar from './components/FloatingControlsBar';
 import { AudioConfigProvider, useAudioConfig } from './context/AudioConfigContext';
 import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
-import { ControlsProvider } from './context/ControlsContext';
 import { useAudioContext } from './hooks/useAudioContext';
 import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
 import { useModals } from './hooks/useModals';
@@ -24,8 +18,8 @@ import { useControlHandlers } from './hooks/useControlHandlers';
 import { useControlsContextValue } from './hooks/useControlsContextValue';
 import { useFrequencyEffects } from './hooks/useFrequencyEffects';
 import { useAudioInitialization } from './hooks/useAudioInitialization';
-import { VisualizationProvider } from './context/VisualizationContext';
 import { useVisualizationContextValue } from './hooks/useVisualizationContextValue';
+import OrbitalSonificationLayout from './components/OrbitalSonificationLayout';
 import { SynthManager } from './utils/synthManager';
 import {
   Planet,
@@ -482,27 +476,16 @@ const OrbitalSonificationContent: React.FC = () => {
   });
 
   return (
-    <ControlsProvider value={controlsValue}>
-      <div
-        className="container"
-        onClick={needsUserInteraction ? handleUserInteraction : undefined}
-      >
-        <div className="visualization-container">
-          <div className="orbital-display">
-            <VisualizationProvider value={visualizationValue}>
-              <PlanetarySystem />
-            </VisualizationProvider>
-          </div>
-
-          <FloatingControlsBar />
-
-          <SidebarContent />
-        </div>
-
-        <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
-        <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
-      </div>
-    </ControlsProvider>
+    <OrbitalSonificationLayout
+      controlsValue={controlsValue}
+      visualizationValue={visualizationValue}
+      needsUserInteraction={needsUserInteraction}
+      handleUserInteraction={handleUserInteraction}
+      isInfoModalOpen={isInfoModalOpen}
+      setIsInfoModalOpen={setIsInfoModalOpen}
+      isInstructionsModalOpen={isInstructionsModalOpen}
+      setIsInstructionsModalOpen={setIsInstructionsModalOpen}
+    />
   );
 };
 

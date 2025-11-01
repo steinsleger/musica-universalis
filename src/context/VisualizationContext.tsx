@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { Planet, FrequencyMode } from '../utils/types';
 
-interface VisualizationContextType {
+export interface VisualizationContextType {
   orbitData: Planet[];
   animationSpeed: number;
   baseFrequency: number;

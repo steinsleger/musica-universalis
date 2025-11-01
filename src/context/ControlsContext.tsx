@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { Planet, CurrentFrequencies, PositionMode, FrequencyMode, AudioScalingConfig, TabType } from '../utils/types';
 
-interface ControlsContextType {
+export interface ControlsContextType {
   // Audio Controls
   masterVolume: number;
   handleVolumeChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
