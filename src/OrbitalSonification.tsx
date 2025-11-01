@@ -24,6 +24,8 @@ import { useControlHandlers } from './hooks/useControlHandlers';
 import { useControlsContextValue } from './hooks/useControlsContextValue';
 import { useFrequencyEffects } from './hooks/useFrequencyEffects';
 import { useAudioInitialization } from './hooks/useAudioInitialization';
+import { VisualizationProvider } from './context/VisualizationContext';
+import { useVisualizationContextValue } from './hooks/useVisualizationContextValue';
 import { SynthManager } from './utils/synthManager';
 import {
   Planet,
@@ -463,6 +465,22 @@ const OrbitalSonificationContent: React.FC = () => {
     setPositionMode
   });
 
+  const visualizationValue = useVisualizationContextValue({
+    orbitData,
+    animationSpeed,
+    baseFrequency,
+    onFrequencyChange: handleFrequencyChange,
+    isPaused,
+    setToAverageDistance: positionMode === 'average',
+    setToAphelion: positionMode === 'aphelion',
+    setToPerihelion: positionMode === 'perihelion',
+    zoomLevel,
+    setZoomLevel,
+    distanceMode,
+    currentlyPlayingPlanet,
+    sequenceBPM
+  });
+
   return (
     <ControlsProvider value={controlsValue}>
       <div
@@ -471,21 +489,9 @@ const OrbitalSonificationContent: React.FC = () => {
       >
         <div className="visualization-container">
           <div className="orbital-display">
-            <PlanetarySystem
-              animationSpeed={animationSpeed}
-              baseFrequency={baseFrequency}
-              distanceMode={distanceMode}
-              isPaused={isPaused}
-              onFrequencyChange={handleFrequencyChange}
-              orbitData={orbitData}
-              setToAverageDistance={positionMode === 'average'}
-              setToAphelion={positionMode === 'aphelion'}
-              setToPerihelion={positionMode === 'perihelion'}
-              setZoomLevel={setZoomLevel}
-              zoomLevel={zoomLevel}
-              currentlyPlayingPlanet={currentlyPlayingPlanet}
-              sequenceBPM={sequenceBPM}
-            />
+            <VisualizationProvider value={visualizationValue}>
+              <PlanetarySystem />
+            </VisualizationProvider>
           </div>
 
           <FloatingControlsBar />

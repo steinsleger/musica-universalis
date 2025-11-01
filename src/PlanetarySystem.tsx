@@ -1,6 +1,7 @@
 // src/PlanetarySystem.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Planet, CurrentFrequencies, PlanetarySystemProps } from './utils/types';
+import { CurrentFrequencies } from './utils/types';
+import { useVisualization } from './context/VisualizationContext';
 import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
 import { useOrbitalAnimation } from './hooks/useOrbitalAnimation';
 import { useGlowEffect } from './hooks/useGlowEffect';
@@ -8,21 +9,22 @@ import OrbitPath from './components/OrbitPath';
 import PlanetNode from './components/PlanetNode';
 import { getOrbitColor } from './utils/visualizationHelpers';
 
-const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
-  orbitData,
-  animationSpeed = 1,
-  baseFrequency = 220,
-  onFrequencyChange,
-  isPaused = false,
-  setToAverageDistance = false,
-  setToAphelion = false,
-  setToPerihelion = false,
-  zoomLevel = 1,
-  setZoomLevel,
-  distanceMode = 'titiusBode',
-  currentlyPlayingPlanet = null,
-  sequenceBPM = 60
-}) => {
+const PlanetarySystem: React.FC = () => {
+  const {
+    orbitData,
+    animationSpeed,
+    baseFrequency,
+    onFrequencyChange,
+    isPaused,
+    setToAverageDistance,
+    setToAphelion,
+    setToPerihelion,
+    zoomLevel,
+    setZoomLevel,
+    distanceMode,
+    currentlyPlayingPlanet,
+    sequenceBPM
+  } = useVisualization();
 
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
