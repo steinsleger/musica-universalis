@@ -20,17 +20,15 @@ import { useLiveModeAudio } from './hooks/useLiveModeAudio';
 import { useToggleControls } from './hooks/useToggleControls';
 import { useAudioContextManager } from './hooks/useAudioContextManager';
 import { useSequencePlayback } from './hooks/useSequencePlayback';
+import { useControlHandlers } from './hooks/useControlHandlers';
+import { useControlsContextValue } from './hooks/useControlsContextValue';
+import { useFrequencyEffects } from './hooks/useFrequencyEffects';
 import { SynthManager } from './utils/synthManager';
-import { volumeToDb, getPlanetColor } from './utils/visualizationHelpers';
 import {
   Planet,
   CurrentFrequencies,
   PositionMode,
-  FrequencyMode,
-  SynthObject,
-  AudioScalingConfig,
-  getDefaultOrbitData,
-  getDefaultAudioScalingConfig
+  AudioScalingConfig
 } from './utils/types';
 
 declare global {
@@ -445,23 +443,21 @@ const OrbitalSonificationContent: React.FC = () => {
     debugAudio
   });
 
-  useEffect(() => {
-    if (liveMode && !isPaused) {
-      const updatedFrequencies: CurrentFrequencies = {};
-      orbitData.forEach((planet, index) => {
-        if (planet.enabled) {
-          const n = index - 2;
-          const baseFreq = calculateBaseFrequencies(baseFrequency, planet, n);
-          updatedFrequencies[planet.name] = baseFreq;
-        }
-      });
-
-      setCurrentFrequencies(prevFreqs => ({
-        ...prevFreqs,
-        ...updatedFrequencies
-      }));
-    }
-  }, [baseFrequency, liveMode, isPaused, orbitData, calculateBaseFrequencies]);
+  // Use frequency effects hook for gain and frequency updates
+  useFrequencyEffects({
+    liveMode,
+    isPaused,
+    baseFrequency,
+    currentFrequencies,
+    orbitData,
+    calculateBaseFrequencies,
+    setCurrentFrequencies,
+    useFletcher,
+    audioScalingConfig,
+    synthManagerRef,
+    synthsRef,
+    gainNodesRef
+  });
 
   useEffect(() => {
     const initializeTone = async (): Promise<void> => {
@@ -490,38 +486,6 @@ const OrbitalSonificationContent: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!liveMode) return;
-
-    window.lastAudioUpdate = Date.now();
-
-    const enabledFrequencies: CurrentFrequencies = {};
-    Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
-      const planet = orbitData.find(p => p.name === planetName);
-      if (planet && planet.enabled && freq) {
-        enabledFrequencies[planetName] = freq;
-      }
-    });
-
-    synthManagerRef.current.updateAllGains(enabledFrequencies, audioScalingConfig, useFletcher);
-
-    // Sync old refs for backward compatibility
-    Object.keys(enabledFrequencies).forEach(planetName => {
-      const synthObj = synthManagerRef.current.getSynth(planetName);
-      if (synthObj) {
-        synthsRef.current[planetName] = synthObj;
-        gainNodesRef.current[planetName] = synthObj.gain;
-      }
-    });
-  }, [
-    useFletcher,
-    audioScalingConfig.referenceFrequency,
-    audioScalingConfig.scalingFactor,
-    liveMode,
-    orbitData,
-    currentFrequencies
-  ]);
-
   const handleUserInteraction = async (): Promise<void> => {
     if (needsUserInteraction) {
       try {
@@ -535,114 +499,51 @@ const OrbitalSonificationContent: React.FC = () => {
     }
   };
 
-  const togglePlayPause = async (): Promise<void> => {
-    await startAudioContext();
-    if (isPaused) {
-      setPositionMode('normal');
-    }
-    setIsPaused(!isPaused);
-  };
-
-  const handleBPMChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setSequenceBPM(parseInt(e.target.value, 10));
-  };
-
-  const toggleLoopSequence = (): void => {
-    setLoopSequence(!loopSequence);
-  };
-
-  const toggleSidebar = (): void => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  const handleDistanceModeChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-    const newMode = e.target.value as FrequencyMode;
-    setDistanceMode(newMode);
-
-    if (liveMode) {
-      updateAllFrequencies();
-    }
-  };
-
-  const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setZoomLevel(parseFloat(e.target.value));
-  };
-
-  const updateMasterVolume = (newVolume: number): boolean => {
-    debugAudio(`Updating master volume to ${newVolume}`);
-
-    try {
-      Tone.Destination.volume.value = Tone.gainToDb(newVolume);
-      synthManagerRef.current.setMasterVolume(newVolume);
-      return true;
-    } catch {
-      console.error('Failed to update master volume:');
-      return false;
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const newVolume = parseFloat(e.target.value);
-    setMasterVolume(newVolume);
-    updateMasterVolume(newVolume);
-  };
-
-  const handleBaseFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const newBaseFrequency = parseFloat(e.target.value);
-    setBaseFrequency(newBaseFrequency);
-
-    const recalculatedFrequencies: CurrentFrequencies = {};
-    orbitData.forEach((planet, index) => {
-      if (planet.enabled) {
-        const _n = index - 2;
-        const baseFreq = calculateBaseFrequencies(newBaseFrequency, planet, index);
-        recalculatedFrequencies[planet.name] = baseFreq;
-
-        if (liveMode && activeSynthsRef.current.has(planet.name)) {
-          updatePlanetFrequency(planet.name, baseFreq);
-        }
-      }
-    });
-
-    setCurrentFrequencies(prevFreqs => ({
-      ...prevFreqs,
-      ...recalculatedFrequencies
-    }));
-  };
-
-  const frequencyToNote = (frequency: number | undefined): string => {
-    return frequency ? hookFrequencyToNote(frequency) : '';
-  };
-
-  const toggleFletcherCurves = useCallback((): void => {
-    const newValue = !useFletcher;
-
-    if (liveMode) {
-      const enabledFrequencies: CurrentFrequencies = {};
-      Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
-        const planet = orbitData.find(p => p.name === planetName);
-        if (planet && planet.enabled && freq) {
-          enabledFrequencies[planetName] = freq;
-        }
-      });
-
-      synthManagerRef.current.updateAllGains(enabledFrequencies, audioScalingConfig, newValue);
-
-      // Sync old refs for backward compatibility
-      Object.keys(enabledFrequencies).forEach(planetName => {
-        const synthObj = synthManagerRef.current.getSynth(planetName);
-        if (synthObj) {
-          synthsRef.current[planetName] = synthObj;
-          gainNodesRef.current[planetName] = synthObj.gain;
-        }
-      });
-    }
-
-    setUseFletcher(newValue);
-  }, [liveMode, orbitData, currentFrequencies, audioScalingConfig]);
+  const {
+    togglePlayPause,
+    handleBPMChange,
+    toggleLoopSequence,
+    toggleSidebar,
+    handleDistanceModeChange,
+    handleZoomChange,
+    handleVolumeChange,
+    handleBaseFrequencyChange,
+    frequencyToNote,
+    toggleFletcherCurves
+  } = useControlHandlers({
+    startAudioContext,
+    isPaused,
+    setPositionMode,
+    setIsPaused,
+    setSequenceBPM,
+    loopSequence,
+    setLoopSequence,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    setDistanceMode,
+    liveMode,
+    updateAllFrequencies,
+    setZoomLevel,
+    debugAudio,
+    synthManagerRef,
+    setMasterVolume,
+    calculateBaseFrequencies,
+    orbitData,
+    activeSynthsRef,
+    updatePlanetFrequency,
+    setCurrentFrequencies,
+    currentFrequencies,
+    setBaseFrequency,
+    hookFrequencyToNote,
+    useFletcher,
+    audioScalingConfig,
+    setUseFletcher,
+    synthsRef,
+    gainNodesRef
+  });
 
 
-  const controlsValue = {
+  const controlsValue = useControlsContextValue({
     masterVolume,
     handleVolumeChange,
     baseFrequency,
@@ -679,7 +580,7 @@ const OrbitalSonificationContent: React.FC = () => {
     setActiveTab,
     isPaused,
     positionMode
-  };
+  });
 
   return (
     <ControlsProvider value={controlsValue}>
