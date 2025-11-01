@@ -45,10 +45,15 @@ interface ControlsContextType {
   toggleSidebar: () => void;
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  isInfoModalOpen: boolean;
+  setIsInfoModalOpen: (open: boolean) => void;
+  isInstructionsModalOpen: boolean;
+  setIsInstructionsModalOpen: (open: boolean) => void;
 
   // Other
   isPaused: boolean;
   positionMode: PositionMode;
+  setPositionMode: (mode: PositionMode) => void;
 }
 
 const ControlsContext = createContext<ControlsContextType | undefined>(undefined);

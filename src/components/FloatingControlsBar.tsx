@@ -1,45 +1,29 @@
 import React from 'react';
-import { PositionMode } from '../utils/types';
+import { useControls } from '../context/ControlsContext';
 
-interface FloatingControlsBarProps {
-  isPaused: boolean;
-  onPlayPauseClick: () => void;
-  isPlaying: boolean;
-  liveMode: boolean;
-  onPlaySequenceClick: () => void;
-  onLiveModeToggle: () => void;
-  positionMode: PositionMode;
-  onPositionModeChange: (mode: PositionMode) => void;
-  isInfoModalOpen: boolean;
-  onInfoClick: () => void;
-  isInstructionsModalOpen: boolean;
-  onInstructionsClick: () => void;
-  sidebarCollapsed: boolean;
-  onSidebarToggle: () => void;
-}
-
-const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
-  isPaused,
-  onPlayPauseClick,
-  isPlaying,
-  liveMode,
-  onPlaySequenceClick,
-  onLiveModeToggle,
-  positionMode,
-  onPositionModeChange,
-  isInfoModalOpen,
-  onInfoClick,
-  isInstructionsModalOpen,
-  onInstructionsClick,
-  sidebarCollapsed,
-  onSidebarToggle
-}) => {
+const FloatingControlsBar: React.FC = () => {
+  const {
+    isPaused,
+    togglePlayPause,
+    isPlaying,
+    liveMode,
+    playOrbitalSequence,
+    toggleLiveMode,
+    positionMode,
+    setPositionMode,
+    isInfoModalOpen,
+    setIsInfoModalOpen,
+    isInstructionsModalOpen,
+    setIsInstructionsModalOpen,
+    sidebarCollapsed,
+    toggleSidebar
+  } = useControls();
   return (
     <>
       <div className="floating-controls fade-in" role="toolbar" aria-label="Playback and visualization controls">
         <button
           className="floating-button"
-          onClick={onPlayPauseClick}
+          onClick={togglePlayPause}
           title={isPaused ? 'Play Animation' : 'Pause Animation'}
           aria-label={isPaused ? 'Play orbital animation' : 'Pause orbital animation'}
         >
@@ -47,7 +31,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
         </button>
 
         <button
-          onClick={onPlaySequenceClick}
+          onClick={playOrbitalSequence}
           title={isPlaying ? 'Stop Sequence' : 'Play Orbital Sequence'}
           disabled={liveMode}
           className="floating-button"
@@ -59,7 +43,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
 
         <button
           className="floating-button"
-          onClick={onLiveModeToggle}
+          onClick={toggleLiveMode}
           disabled={isPlaying}
           title={liveMode ? 'Disable Live Mode' : 'Enable Live Mode'}
           aria-label={liveMode ? 'Disable live audio mode' : 'Enable live audio mode'}
@@ -75,7 +59,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
 
         <button
           className="floating-button"
-          onClick={() => onPositionModeChange('average')}
+          onClick={() => setPositionMode('average')}
           title="Set to Average Distance"
           aria-label="Set planets to average orbital distance"
           aria-pressed={positionMode === 'average'}
@@ -85,7 +69,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
 
         <button
           className="floating-button"
-          onClick={() => onPositionModeChange('aphelion')}
+          onClick={() => setPositionMode('aphelion')}
           title="Set to Aphelion"
           aria-label="Set planets to aphelion (farthest position from sun)"
           aria-pressed={positionMode === 'aphelion'}
@@ -95,7 +79,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
 
         <button
           className="floating-button"
-          onClick={() => onPositionModeChange('perihelion')}
+          onClick={() => setPositionMode('perihelion')}
           title="Set to Perihelion"
           aria-label="Set planets to perihelion (closest position to sun)"
           aria-pressed={positionMode === 'perihelion'}
@@ -106,7 +90,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
 
       <button
         className="instructions-button"
-        onClick={onInstructionsClick}
+        onClick={() => setIsInstructionsModalOpen(!isInstructionsModalOpen)}
         title={isInstructionsModalOpen ? 'Close' : 'Help'}
         aria-label="Open help instructions"
         aria-expanded={isInstructionsModalOpen}
@@ -116,7 +100,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
 
       <button
         className="info-button"
-        onClick={onInfoClick}
+        onClick={() => setIsInfoModalOpen(!isInfoModalOpen)}
         title={isInfoModalOpen ? 'Close' : 'About'}
         aria-label="Open information about the application"
         aria-expanded={isInfoModalOpen}
@@ -126,7 +110,7 @@ const FloatingControlsBar: React.FC<FloatingControlsBarProps> = ({
 
       <button
         className="more-settings-button"
-        onClick={onSidebarToggle}
+        onClick={toggleSidebar}
         title="More Settings"
         aria-label="Toggle settings sidebar"
         aria-expanded={!sidebarCollapsed}

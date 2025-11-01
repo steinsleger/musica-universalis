@@ -36,8 +36,13 @@ interface ControlsContextValueParams {
   toggleSidebar: () => void;
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  isInfoModalOpen: boolean;
+  setIsInfoModalOpen: (open: boolean) => void;
+  isInstructionsModalOpen: boolean;
+  setIsInstructionsModalOpen: (open: boolean) => void;
   isPaused: boolean;
   positionMode: PositionMode;
+  setPositionMode: (mode: PositionMode) => void;
 }
 
 export const useControlsContextValue = (params: ControlsContextValueParams) => {
@@ -76,8 +81,13 @@ export const useControlsContextValue = (params: ControlsContextValueParams) => {
     toggleSidebar: params.toggleSidebar,
     activeTab: params.activeTab,
     setActiveTab: params.setActiveTab,
+    isInfoModalOpen: params.isInfoModalOpen,
+    setIsInfoModalOpen: params.setIsInfoModalOpen,
+    isInstructionsModalOpen: params.isInstructionsModalOpen,
+    setIsInstructionsModalOpen: params.setIsInstructionsModalOpen,
     isPaused: params.isPaused,
-    positionMode: params.positionMode
+    positionMode: params.positionMode,
+    setPositionMode: params.setPositionMode
   }), [
     params.masterVolume,
     params.handleVolumeChange,
@@ -113,7 +123,12 @@ export const useControlsContextValue = (params: ControlsContextValueParams) => {
     params.toggleSidebar,
     params.activeTab,
     params.setActiveTab,
+    params.isInfoModalOpen,
+    params.setIsInfoModalOpen,
+    params.isInstructionsModalOpen,
+    params.setIsInstructionsModalOpen,
     params.isPaused,
-    params.positionMode
+    params.positionMode,
+    params.setPositionMode
   ]);
 };
