@@ -6,7 +6,7 @@
   "license": "CC-BY-NC-SA-4.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && node --import=tsx scripts/update-version.ts && vite build",
+    "build": "eslint . --max-warnings 0 && tsc --noEmit && node --import=tsx scripts/update-version.ts && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "release": "standard-version",
