@@ -481,10 +481,6 @@ const OrbitalSonificationContent: React.FC = () => {
       visualizationValue={visualizationValue}
       needsUserInteraction={needsUserInteraction}
       handleUserInteraction={handleUserInteraction}
-      isInfoModalOpen={isInfoModalOpen}
-      setIsInfoModalOpen={setIsInfoModalOpen}
-      isInstructionsModalOpen={isInstructionsModalOpen}
-      setIsInstructionsModalOpen={setIsInstructionsModalOpen}
     />
   );
 };
