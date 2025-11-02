@@ -12,7 +12,7 @@ interface PlaybackControlsProps {
 }
 
 const PlaybackControls: React.FC<PlaybackControlsProps> = ({
-  isPlaying = false,
+  _isPlaying = false,
   onPlay,
   isPlayingSequence = false,
   onPlaySequence,

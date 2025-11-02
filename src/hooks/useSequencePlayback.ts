@@ -97,7 +97,7 @@ export const useSequencePlayback = ({
 
       debugAudio(`Playing sequence with ${enabledPlanets.length} planets`);
 
-      const { beatDuration, noteDuration, interval } = calculateSequenceTiming(sequenceBPM);
+      const { noteDuration, interval } = calculateSequenceTiming(sequenceBPM);
 
       const now = Tone.now();
 

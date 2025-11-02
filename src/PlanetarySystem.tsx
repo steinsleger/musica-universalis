@@ -31,20 +31,15 @@ const PlanetarySystem: React.FC = () => {
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const lastBaseFrequencyRef = useRef<number>(baseFrequency);
 
   // Constants for visualization
   const svgSize = 600;
   const center = svgSize / 2;
-  const minPlanetSize = 3;
   const sunRadius = 10;
 
   // Use orbital calculations hook
   const {
     getDistance,
-    maxDistance,
-    getEffectiveZoom,
-    effectiveZoom,
     orbitScaleFactor,
     getCurrentDistance,
     getPlanetPosition,
@@ -289,8 +284,6 @@ const PlanetarySystem: React.FC = () => {
                 size={size}
                 planetColors={planetColors}
                 currentlyPlayingPlanet={currentlyPlayingPlanet}
-                frequencyNote={frequencyToNote(currentFrequencies[planet.name] || 0)}
-                frequencyValue={currentFrequencies[planet.name] || 0}
                 glowOpacity={glowOpacity}
                 currentDistance={currentDistance}
                 distanceMode={distanceMode}

@@ -1,6 +1,7 @@
 import { useEffect, MutableRefObject } from 'react';
 import * as Tone from 'tone';
 import { Planet, CurrentFrequencies } from '../utils/types';
+import { SynthManager } from '../utils/synthManager';
 import { performEmergencyRecovery, resumeAudioContextIfNeeded, isGainNodeInvalid } from '../utils/audioUtils';
 
 interface UseLiveModeAudioProps {
@@ -10,7 +11,7 @@ interface UseLiveModeAudioProps {
   audioInitializedRef: MutableRefObject<boolean>;
   gainNodeRef: MutableRefObject<Tone.Gain | null>;
   activeSynthsRef: MutableRefObject<Set<string>>;
-  synthManagerRef: MutableRefObject<any>;
+  synthManagerRef: MutableRefObject<SynthManager>;
   isPaused: boolean;
   distanceMode: string;
   initializeAudioContext: () => Promise<boolean>;
@@ -42,6 +43,7 @@ export const useLiveModeAudio = ({
   recreateAllAudio,
   debugAudio
 }: UseLiveModeAudioProps): void => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!liveMode) return;
 

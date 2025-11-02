@@ -1,12 +1,12 @@
 import * as Tone from 'tone';
-import { CurrentFrequencies, AudioScalingConfig, Planet } from '../utils/types';
+import { CurrentFrequencies, AudioScalingConfig, Planet, SynthObject } from '../utils/types';
 import { SynthManager } from '../utils/synthManager';
 
 interface UseAudioInitializationParams {
   gainNodeRef: React.MutableRefObject<Tone.Gain | null>;
   reverbRef: React.MutableRefObject<Tone.Reverb | null>;
   synthManagerRef: React.MutableRefObject<SynthManager>;
-  synthsRef: React.MutableRefObject<Record<string, any>>;
+  synthsRef: React.MutableRefObject<Record<string, SynthObject>>;
   gainNodesRef: React.MutableRefObject<Record<string, Tone.Gain>>;
   activeSynthsRef: React.MutableRefObject<Set<string>>;
   audioContextStarted: React.MutableRefObject<boolean>;
@@ -17,7 +17,7 @@ interface UseAudioInitializationParams {
   audioScalingConfig: AudioScalingConfig;
   useFletcher: boolean;
   debugAudio: (message: string) => void;
-  createIsolatedSynth: (planetName: string) => any;
+  createIsolatedSynth: (planetName: string) => SynthObject | null;
   startPlanetSound: (planetName: string, frequency: number) => boolean;
 }
 
@@ -65,12 +65,16 @@ export const useAudioInitialization = ({
       if (gainNodeRef.current) {
         try {
           gainNodeRef.current.dispose();
-        } catch {}
+        } catch {
+          // Ignore disposal errors
+        }
       }
       if (reverbRef.current) {
         try {
           reverbRef.current.dispose();
-        } catch {}
+        } catch {
+          // Ignore disposal errors
+        }
       }
       const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.5 }).toDestination();
       await reverb.generate();

@@ -1,4 +1,5 @@
 import { useCallback, MutableRefObject } from 'react';
+import * as Tone from 'tone';
 import { CurrentFrequencies, AudioScalingConfig, SynthObject } from '../utils/types';
 import { SynthManager } from '../utils/synthManager';
 import {
@@ -10,12 +11,11 @@ import {
 interface UsePlanetAudioManagementProps {
   synthManagerRef: MutableRefObject<SynthManager>;
   synthsRef: MutableRefObject<Record<string, SynthObject>>;
-  gainNodesRef: MutableRefObject<Record<string, any>>;
+  gainNodesRef: MutableRefObject<Record<string, Tone.Gain>>;
   activeSynthsRef: MutableRefObject<Set<string>>;
   currentFrequencies: CurrentFrequencies;
   audioScalingConfig: AudioScalingConfig;
   useFletcher: boolean;
-  debugAudio: (msg: string) => void;
 }
 
 interface PlanetAudioManagement {
@@ -33,8 +33,7 @@ export const usePlanetAudioManagement = ({
   activeSynthsRef,
   currentFrequencies,
   audioScalingConfig,
-  useFletcher,
-  debugAudio
+  useFletcher
 }: UsePlanetAudioManagementProps): PlanetAudioManagement => {
   const createIsolatedSynth = useCallback((planetName: string): SynthObject | null => {
     const synthObj = synthManagerRef.current.createSynth(
@@ -52,6 +51,7 @@ export const usePlanetAudioManagement = ({
     return synthObj;
   }, [synthManagerRef, currentFrequencies, audioScalingConfig, useFletcher]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const getAdjustedGain = useCallback((frequency: number): number => {
     if (!frequency) return 1.0;
 
@@ -65,6 +65,7 @@ export const usePlanetAudioManagement = ({
     }
   }, [useFletcher, audioScalingConfig]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const stopPlanetSound = useCallback((planetName: string): boolean => {
     try {
       const success = synthManagerRef.current.stopSound(planetName);
@@ -84,6 +85,7 @@ export const usePlanetAudioManagement = ({
     }
   }, [synthManagerRef, createIsolatedSynth]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const updatePlanetFrequency = useCallback((planetName: string, frequency: number): boolean => {
     try {
       const synthObj = synthManagerRef.current.getSynth(planetName);

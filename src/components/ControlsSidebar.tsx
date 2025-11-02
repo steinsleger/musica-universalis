@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useAudioConfig } from '../context/AudioConfigContext';
-import { useOrbitState } from '../context/OrbitStateContext';
 import { TabType } from '../utils/types';
 import PlaybackControls from './PlaybackControls';
 import PlanetsList from './PlanetsList';

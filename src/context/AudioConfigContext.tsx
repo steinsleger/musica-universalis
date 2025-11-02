@@ -52,6 +52,7 @@ export const AudioConfigProvider: React.FC<AudioConfigProviderProps> = ({ childr
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAudioConfig = (): AudioConfigContextType => {
   const context = useContext(AudioConfigContext);
   if (!context) {

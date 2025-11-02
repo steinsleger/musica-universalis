@@ -19,8 +19,7 @@ export const useOrbitalCalculations = (params: OrbitalCalculationsParams) => {
     zoomLevel,
     panOffset,
     orbitData,
-    distanceMode,
-    baseFrequency
+    distanceMode
   } = params;
 
   // Get distance based on mode

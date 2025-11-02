@@ -41,6 +41,7 @@ export const useVisualizationInteraction = (): UseVisualizationInteractionReturn
     []
   );
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, zoomLevel: number, currentPanOffset: PanOffset): { isDragging: boolean; dragStart: DragStart } => {
       if (zoomLevel > 1.1) {

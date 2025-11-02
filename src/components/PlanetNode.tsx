@@ -7,8 +7,6 @@ interface PlanetNodeProps {
   size: number;
   planetColors: Record<string, string>;
   currentlyPlayingPlanet: string | null;
-  frequencyNote: string;
-  frequencyValue: number;
   glowOpacity: number;
   currentDistance: number;
   distanceMode: 'titiusBode' | 'actual';
@@ -21,8 +19,6 @@ const PlanetNode: React.FC<PlanetNodeProps> = ({
   size,
   planetColors,
   currentlyPlayingPlanet,
-  frequencyNote,
-  frequencyValue,
   glowOpacity,
   currentDistance,
   distanceMode,

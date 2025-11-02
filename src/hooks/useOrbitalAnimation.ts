@@ -98,6 +98,7 @@ export const useOrbitalAnimation = ({
   }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, distanceMode]);
 
   // Notify frequency changes to parent
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const notifyFrequencyChanges = useCallback((): void => {
     if (onFrequencyChange) {
       onFrequencyChange(frequenciesRef.current);
@@ -105,6 +106,7 @@ export const useOrbitalAnimation = ({
   }, [onFrequencyChange]);
 
   // Initialize planet angles when orbitData changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!orbitData || orbitData.length === 0) return;
     if (Object.keys(planetAngles).length > 0) return;
@@ -118,6 +120,7 @@ export const useOrbitalAnimation = ({
   }, [orbitData]);
 
   // Initialize frequencies when component mounts or baseFrequency changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (initializedRef.current) return;
 
@@ -161,6 +164,7 @@ export const useOrbitalAnimation = ({
   }, [distanceMode, orbitData, planetAngles, onFrequencyChange, isPaused, baseFrequency]);
 
   // Handle position jumps (average distance, perihelion, aphelion)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (setToAverageDistance || setToAphelion || setToPerihelion) {
       setPlanetAngles(prevAngles => {

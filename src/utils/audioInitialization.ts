@@ -84,7 +84,7 @@ export const initializeToneContext = async (): Promise<boolean> => {
 /**
  * Safely dispose a synth or audio node
  */
-export const safeDispose = (node: Tone.BaseContext | Tone.Synth | Tone.PolySynth<any> | Tone.Gain | Tone.Reverb | null | undefined): void => {
+export const safeDispose = (node: Tone.BaseContext | Tone.Synth | Tone.PolySynth<Tone.Synth> | Tone.Gain | Tone.Reverb | null | undefined): void => {
   try {
     if (node && !node.disposed) {
       node.dispose();

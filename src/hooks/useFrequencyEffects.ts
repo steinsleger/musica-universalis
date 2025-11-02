@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { CurrentFrequencies, AudioScalingConfig, Planet } from '../utils/types';
+import * as Tone from 'tone';
+import { CurrentFrequencies, AudioScalingConfig, Planet, SynthObject } from '../utils/types';
 import { SynthManager } from '../utils/synthManager';
 
 interface UseFrequencyEffectsParams {
@@ -13,8 +14,8 @@ interface UseFrequencyEffectsParams {
   useFletcher: boolean;
   audioScalingConfig: AudioScalingConfig;
   synthManagerRef: React.MutableRefObject<SynthManager>;
-  synthsRef: React.MutableRefObject<Record<string, any>>;
-  gainNodesRef: React.MutableRefObject<Record<string, any>>;
+  synthsRef: React.MutableRefObject<Record<string, SynthObject>>;
+  gainNodesRef: React.MutableRefObject<Record<string, Tone.Gain>>;
 }
 
 export const useFrequencyEffects = ({
@@ -50,6 +51,7 @@ export const useFrequencyEffects = ({
   }, [baseFrequency, liveMode, isPaused, orbitData, calculateBaseFrequencies, setCurrentFrequencies]);
 
   // Update gains when Fletcher curves or audio scaling changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!liveMode) return;
 

@@ -125,7 +125,7 @@ export class SynthManager {
    */
   startSound(planetName: string, frequency: number): boolean {
     try {
-      let synthObj = this.synths[planetName];
+      const synthObj = this.synths[planetName];
 
       // Create synth if it doesn't exist or is disposed
       if (!synthObj || !synthObj.synth || synthObj.synth.disposed) {

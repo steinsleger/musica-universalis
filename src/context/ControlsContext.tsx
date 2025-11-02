@@ -69,6 +69,7 @@ export const ControlsProvider: React.FC<ControlsProviderProps> = ({ children, va
   </ControlsContext.Provider>
 );
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useControls = (): ControlsContextType => {
   const context = useContext(ControlsContext);
   if (!context) {

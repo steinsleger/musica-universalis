@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CurrentFrequencies, PositionMode, AudioScalingConfig, FrequencyMode, TabType } from '../utils/types';
+import { CurrentFrequencies, PositionMode, AudioScalingConfig, FrequencyMode, TabType, Planet } from '../utils/types';
 
 interface ControlsContextValueParams {
   masterVolume: number;
@@ -27,7 +27,7 @@ interface ControlsContextValueParams {
   liveMode: boolean;
   toggleLiveMode: () => Promise<void>;
   togglePlayPause: () => Promise<void>;
-  orbitData: any[];
+  orbitData: Planet[];
   togglePlanet: (index: number, forceState?: boolean | null) => Promise<void>;
   toggleAllPlanets: (enable: boolean) => Promise<void>;
   currentFrequencies: CurrentFrequencies;

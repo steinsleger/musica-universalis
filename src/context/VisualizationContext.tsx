@@ -30,6 +30,7 @@ export const VisualizationProvider: React.FC<VisualizationProviderProps> = ({ ch
   </VisualizationContext.Provider>
 );
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useVisualization = (): VisualizationContextType => {
   const context = useContext(VisualizationContext);
   if (!context) {

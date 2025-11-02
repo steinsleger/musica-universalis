@@ -63,6 +63,7 @@ export const OrbitStateProvider: React.FC<OrbitStateProviderProps> = ({ children
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useOrbitState = (): OrbitStateContextType => {
   const context = useContext(OrbitStateContext);
   if (!context) {

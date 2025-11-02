@@ -1,5 +1,5 @@
 import { useCallback, MutableRefObject } from 'react';
-import { Planet, CurrentFrequencies } from '../utils/types';
+import { Planet, CurrentFrequencies, SynthObject } from '../utils/types';
 
 interface UseToggleControlsProps {
   orbitData: Planet[];
@@ -8,7 +8,7 @@ interface UseToggleControlsProps {
   setLiveMode: (mode: boolean) => void;
   currentFrequencies: CurrentFrequencies;
   activeSynthsRef: MutableRefObject<Set<string>>;
-  createIsolatedSynth: (planetName: string) => any;
+  createIsolatedSynth: (planetName: string) => SynthObject | null;
   startPlanetSound: (planetName: string, frequency: number) => boolean;
   stopPlanetSound: (planetName: string) => boolean;
   initializeAudioContext: () => Promise<boolean>;
@@ -42,6 +42,7 @@ export const useToggleControls = ({
   forceRecalculateAllGains,
   debugAudio
 }: UseToggleControlsProps): ToggleControls => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const togglePlanet = useCallback(
     async (index: number, forceState: boolean | null = null): Promise<void> => {
       try {
@@ -107,6 +108,7 @@ export const useToggleControls = ({
     [orbitData, togglePlanet]
   );
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const toggleLiveMode = useCallback(async (): Promise<void> => {
     try {
       const success = await initializeAudioContext();

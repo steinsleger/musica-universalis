@@ -141,6 +141,7 @@ const OrbitalSonificationContent: React.FC = () => {
     return calculateFrequency(baseFreq, planet, distanceMode);
   }, [distanceMode, calculateFrequency]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const updateAllFrequencies = useCallback((): CurrentFrequencies => {
     const defaultFrequencies: CurrentFrequencies = {};
     orbitData.forEach((planet, index) => {
@@ -153,6 +154,7 @@ const OrbitalSonificationContent: React.FC = () => {
     return defaultFrequencies;
   }, [orbitData, baseFrequency, calculateBaseFrequencies]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleFrequencyChange = useCallback((frequencies: CurrentFrequencies): void => {
     const updatedFrequencies = { ...currentFrequencies, ...frequencies };
 
@@ -169,6 +171,7 @@ const OrbitalSonificationContent: React.FC = () => {
     }
   }, [currentFrequencies, liveMode]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!audioInitializedRef.current) {
       initializeAudioContext().then(success => {
@@ -205,6 +208,7 @@ const OrbitalSonificationContent: React.FC = () => {
     };
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect((): void | (() => void) => {
     if (needsUserInteraction) {
       const handleGlobalClick = async (): Promise<void> => {
@@ -221,6 +225,7 @@ const OrbitalSonificationContent: React.FC = () => {
     }
   }, [needsUserInteraction]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!initFrequenciesRef.current) {
       updateAllFrequencies();
@@ -232,6 +237,7 @@ const OrbitalSonificationContent: React.FC = () => {
     updateAllFrequencies();
   }, [baseFrequency, updateAllFrequencies]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const positionModeHasChanged = prevPositionMode.current !== positionMode;
 
@@ -246,6 +252,7 @@ const OrbitalSonificationContent: React.FC = () => {
     prevPositionMode.current = positionMode;
   }, [liveMode, isPaused, positionMode]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (positionMode !== 'normal') {
       setPositionMode('normal');

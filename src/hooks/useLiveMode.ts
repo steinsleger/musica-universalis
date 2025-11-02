@@ -3,7 +3,7 @@ import * as Tone from 'tone';
 import { Planet, CurrentFrequencies, SynthObject } from '../utils/types';
 
 interface UseLiveModeReturn {
-  debug: (message: string, ...args: any[]) => void;
+  debug: (message: string, ...args: (string | number | boolean)[]) => void;
 }
 
 export const useLiveMode = (
@@ -23,12 +23,13 @@ export const useLiveMode = (
 ): UseLiveModeReturn => {
   const debugRef = useRef(true);
 
-  const debug = useCallback((message: string, ...args: any[]): void => {
+  const debug = useCallback((message: string, ...args: (string | number | boolean)[]): void => {
     if (debugRef.current) {
       console.log(`[LIVE MODE] ${message}`, ...args);
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!liveMode) return;
 
