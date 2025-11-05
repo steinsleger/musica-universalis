@@ -1,7 +1,7 @@
 import React from 'react';
-import { useOrbitState } from '../context/OrbitStateContext';
+import { useOrbitState } from '../hooks/useOrbitState';
 import { useFrequencyCalculation } from '../hooks/useFrequencyCalculation';
-import { useAudioConfig } from '../context/AudioConfigContext';
+import { useAudioConfig } from '../hooks/useAudioConfig';
 
 const PlanetsList: React.FC = () => {
   const { orbitData, togglePlanet } = useOrbitState();

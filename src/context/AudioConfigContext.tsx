@@ -53,3 +53,4 @@ export const AudioConfigProvider: React.FC<AudioConfigProviderProps> = ({ childr
 };
 
 export { AudioConfigContext };
+export type { AudioConfigContextType };

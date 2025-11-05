@@ -29,9 +29,10 @@ export const useLiveMode = (
     }
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!liveMode) return;
+
+    const activeSynthsCopy = activeSynthsRef.current;
 
     if (Tone.context.state !== 'running') {
       try {
@@ -148,7 +149,7 @@ export const useLiveMode = (
       clearInterval(intervalId);
       debug('Stopped live mode audio interval');
 
-      Array.from(activeSynthsRef.current).forEach(planetName => {
+      Array.from(activeSynthsCopy).forEach(planetName => {
         stopPlanetSound(planetName);
       });
     };

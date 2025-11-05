@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAudioConfig } from '../context/AudioConfigContext';
+import { useAudioConfig } from '../hooks/useAudioConfig';
 import {
   DEFAULT_REFERENCE_FREQUENCY,
   DEFAULT_SCALING_FACTOR,

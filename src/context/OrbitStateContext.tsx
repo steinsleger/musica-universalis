@@ -64,3 +64,4 @@ export const OrbitStateProvider: React.FC<OrbitStateProviderProps> = ({ children
 };
 
 export { OrbitStateContext };
+export type { OrbitStateContextType };

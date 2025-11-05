@@ -113,8 +113,7 @@ const OrbitalSonificationContent: React.FC = () => {
     activeSynthsRef,
     currentFrequencies,
     audioScalingConfig,
-    useFletcher,
-    debugAudio
+    useFletcher
   });
 
   // Use audio initialization hook
@@ -206,20 +205,19 @@ const OrbitalSonificationContent: React.FC = () => {
         }
       }
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!initFrequenciesRef.current) {
       updateAllFrequencies();
       initFrequenciesRef.current = true;
     }
-  }, [updateAllFrequencies]);
+  }, [updateAllFrequencies]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     updateAllFrequencies();
   }, [baseFrequency, updateAllFrequencies]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const positionModeHasChanged = prevPositionMode.current !== positionMode;
 
@@ -232,14 +230,13 @@ const OrbitalSonificationContent: React.FC = () => {
     }
 
     prevPositionMode.current = positionMode;
-  }, [liveMode, isPaused, positionMode]);
+  }, [liveMode, isPaused, positionMode, currentFrequencies, updatePlanetFrequency]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (positionMode !== 'normal') {
       setPositionMode('normal');
     }
-  }, [positionMode]);
+  }, [positionMode, setPositionMode]);
 
   // Use live mode audio hook
   useLiveModeAudio({

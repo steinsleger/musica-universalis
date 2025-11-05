@@ -168,7 +168,7 @@ export class AudioManager {
    * Dispose all synths and cleanup
    */
   disposeAll(): void {
-    this.synths.forEach((synth, name) => {
+    this.synths.forEach((_, name) => {
       this.disposeSynth(name);
     });
 

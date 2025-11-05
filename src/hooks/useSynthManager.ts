@@ -125,7 +125,7 @@ export const useSynthManager = (mainGainNode: Tone.Gain | null): UseSynthManager
     for (const name of planetNames) {
       createSynth(name);
     }
-  }, [createSynth]);
+  }, [createSynth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const disposeAllSynths = useCallback((): void => {
     Object.keys(synthsRef.current).forEach(name => {

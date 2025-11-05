@@ -42,7 +42,6 @@ export const useToggleControls = ({
   forceRecalculateAllGains,
   debugAudio
 }: UseToggleControlsProps): ToggleControls => {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const togglePlanet = useCallback(
     async (index: number, forceState: boolean | null = null): Promise<void> => {
       try {
@@ -94,7 +93,7 @@ export const useToggleControls = ({
         console.error('Error toggling planet:', error);
       }
     },
-    [orbitData, liveMode, currentFrequencies, activeSynthsRef, createIsolatedSynth, startPlanetSound, stopPlanetSound, debugAudio]
+    [orbitData, liveMode, currentFrequencies, activeSynthsRef, createIsolatedSynth, startPlanetSound, stopPlanetSound, debugAudio] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const toggleAllPlanets = useCallback(
@@ -108,7 +107,6 @@ export const useToggleControls = ({
     [orbitData, togglePlanet]
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const toggleLiveMode = useCallback(async (): Promise<void> => {
     try {
       const success = await initializeAudioContext();
@@ -140,7 +138,7 @@ export const useToggleControls = ({
     } catch (error) {
       console.error('Error toggling live mode:', error);
     }
-  }, [liveMode, activeSynthsRef, stopPlanetSound, initializeAudioContext, recreateAllAudio, forceRecalculateAllGains, debugAudio]);
+  }, [liveMode, activeSynthsRef, stopPlanetSound, initializeAudioContext, recreateAllAudio, forceRecalculateAllGains, debugAudio]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     togglePlanet,

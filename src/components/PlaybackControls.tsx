@@ -1,6 +1,6 @@
 import React from 'react';
-import { useOrbitState } from '../context/OrbitStateContext';
-import { useAudioConfig } from '../context/AudioConfigContext';
+import { useOrbitState } from '../hooks/useOrbitState';
+import { useAudioConfig } from '../hooks/useAudioConfig';
 
 interface PlaybackControlsProps {
   isPlaying?: boolean;
@@ -12,7 +12,6 @@ interface PlaybackControlsProps {
 }
 
 const PlaybackControls: React.FC<PlaybackControlsProps> = ({
-  _isPlaying = false,
   onPlay,
   isPlayingSequence = false,
   onPlaySequence,
