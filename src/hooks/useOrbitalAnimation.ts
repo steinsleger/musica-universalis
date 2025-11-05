@@ -95,7 +95,17 @@ export const useOrbitalAnimation = ({
 
     // Request next frame
     requestRef.current = requestAnimationFrame(animate);
-  }, [isPaused, animationSpeed, orbitData, baseFrequency, planetAngles, distanceMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    isPaused,
+    animationSpeed,
+    orbitData,
+    baseFrequency,
+    planetAngles,
+    calculateFrequencies,
+    getCurrentDistance,
+    getDistance,
+    getOrbitalPeriod
+  ]);
 
   // Notify frequency changes to parent
   const notifyFrequencyChanges = useCallback((): void => {
@@ -115,7 +125,7 @@ export const useOrbitalAnimation = ({
     });
 
     setPlanetAngles(initialAngles);
-  }, [orbitData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [orbitData, planetAngles]);
 
   // Initialize frequencies when component mounts or baseFrequency changes
   useEffect(() => {
@@ -134,7 +144,7 @@ export const useOrbitalAnimation = ({
     }
 
     initializedRef.current = true;
-  }, [baseFrequency, orbitData, onFrequencyChange, distanceMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [baseFrequency, orbitData, onFrequencyChange, distanceMode, calculateFrequencies]);
 
   // Handle distance mode changes
   useEffect(() => {
@@ -158,7 +168,17 @@ export const useOrbitalAnimation = ({
         onFrequencyChange(updatedFrequencies);
       }
     }
-  }, [distanceMode, orbitData, planetAngles, onFrequencyChange, isPaused, baseFrequency]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    distanceMode,
+    orbitData,
+    planetAngles,
+    onFrequencyChange,
+    isPaused,
+    baseFrequency,
+    calculateFrequencies,
+    getCurrentDistance,
+    getDistance
+  ]);
 
   // Handle position jumps (average distance, perihelion, aphelion)
   useEffect(() => {
@@ -177,7 +197,16 @@ export const useOrbitalAnimation = ({
         return newAngles;
       });
     }
-  }, [setToAverageDistance, setToAphelion, setToPerihelion, orbitData, distanceMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    setToAverageDistance,
+    setToAphelion,
+    setToPerihelion,
+    orbitData,
+    distanceMode,
+    getAverageDistanceAngle,
+    getAphelionAngle,
+    getPerihelionAngle
+  ]);
 
   // Start/stop animation loop
   useEffect(() => {

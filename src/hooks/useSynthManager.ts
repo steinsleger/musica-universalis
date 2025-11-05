@@ -118,6 +118,12 @@ export const useSynthManager = (mainGainNode: Tone.Gain | null): UseSynthManager
     }
   }, []);
 
+  const disposeAllSynths = useCallback((): void => {
+    Object.keys(synthsRef.current).forEach(name => {
+      disposeSynth(name);
+    });
+  }, [disposeSynth]);
+
   const recreateAllSynths = useCallback(async (planetNames: string[]): Promise<void> => {
     disposeAllSynths();
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -125,13 +131,7 @@ export const useSynthManager = (mainGainNode: Tone.Gain | null): UseSynthManager
     for (const name of planetNames) {
       createSynth(name);
     }
-  }, [createSynth]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const disposeAllSynths = useCallback((): void => {
-    Object.keys(synthsRef.current).forEach(name => {
-      disposeSynth(name);
-    });
-  }, [disposeSynth]);
+  }, [createSynth, disposeAllSynths]);
 
   const getMainGainNode = useCallback((): Tone.Gain | null => mainGainNode, [mainGainNode]);
 

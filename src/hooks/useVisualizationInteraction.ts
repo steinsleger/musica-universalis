@@ -54,7 +54,7 @@ export const useVisualizationInteraction = (): UseVisualizationInteractionReturn
       }
       return { isDragging: false, dragStart };
     },
-    [] // eslint-disable-line react-hooks/exhaustive-deps
+    [dragStart]
   );
 
   const handleMouseMove = useCallback(

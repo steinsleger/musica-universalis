@@ -165,8 +165,7 @@ const OrbitalSonificationContent: React.FC = () => {
         }
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentFrequencies, liveMode]);
+  }, [currentFrequencies, liveMode, updatePlanetFrequency]); // eslint-disable-line react-hooks/exhaustive-deps -- refs don't trigger updates
 
   useEffect(() => {
     if (!audioInitializedRef.current) {
@@ -205,14 +204,14 @@ const OrbitalSonificationContent: React.FC = () => {
         }
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount effect only, refs don't trigger updates
 
   useEffect(() => {
     if (!initFrequenciesRef.current) {
       updateAllFrequencies();
       initFrequenciesRef.current = true;
     }
-  }, [updateAllFrequencies]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [updateAllFrequencies]); // eslint-disable-line react-hooks/exhaustive-deps -- ref guard prevents multiple initializations
 
   useEffect(() => {
     updateAllFrequencies();
@@ -230,7 +229,7 @@ const OrbitalSonificationContent: React.FC = () => {
     }
 
     prevPositionMode.current = positionMode;
-  }, [liveMode, isPaused, positionMode, currentFrequencies, updatePlanetFrequency]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [liveMode, isPaused, positionMode, currentFrequencies, updatePlanetFrequency]); // eslint-disable-line react-hooks/exhaustive-deps -- activeSynthsRef is a ref
 
   useEffect(() => {
     if (positionMode !== 'normal') {
@@ -248,7 +247,6 @@ const OrbitalSonificationContent: React.FC = () => {
     activeSynthsRef,
     synthManagerRef,
     isPaused,
-    distanceMode,
     initializeAudioContext,
     startPlanetSound,
     stopPlanetSound,
@@ -310,8 +308,7 @@ const OrbitalSonificationContent: React.FC = () => {
         document.removeEventListener('touchstart', handleGlobalClick);
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needsUserInteraction]);
+  }, [needsUserInteraction, handleUserInteraction]);
 
   // Use sequence playback hook
   const {

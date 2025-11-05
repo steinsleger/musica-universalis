@@ -13,7 +13,6 @@ interface UseLiveModeAudioProps {
   activeSynthsRef: MutableRefObject<Set<string>>;
   synthManagerRef: MutableRefObject<SynthManager>;
   isPaused: boolean;
-  distanceMode: string;
   initializeAudioContext: () => Promise<boolean>;
   startPlanetSound: (planetName: string, frequency: number) => boolean;
   stopPlanetSound: (planetName: string) => boolean;
@@ -35,7 +34,6 @@ export const useLiveModeAudio = ({
   activeSynthsRef,
   synthManagerRef,
   isPaused,
-  distanceMode,
   initializeAudioContext,
   startPlanetSound,
   stopPlanetSound,
@@ -157,5 +155,5 @@ export const useLiveModeAudio = ({
         stopPlanetSound(planetName);
       });
     };
-  }, [liveMode, distanceMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [liveMode, isPaused]); // eslint-disable-line react-hooks/exhaustive-deps -- refs and callbacks are read fresh in interval
 };
