@@ -1,8 +1,10 @@
 // src/OrbitalSonification.tsx
 import React, { useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
-import { AudioConfigProvider, useAudioConfig } from './context/AudioConfigContext';
-import { OrbitStateProvider, useOrbitState } from './context/OrbitStateContext';
+import { AudioConfigProvider } from './context/AudioConfigContext';
+import { OrbitStateProvider } from './context/OrbitStateContext';
+import { useAudioConfig } from './hooks/useAudioConfig';
+import { useOrbitState } from './hooks/useOrbitState';
 import { useAudioContext } from './hooks/useAudioContext';
 import { useFrequencyCalculation } from './hooks/useFrequencyCalculation';
 import { useModals } from './hooks/useModals';
@@ -20,12 +22,10 @@ import { useFrequencyEffects } from './hooks/useFrequencyEffects';
 import { useAudioInitialization } from './hooks/useAudioInitialization';
 import { useVisualizationContextValue } from './hooks/useVisualizationContextValue';
 import OrbitalSonificationLayout from './components/OrbitalSonificationLayout';
-import { SynthManager } from './utils/synthManager';
 import {
   Planet,
   CurrentFrequencies,
-  PositionMode,
-  AudioScalingConfig
+  PositionMode
 } from './utils/types';
 
 declare global {
@@ -141,7 +141,6 @@ const OrbitalSonificationContent: React.FC = () => {
     return calculateFrequency(baseFreq, planet, distanceMode);
   }, [distanceMode, calculateFrequency]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const updateAllFrequencies = useCallback((): CurrentFrequencies => {
     const defaultFrequencies: CurrentFrequencies = {};
     orbitData.forEach((planet, index) => {
@@ -152,14 +151,12 @@ const OrbitalSonificationContent: React.FC = () => {
     setCurrentFrequencies(defaultFrequencies);
 
     return defaultFrequencies;
-  }, [orbitData, baseFrequency, calculateBaseFrequencies]);
+  }, [orbitData, baseFrequency, calculateBaseFrequencies, setCurrentFrequencies]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleFrequencyChange = useCallback((frequencies: CurrentFrequencies): void => {
     const updatedFrequencies = { ...currentFrequencies, ...frequencies };
 
     setCurrentFrequencies(updatedFrequencies);
-
     lastFrequenciesRef.current = { ...lastFrequenciesRef.current, ...frequencies };
 
     if (liveMode) {
@@ -169,9 +166,9 @@ const OrbitalSonificationContent: React.FC = () => {
         }
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFrequencies, liveMode]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!audioInitializedRef.current) {
       initializeAudioContext().then(success => {
@@ -184,23 +181,26 @@ const OrbitalSonificationContent: React.FC = () => {
       });
     }
 
+    const synthManagerCurrent = synthManagerRef.current;
+    const mainSynthCurrent = mainSynthRef.current;
+    const gainNodeCurrent = gainNodeRef.current;
+
     return () => {
       debugAudio('Component unmounting, cleaning up audio');
 
-      // Use SynthManager to dispose all synths
-      synthManagerRef.current.disposeAll();
+      synthManagerCurrent.disposeAll();
 
-      if (mainSynthRef.current) {
+      if (mainSynthCurrent) {
         try {
-          mainSynthRef.current.dispose();
+          mainSynthCurrent.dispose();
         } catch {
           // Ignore disposal errors
         }
       }
 
-      if (gainNodeRef.current) {
+      if (gainNodeCurrent) {
         try {
-          gainNodeRef.current.dispose();
+          gainNodeCurrent.dispose();
         } catch {
           // Ignore disposal errors
         }
@@ -208,24 +208,6 @@ const OrbitalSonificationContent: React.FC = () => {
     };
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect((): void | (() => void) => {
-    if (needsUserInteraction) {
-      const handleGlobalClick = async (): Promise<void> => {
-        await handleUserInteraction();
-      };
-
-      document.addEventListener('click', handleGlobalClick);
-      document.addEventListener('touchstart', handleGlobalClick);
-
-      return () => {
-        document.removeEventListener('click', handleGlobalClick);
-        document.removeEventListener('touchstart', handleGlobalClick);
-      };
-    }
-  }, [needsUserInteraction]);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!initFrequenciesRef.current) {
       updateAllFrequencies();
@@ -304,6 +286,36 @@ const OrbitalSonificationContent: React.FC = () => {
     debugAudio
   });
 
+  const handleUserInteraction = useCallback(async (): Promise<void> => {
+    if (needsUserInteraction) {
+      try {
+        const started = await startAudioContext();
+        if (!started) {
+          console.error('Failed to start audio context on user interaction');
+        }
+      } catch (error) {
+        console.error('Error initializing audio on user interaction:', error);
+      }
+    }
+  }, [needsUserInteraction, startAudioContext]);
+
+  useEffect((): void | (() => void) => {
+    if (needsUserInteraction) {
+      const handleGlobalClick = async (): Promise<void> => {
+        await handleUserInteraction();
+      };
+
+      document.addEventListener('click', handleGlobalClick);
+      document.addEventListener('touchstart', handleGlobalClick);
+
+      return () => {
+        document.removeEventListener('click', handleGlobalClick);
+        document.removeEventListener('touchstart', handleGlobalClick);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsUserInteraction]);
+
   // Use sequence playback hook
   const {
     currentlyPlayingPlanet,
@@ -364,19 +376,6 @@ const OrbitalSonificationContent: React.FC = () => {
       }
     };
   }, []);
-
-  const handleUserInteraction = async (): Promise<void> => {
-    if (needsUserInteraction) {
-      try {
-        const started = await startAudioContext();
-        if (!started) {
-          console.error('Failed to start audio context on user interaction');
-        }
-      } catch (error) {
-        console.error('Error initializing audio on user interaction:', error);
-      }
-    }
-  };
 
   const {
     togglePlayPause,

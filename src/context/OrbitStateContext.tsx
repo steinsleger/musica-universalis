@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useCallback, ReactNode } from 'react';
 import { Planet, FrequencyMode, PositionMode, getDefaultOrbitData } from '../utils/types';
 import { DEFAULT_ANIMATION_SPEED, DEFAULT_ZOOM_LEVEL } from '../utils/constants';
 
@@ -63,11 +63,4 @@ export const OrbitStateProvider: React.FC<OrbitStateProviderProps> = ({ children
   );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const useOrbitState = (): OrbitStateContextType => {
-  const context = useContext(OrbitStateContext);
-  if (!context) {
-    throw new Error('useOrbitState must be used within OrbitStateProvider');
-  }
-  return context;
-};
+export { OrbitStateContext };

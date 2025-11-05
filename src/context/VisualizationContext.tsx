@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, ReactNode } from 'react';
 import { Planet, FrequencyMode } from '../utils/types';
 
 export interface VisualizationContextType {
@@ -30,11 +30,4 @@ export const VisualizationProvider: React.FC<VisualizationProviderProps> = ({ ch
   </VisualizationContext.Provider>
 );
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const useVisualization = (): VisualizationContextType => {
-  const context = useContext(VisualizationContext);
-  if (!context) {
-    throw new Error('useVisualization must be used within VisualizationProvider');
-  }
-  return context;
-};
+export { VisualizationContext };

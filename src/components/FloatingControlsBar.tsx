@@ -1,5 +1,5 @@
 import React from 'react';
-import { useControls } from '../context/ControlsContext';
+import { useControls } from '../hooks/useControls';
 
 const FloatingControlsBar: React.FC = () => {
   const {

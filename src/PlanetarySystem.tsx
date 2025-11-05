@@ -1,6 +1,6 @@
 // src/PlanetarySystem.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useVisualization } from './context/VisualizationContext';
+import { useVisualization } from './hooks/useVisualization';
 import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
 import { useOrbitalAnimation } from './hooks/useOrbitalAnimation';
 import { useGlowEffect } from './hooks/useGlowEffect';

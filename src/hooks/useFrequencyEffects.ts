@@ -51,7 +51,6 @@ export const useFrequencyEffects = ({
   }, [baseFrequency, liveMode, isPaused, orbitData, calculateBaseFrequencies, setCurrentFrequencies]);
 
   // Update gains when Fletcher curves or audio scaling changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!liveMode) return;
 
@@ -76,8 +75,7 @@ export const useFrequencyEffects = ({
     });
   }, [
     useFletcher,
-    audioScalingConfig.referenceFrequency,
-    audioScalingConfig.scalingFactor,
+    audioScalingConfig,
     liveMode,
     orbitData,
     currentFrequencies,

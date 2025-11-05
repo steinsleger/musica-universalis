@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useCallback, ReactNode } from 'react';
 import { AudioScalingConfig, getDefaultAudioScalingConfig } from '../utils/types';
 import {
   DEFAULT_BASE_FREQUENCY,
@@ -52,11 +52,4 @@ export const AudioConfigProvider: React.FC<AudioConfigProviderProps> = ({ childr
   );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const useAudioConfig = (): AudioConfigContextType => {
-  const context = useContext(AudioConfigContext);
-  if (!context) {
-    throw new Error('useAudioConfig must be used within AudioConfigProvider');
-  }
-  return context;
-};
+export { AudioConfigContext };

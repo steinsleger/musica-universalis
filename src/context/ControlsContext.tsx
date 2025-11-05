@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, ReactNode } from 'react';
 import { Planet, CurrentFrequencies, PositionMode, FrequencyMode, AudioScalingConfig, TabType } from '../utils/types';
 
 export interface ControlsContextType {
@@ -69,11 +69,4 @@ export const ControlsProvider: React.FC<ControlsProviderProps> = ({ children, va
   </ControlsContext.Provider>
 );
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const useControls = (): ControlsContextType => {
-  const context = useContext(ControlsContext);
-  if (!context) {
-    throw new Error('useControls must be used within ControlsProvider');
-  }
-  return context;
-};
+export { ControlsContext };

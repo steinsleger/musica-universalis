@@ -1,5 +1,5 @@
 import React from 'react';
-import { useControls } from '../context/ControlsContext';
+import { useControls } from '../hooks/useControls';
 import ControlsTabContent from './ControlsTabContent';
 import PlanetsTabContent from './PlanetsTabContent';
 import AudioTabContent from './AudioTabContent';
