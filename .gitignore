@@ -25,3 +25,5 @@ dist-ssr
 *.sw?
 
 REFACTORING_*.md
+ARCHITECTURE_*.md
+*.txt
