@@ -148,4 +148,4 @@ const ControlsTabContent: React.FC<ControlsTabContentProps> = ({
   );
 };
 
-export default ControlsTabContent;
+export default React.memo(ControlsTabContent);

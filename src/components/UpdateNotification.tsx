@@ -6,7 +6,7 @@ type RegisterSWFunction = (options: {
   onOfflineReady: () => void;
 }) => (skipWaiting?: boolean) => Promise<void>;
 
-export const UpdateNotification: React.FC = () => {
+const UpdateNotificationComponent: React.FC = () => {
   const [showUpdate, setShowUpdate] = useState(false);
   const [updateSW, setUpdateSW] = useState<((skipWaiting?: boolean) => Promise<void>) | null>(null);
 
@@ -100,3 +100,5 @@ export const UpdateNotification: React.FC = () => {
     </div>
   );
 };
+
+export const UpdateNotification = React.memo(UpdateNotificationComponent);

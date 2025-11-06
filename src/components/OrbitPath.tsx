@@ -113,4 +113,4 @@ const OrbitPath: React.FC<OrbitPathProps> = ({
   );
 };
 
-export default OrbitPath;
+export default React.memo(OrbitPath);

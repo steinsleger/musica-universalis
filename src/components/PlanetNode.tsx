@@ -118,4 +118,4 @@ const PlanetNode: React.FC<PlanetNodeProps> = ({
   );
 };
 
-export default PlanetNode;
+export default React.memo(PlanetNode);

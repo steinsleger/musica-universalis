@@ -116,4 +116,4 @@ const ScreenAlert: React.FC = () => {
   );
 };
 
-export default ScreenAlert;
+export default React.memo(ScreenAlert);

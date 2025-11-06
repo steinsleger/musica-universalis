@@ -128,4 +128,4 @@ const AudioTabContent: React.FC<AudioTabContentProps> = ({
   );
 };
 
-export default AudioTabContent;
+export default React.memo(AudioTabContent);
