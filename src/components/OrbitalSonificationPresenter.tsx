@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { useUIControls } from '../hooks/useUIControls';
 import { useAudioControls } from '../hooks/useAudioControls';
 import { useVisualizationControls } from '../hooks/useVisualizationControls';
@@ -90,38 +90,12 @@ const OrbitalSonificationPresenter: React.FC<OrbitalSonificationPresenterProps> 
     [audioControls, vizControls, uiControls]
   );
 
-  // Wrap handleZoomChange to accept number instead of event
-  const handleZoomLevelChange = useCallback((zoom: number) => {
-    const event = { target: { value: String(zoom) } } as React.ChangeEvent<HTMLInputElement>;
-    vizControls.handleZoomChange(event);
-  }, [vizControls]);
-
-  // Build visualizationValue from split contexts for backward compatibility with OrbitalSonificationLayout
-  const visualizationValue = useMemo(
-    () => ({
-      orbitData: vizControls.orbitData,
-      animationSpeed: vizControls.animationSpeed,
-      baseFrequency: audioControls.baseFrequency,
-      onFrequencyChange,
-      isPaused: vizControls.isPaused,
-      setToAverageDistance: vizControls.positionMode === 'average',
-      setToAphelion: vizControls.positionMode === 'aphelion',
-      setToPerihelion: vizControls.positionMode === 'perihelion',
-      zoomLevel: vizControls.zoomLevel,
-      setZoomLevel: handleZoomLevelChange,
-      distanceMode: vizControls.distanceMode,
-      currentlyPlayingPlanet: vizControls.currentlyPlayingPlanet ?? null,
-      sequenceBPM: audioControls.sequenceBPM
-    }),
-    [vizControls, audioControls, handleZoomLevelChange, onFrequencyChange]
-  );
-
   return (
     <OrbitalSonificationLayout
       controlsValue={controlsValue}
-      visualizationValue={visualizationValue}
       needsUserInteraction={needsUserInteraction}
       handleUserInteraction={handleUserInteraction}
+      onFrequencyChange={onFrequencyChange}
     />
   );
 };

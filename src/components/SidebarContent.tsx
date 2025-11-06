@@ -1,12 +1,15 @@
 import React from 'react';
-import { useControls } from '../hooks/useControls';
+import { useUIControls } from '../hooks/useUIControls';
+import { useAudioControls } from '../hooks/useAudioControls';
+import { useVisualizationControls } from '../hooks/useVisualizationControls';
 import ControlsTabContent from './ControlsTabContent';
 import PlanetsTabContent from './PlanetsTabContent';
 import AudioTabContent from './AudioTabContent';
 
 const SidebarContent: React.FC = () => {
-  const controls = useControls();
-  const { sidebarCollapsed, activeTab, setActiveTab } = controls;
+  const { sidebarCollapsed, activeTab, setActiveTab } = useUIControls();
+  const audioControls = useAudioControls();
+  const vizControls = useVisualizationControls();
 
   return (
     <div
@@ -50,48 +53,48 @@ const SidebarContent: React.FC = () => {
 
       <ControlsTabContent
         activeTab={activeTab}
-        masterVolume={controls.masterVolume}
-        handleVolumeChange={controls.handleVolumeChange}
-        baseFrequency={controls.baseFrequency}
-        handleBaseFrequencyChange={controls.handleBaseFrequencyChange}
-        distanceMode={controls.distanceMode}
-        handleDistanceModeChange={controls.handleDistanceModeChange}
-        zoomLevel={controls.zoomLevel}
-        handleZoomChange={controls.handleZoomChange}
-        animationSpeed={controls.animationSpeed}
-        setAnimationSpeed={controls.setAnimationSpeed}
-        isPlaying={controls.isPlaying}
+        masterVolume={audioControls.masterVolume}
+        handleVolumeChange={audioControls.handleVolumeChange}
+        baseFrequency={audioControls.baseFrequency}
+        handleBaseFrequencyChange={audioControls.handleBaseFrequencyChange}
+        distanceMode={vizControls.distanceMode}
+        handleDistanceModeChange={vizControls.handleDistanceModeChange}
+        zoomLevel={vizControls.zoomLevel}
+        handleZoomChange={vizControls.handleZoomChange}
+        animationSpeed={vizControls.animationSpeed}
+        setAnimationSpeed={vizControls.setAnimationSpeed}
+        isPlaying={audioControls.isPlaying}
         volumeToDb={() => '0dB'}
       />
 
       {activeTab === 'planets' && (
         <PlanetsTabContent
           activeTab={activeTab}
-          playOrbitalSequence={controls.playOrbitalSequence}
-          liveMode={controls.liveMode}
-          isPlaying={controls.isPlaying}
-          loopSequence={controls.loopSequence}
-          toggleLoopSequence={controls.toggleLoopSequence}
-          sequenceBPM={controls.sequenceBPM}
-          handleBPMChange={controls.handleBPMChange}
-          orbitData={controls.orbitData}
-          toggleAllPlanets={controls.toggleAllPlanets}
-          togglePlanet={controls.togglePlanet}
-          currentFrequencies={controls.currentFrequencies}
-          distanceModeForDisplay={controls.distanceMode}
+          playOrbitalSequence={audioControls.playOrbitalSequence}
+          liveMode={audioControls.liveMode}
+          isPlaying={audioControls.isPlaying}
+          loopSequence={audioControls.loopSequence}
+          toggleLoopSequence={audioControls.toggleLoopSequence}
+          sequenceBPM={audioControls.sequenceBPM}
+          handleBPMChange={audioControls.handleBPMChange}
+          orbitData={vizControls.orbitData}
+          toggleAllPlanets={vizControls.toggleAllPlanets}
+          togglePlanet={vizControls.togglePlanet}
+          currentFrequencies={vizControls.currentFrequencies}
+          distanceModeForDisplay={vizControls.distanceMode}
           getPlanetColor={() => '#fff'}
-          frequencyToNote={controls.frequencyToNote}
+          frequencyToNote={vizControls.frequencyToNote}
         />
       )}
 
       {activeTab === 'audio' && (
         <AudioTabContent
           activeTab={activeTab}
-          useFletcher={controls.useFletcher}
-          toggleFletcherCurves={controls.toggleFletcherCurves}
-          audioScalingConfig={controls.audioScalingConfig}
-          setAudioScalingConfig={controls.setAudioScalingConfig}
-          forceRecalculateAllGains={controls.forceRecalculateAllGains}
+          useFletcher={audioControls.useFletcher}
+          toggleFletcherCurves={audioControls.toggleFletcherCurves}
+          audioScalingConfig={audioControls.audioScalingConfig}
+          setAudioScalingConfig={audioControls.setAudioScalingConfig}
+          forceRecalculateAllGains={audioControls.forceRecalculateAllGains}
         />
       )}
     </div>

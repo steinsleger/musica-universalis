@@ -47,7 +47,6 @@ export const DEFAULT_MASTER_VOLUME = 0.35;
 export const DEFAULT_SEQUENCE_BPM = 60;
 export const DEFAULT_ANIMATION_SPEED = 1;
 export const DEFAULT_ZOOM_LEVEL = 20;
-export const REVERB_AMOUNT = 0.5;
 
 // SVG visualization constants
 export const SVG_SIZE = 600;
@@ -64,21 +63,6 @@ export const ZOOM_SPEED = 0.1;
 export const ORBIT_SCALE_FACTOR_MULTIPLIER = 0.98;
 export const MIN_ZOOM_SCALE = 0.25;
 
-// Gain control
-export const DEFAULT_SYNTH_ENVELOPE = {
-  attack: 0.01,
-  decay: 0.1,
-  sustain: 0.3,
-  release: 0.5
-};
-
-export const DEFAULT_SEQUENCE_ENVELOPE = {
-  attack: 0.02,
-  decay: 0.1,
-  sustain: 0.3,
-  release: 1
-};
-
 // Audio safety
 export const DEFAULT_REFERENCE_FREQUENCY = 55;
 export const DEFAULT_SCALING_FACTOR = 0.4;
@@ -87,18 +71,9 @@ export const DEFAULT_MAXIMUM_GAIN = 1.2;
 export const HIGH_FREQUENCY_CUTOFF = 2000;
 export const HIGH_FREQUENCY_SCALING_FACTOR = 0.6;
 
-// Polling/update rates
-export const FREQUENCY_UPDATE_INTERVAL_MS = 50;
-export const FREQUENCY_NOTIFICATION_INTERVAL_MS = 16;
-export const LIVE_MODE_POLL_INTERVAL_MS = 100;
-export const RECOVERY_THRESHOLD = 3;
-
-// Pan/drag settings
-export const DISABLE_PAN_BELOW_ZOOM = 1.1;
 
 // Ellipse math
 export const ELLIPSE_POINTS = 100;
 
 // UI
 export const MIN_PAN = 0;
-export const MAX_ECCENTRICITY_FOR_EXTREMES = 0.1;

@@ -1,29 +1,42 @@
 // src/PlanetarySystem.tsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useVisualization } from './hooks/useVisualization';
+import { useVisualizationControls } from './hooks/useVisualizationControls';
+import { useAudioControls } from './hooks/useAudioControls';
 import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
 import { useOrbitalAnimation } from './hooks/useOrbitalAnimation';
 import { useGlowEffect } from './hooks/useGlowEffect';
 import OrbitPath from './components/OrbitPath';
 import PlanetNode from './components/PlanetNode';
 import { getOrbitColor } from './utils/visualizationHelpers';
+import { CurrentFrequencies } from './utils/types';
 
-const PlanetarySystem: React.FC = () => {
+interface PlanetarySystemProps {
+  onFrequencyChange?: (frequencies: CurrentFrequencies) => void;
+}
+
+const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
+  onFrequencyChange
+}) => {
   const {
     orbitData,
     animationSpeed,
-    baseFrequency,
-    onFrequencyChange,
     isPaused,
-    setToAverageDistance,
-    setToAphelion,
-    setToPerihelion,
     zoomLevel,
-    setZoomLevel,
+    handleZoomChange,
     distanceMode,
     currentlyPlayingPlanet,
+    positionMode
+  } = useVisualizationControls();
+
+  // Derive position setters from positionMode
+  const setToAverageDistance = positionMode === 'average';
+  const setToAphelion = positionMode === 'aphelion';
+  const setToPerihelion = positionMode === 'perihelion';
+
+  const {
+    baseFrequency,
     sequenceBPM
-  } = useVisualization();
+  } = useAudioControls();
 
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -119,7 +132,7 @@ const PlanetarySystem: React.FC = () => {
 
   // Use glow effect hook for glow animation
   const glowOpacity = useGlowEffect({
-    currentlyPlayingPlanet,
+    currentlyPlayingPlanet: currentlyPlayingPlanet ?? null,
     sequenceBPM
   });
 
@@ -135,11 +148,12 @@ const PlanetarySystem: React.FC = () => {
     // Clamp zoom level between 1 and 20
     const clampedZoom = Math.max(1, Math.min(40, newZoom));
 
-    // Update zoom level through prop
-    if (setZoomLevel) {
-      setZoomLevel(clampedZoom);
-    }
-  }, [zoomLevel, setZoomLevel]);
+    // Update zoom level through context handler
+    const syntheticEvent = {
+      target: { value: String(clampedZoom) }
+    } as React.ChangeEvent<HTMLInputElement>;
+    handleZoomChange(syntheticEvent);
+  }, [zoomLevel, handleZoomChange]);
 
   // Add wheel event listener with non-passive option
   useEffect((): void | (() => void) => {
@@ -302,7 +316,7 @@ const PlanetarySystem: React.FC = () => {
                 position={position}
                 size={size}
                 planetColors={planetColors}
-                currentlyPlayingPlanet={currentlyPlayingPlanet}
+                currentlyPlayingPlanet={currentlyPlayingPlanet ?? null}
                 glowOpacity={glowOpacity}
                 currentDistance={currentDistance}
                 distanceMode={distanceMode}

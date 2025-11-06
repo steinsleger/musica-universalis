@@ -1,25 +1,24 @@
 import React, { useCallback } from 'react';
-import { ControlsProvider, ControlsContextType } from '../context/ControlsContext';
-import { VisualizationProvider, VisualizationContextType } from '../context/VisualizationContext';
 import PlanetarySystem from '../PlanetarySystem';
 import FloatingControlsBar from './FloatingControlsBar';
 import SidebarContent from './SidebarContent';
 import InfoModal from './InfoModal';
 import InstructionsModal from './InstructionsModal';
 import { AudioErrorNotification } from './AudioErrorNotification';
+import { CurrentFrequencies } from '../utils/types';
 
 interface OrbitalSonificationLayoutProps {
-  controlsValue: ControlsContextType;
-  visualizationValue: VisualizationContextType;
+  controlsValue: unknown;
   needsUserInteraction: boolean;
   handleUserInteraction: () => Promise<void>;
+  onFrequencyChange?: (frequencies: CurrentFrequencies) => void;
 }
 
 const OrbitalSonificationLayout: React.FC<OrbitalSonificationLayoutProps> = ({
   controlsValue,
-  visualizationValue,
   needsUserInteraction,
-  handleUserInteraction
+  handleUserInteraction,
+  onFrequencyChange
 }) => {
   // Extract modal state from controlsValue to avoid redundant prop drilling
   const {
@@ -27,7 +26,7 @@ const OrbitalSonificationLayout: React.FC<OrbitalSonificationLayoutProps> = ({
     setIsInfoModalOpen,
     isInstructionsModalOpen,
     setIsInstructionsModalOpen
-  } = controlsValue;
+  } = controlsValue as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   // Memoize click handler
   const handleContainerClick = useCallback(async () => {
@@ -37,24 +36,20 @@ const OrbitalSonificationLayout: React.FC<OrbitalSonificationLayoutProps> = ({
   }, [needsUserInteraction, handleUserInteraction]);
 
   return (
-    <ControlsProvider value={controlsValue}>
-      <div className="container" onClick={handleContainerClick}>
-        <div className="visualization-container">
-          <div className="orbital-display">
-            <VisualizationProvider value={visualizationValue}>
-              <PlanetarySystem />
-            </VisualizationProvider>
-          </div>
-
-          <FloatingControlsBar />
-          <SidebarContent />
+    <div className="container" onClick={handleContainerClick}>
+      <div className="visualization-container">
+        <div className="orbital-display">
+          <PlanetarySystem onFrequencyChange={onFrequencyChange} />
         </div>
 
-        <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
-        <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
-        <AudioErrorNotification />
+        <FloatingControlsBar />
+        <SidebarContent />
       </div>
-    </ControlsProvider>
+
+      <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
+      <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
+      <AudioErrorNotification />
+    </div>
   );
 };
 

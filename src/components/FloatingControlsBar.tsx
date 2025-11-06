@@ -1,23 +1,31 @@
 import React from 'react';
-import { useControls } from '../hooks/useControls';
+import { useAudioControls } from '../hooks/useAudioControls';
+import { useUIControls } from '../hooks/useUIControls';
+import { useVisualizationControls } from '../hooks/useVisualizationControls';
 
 const FloatingControlsBar: React.FC = () => {
   const {
-    isPaused,
     togglePlayPause,
     isPlaying,
     liveMode,
     playOrbitalSequence,
-    toggleLiveMode,
-    positionMode,
-    setPositionMode,
+    toggleLiveMode
+  } = useAudioControls();
+
+  const {
     isInfoModalOpen,
     setIsInfoModalOpen,
     isInstructionsModalOpen,
     setIsInstructionsModalOpen,
     sidebarCollapsed,
     toggleSidebar
-  } = useControls();
+  } = useUIControls();
+
+  const {
+    positionMode,
+    setPositionMode,
+    isPaused
+  } = useVisualizationControls();
   return (
     <>
       <div className="floating-controls fade-in" role="toolbar" aria-label="Playback and visualization controls">
