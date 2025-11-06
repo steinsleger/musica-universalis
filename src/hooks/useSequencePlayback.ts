@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback } from 'react';
 import * as Tone from 'tone';
 import { Planet } from '../utils/types';
 import {
@@ -10,6 +10,7 @@ import {
 interface UseSequencePlaybackParams {
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
+  setCurrentlyPlayingPlanet: (planet: string | undefined) => void;
   sequenceBPM: number;
   orbitData: Planet[];
   baseFrequency: number;
@@ -24,6 +25,7 @@ interface UseSequencePlaybackParams {
 export const useSequencePlayback = ({
   isPlaying,
   setIsPlaying,
+  setCurrentlyPlayingPlanet,
   sequenceBPM,
   orbitData,
   baseFrequency,
@@ -34,7 +36,6 @@ export const useSequencePlayback = ({
   calculateBaseFrequencies,
   debugAudio
 }: UseSequencePlaybackParams) => {
-  const [currentlyPlayingPlanet, setCurrentlyPlayingPlanet] = useState<string | null>(null);
 
   const planetTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
   const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -50,7 +51,7 @@ export const useSequencePlayback = ({
       if (isPlaying) {
         debugAudio('Stopping orbital sequence');
 
-        setCurrentlyPlayingPlanet(null);
+        setCurrentlyPlayingPlanet(undefined);
 
         planetTimeoutsRef.current.forEach(timeoutId => {
           clearTimeout(timeoutId);
@@ -126,11 +127,11 @@ export const useSequencePlayback = ({
 
       sequenceTimeoutRef.current = setTimeout(() => {
         if (loopSequence) {
-          setCurrentlyPlayingPlanet(null);
+          setCurrentlyPlayingPlanet(undefined);
           clearPlanetTimeouts(planetTimeoutsRef.current);
           playOrbitalSequence();
         } else {
-          setCurrentlyPlayingPlanet(null);
+          setCurrentlyPlayingPlanet(undefined);
           clearPlanetTimeouts(planetTimeoutsRef.current);
           setIsPlaying(false);
           debugAudio('Sequence playback complete');
@@ -146,10 +147,10 @@ export const useSequencePlayback = ({
         sequenceTimeoutRef.current = null;
       }
 
-      setCurrentlyPlayingPlanet(null);
+      setCurrentlyPlayingPlanet(undefined);
       setIsPlaying(false);
     }
-  }, [isPlaying, setIsPlaying, initializeAudioContext, sequenceBPM, orbitData, baseFrequency, loopSequence, calculateBaseFrequencies, debugAudio, gainNodeRef, mainSynthRef]);
+  }, [isPlaying, setIsPlaying, setCurrentlyPlayingPlanet, initializeAudioContext, sequenceBPM, orbitData, baseFrequency, loopSequence, calculateBaseFrequencies, debugAudio, gainNodeRef, mainSynthRef]);
 
   const cleanupSequence = useCallback(() => {
     clearPlanetTimeouts(planetTimeoutsRef.current);
@@ -161,8 +162,6 @@ export const useSequencePlayback = ({
   }, []);
 
   return {
-    currentlyPlayingPlanet,
-    setCurrentlyPlayingPlanet,
     playOrbitalSequence,
     cleanupSequence,
     planetTimeoutsRef,

@@ -8,7 +8,7 @@ import { useOrbitState } from '../hooks/useOrbitState';
 import { useAudioContext } from '../hooks/useAudioContext';
 import { useFrequencyCalculation } from '../hooks/useFrequencyCalculation';
 import { useModals } from '../hooks/useModals';
-import { usePlaybackState } from '../hooks/usePlaybackState';
+import { useAudioState } from '../hooks/useAudioState';
 import { useUIState } from '../hooks/useUIState';
 import { useAudioReferences } from '../hooks/useAudioReferences';
 import { usePlanetAudioManagement } from '../hooks/usePlanetAudioManagement';
@@ -91,8 +91,10 @@ const OrbitalSonificationContainer: React.FC = () => {
     currentFrequencies,
     setCurrentFrequencies,
     loopSequence,
-    setLoopSequence
-  } = usePlaybackState();
+    setLoopSequence,
+    currentlyPlayingPlanet,
+    setCurrentlyPlayingPlanet
+  } = useAudioState();
 
   // Modal state management
   const {
@@ -438,10 +440,11 @@ const OrbitalSonificationContainer: React.FC = () => {
   }, [needsUserInteraction, handleUserInteraction]);
 
   // Use sequence playback hook
-  const { currentlyPlayingPlanet, playOrbitalSequence } = useSequencePlayback(
+  const { playOrbitalSequence } = useSequencePlayback(
     {
       isPlaying,
       setIsPlaying,
+      setCurrentlyPlayingPlanet,
       sequenceBPM,
       orbitData,
       baseFrequency,
