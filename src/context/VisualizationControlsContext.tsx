@@ -26,6 +26,7 @@ export interface VisualizationControlsContextType {
   isPaused: boolean;
   positionMode: PositionMode;
   setPositionMode: (mode: PositionMode) => void;
+  currentlyPlayingPlanet: string | undefined;
 }
 
 const VisualizationControlsContext = createContext<VisualizationControlsContextType | undefined>(

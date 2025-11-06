@@ -1,7 +1,6 @@
 import * as Tone from 'tone';
 import { SynthManager } from './synthManager';
 import { SynthObject, AudioScalingConfig } from './types';
-import { calculateFrequencyGain, calculateAdvancedFrequencyGain } from './audioScaling';
 
 /**
  * AudioManager encapsulates all audio-related state and operations
