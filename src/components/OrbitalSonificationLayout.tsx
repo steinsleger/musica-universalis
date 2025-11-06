@@ -6,6 +6,7 @@ import FloatingControlsBar from './FloatingControlsBar';
 import SidebarContent from './SidebarContent';
 import InfoModal from './InfoModal';
 import InstructionsModal from './InstructionsModal';
+import { AudioErrorNotification } from './AudioErrorNotification';
 
 interface OrbitalSonificationLayoutProps {
   controlsValue: ControlsContextType;
@@ -51,6 +52,7 @@ const OrbitalSonificationLayout: React.FC<OrbitalSonificationLayoutProps> = ({
 
         <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
         <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
+        <AudioErrorNotification />
       </div>
     </ControlsProvider>
   );

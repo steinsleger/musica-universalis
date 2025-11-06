@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import * as Tone from 'tone';
 import { UIControlsProvider } from '../context/UIControlsContext';
 import { AudioControlsProvider } from '../context/AudioControlsContext';
@@ -6,12 +6,11 @@ import { VisualizationControlsProvider } from '../context/VisualizationControlsC
 import { useAudioConfig } from '../hooks/useAudioConfig';
 import { useOrbitState } from '../hooks/useOrbitState';
 import { useAudioContext } from '../hooks/useAudioContext';
-import { useFrequencyCalculation } from '../hooks/useFrequencyCalculation';
 import { useModals } from '../hooks/useModals';
 import { useAudioState } from '../hooks/useAudioState';
 import { useUIState } from '../hooks/useUIState';
 import { useAudioReferences } from '../hooks/useAudioReferences';
-import { usePlanetAudioManagement } from '../hooks/usePlanetAudioManagement';
+import { useFrequencyManager } from '../hooks/useFrequencyManager';
 import { useLiveModeAudio } from '../hooks/useLiveModeAudio';
 import { useToggleControls } from '../hooks/useToggleControls';
 import { useAudioContextManager } from '../hooks/useAudioContextManager';
@@ -76,8 +75,6 @@ const OrbitalSonificationContainer: React.FC = () => {
 
   // Hooks
   const { needsUserInteraction } = useAudioContext();
-  const { calculateFrequency, frequencyToNote: hookFrequencyToNote } =
-    useFrequencyCalculation();
 
   // Local state
   const { sidebarCollapsed, setSidebarCollapsed, activeTab, setActiveTab } =
@@ -95,6 +92,10 @@ const OrbitalSonificationContainer: React.FC = () => {
     currentlyPlayingPlanet,
     setCurrentlyPlayingPlanet
   } = useAudioState();
+
+  // Error state management
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioHealthStatus, setAudioHealthStatus] = useState<'healthy' | 'degraded' | 'failed'>('healthy');
 
   // Modal state management
   const {
@@ -138,13 +139,15 @@ const OrbitalSonificationContainer: React.FC = () => {
     }
   }, [debug]);
 
-  // Planet audio management hook
+  // Consolidated frequency and audio management hook (replaces useFrequencyCalculation + usePlanetAudioManagement)
   const {
+    calculateFrequency,
     createIsolatedSynth,
     startPlanetSound,
     stopPlanetSound,
-    updatePlanetFrequency
-  } = usePlanetAudioManagement({
+    updatePlanetFrequency,
+    frequencyToNote: hookFrequencyToNote
+  } = useFrequencyManager({
     synthManagerRef,
     synthsRef,
     gainNodesRef,
@@ -405,9 +408,12 @@ const OrbitalSonificationContainer: React.FC = () => {
   const handleUserInteraction = useCallback(async (): Promise<void> => {
     if (needsUserInteraction) {
       try {
+        setAudioError(null);
         const started = await startAudioContext();
         if (!started) {
-          console.error('Failed to start audio context on user interaction');
+          const message = 'Failed to start audio context on user interaction';
+          console.error(message);
+          setAudioError(message);
           return;
         }
 
@@ -415,10 +421,15 @@ const OrbitalSonificationContainer: React.FC = () => {
           const initialized = await initializeAudioContextRef.current();
           if (!initialized) {
             console.warn('Failed to fully initialize audio after user interaction');
+            setAudioError('Audio initialization incomplete');
+            setAudioHealthStatus('degraded');
           }
         }
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown audio initialization error';
         console.error('Error initializing audio on user interaction:', error);
+        setAudioError(message);
+        setAudioHealthStatus('failed');
       }
     }
   }, [needsUserInteraction, startAudioContext, audioInitializedRef]);
@@ -587,7 +598,11 @@ const OrbitalSonificationContainer: React.FC = () => {
       toggleLoopSequence,
       liveMode,
       toggleLiveMode,
-      togglePlayPause
+      togglePlayPause,
+      audioError,
+      setAudioError,
+      audioHealthStatus,
+      setAudioHealthStatus
     }),
     [
       masterVolume,
@@ -608,7 +623,9 @@ const OrbitalSonificationContainer: React.FC = () => {
       toggleLoopSequence,
       liveMode,
       toggleLiveMode,
-      togglePlayPause
+      togglePlayPause,
+      audioError,
+      audioHealthStatus
     ]
   );
 

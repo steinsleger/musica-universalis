@@ -29,6 +29,12 @@ export interface AudioControlsContextType {
   liveMode: boolean;
   toggleLiveMode: () => Promise<void>;
   togglePlayPause: () => Promise<void>;
+
+  // Error State
+  audioError: string | null;
+  setAudioError: (error: string | null) => void;
+  audioHealthStatus: 'healthy' | 'degraded' | 'failed';
+  setAudioHealthStatus: (status: 'healthy' | 'degraded' | 'failed') => void;
 }
 
 const AudioControlsContext = createContext<AudioControlsContextType | undefined>(undefined);

@@ -1,5 +1,5 @@
 // src/PlanetarySystem.tsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualization } from './hooks/useVisualization';
 import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
 import { useOrbitalAnimation } from './hooks/useOrbitalAnimation';
@@ -82,6 +82,40 @@ const PlanetarySystem: React.FC = () => {
     getAphelionAngle,
     getPerihelionAngle
   });
+
+  // Memoize orbit path calculations to avoid recalculation on every frame
+  const orbitPathsData = useMemo(() => {
+    return orbitData.map((planet) => {
+      const pathPoints = generateEllipticalPath(
+        getDistance(planet),
+        planet.eccentricity,
+        100
+      );
+
+      const pathData = pathPoints
+        .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+        .join(' ') + ' Z';
+
+      const showOrbitExtremes = planet.eccentricity > 0.1;
+      const { perihelion, aphelion } = showOrbitExtremes
+        ? getExtremePositions(getDistance(planet), planet.eccentricity)
+        : { perihelion: undefined, aphelion: undefined };
+
+      const { perihelion: perihelionDist, aphelion: aphelionDist } =
+        calculateOrbitalExtremes(getDistance(planet), planet.eccentricity);
+
+      return {
+        planetName: planet.name,
+        pathData,
+        showOrbitExtremes,
+        perihelion,
+        aphelion,
+        perihelionDist,
+        aphelionDist,
+        distance: getDistance(planet)
+      };
+    });
+  }, [orbitData, getDistance, generateEllipticalPath, getExtremePositions, calculateOrbitalExtremes]);
 
   // Use glow effect hook for glow animation
   const glowOpacity = useGlowEffect({
@@ -186,42 +220,27 @@ const PlanetarySystem: React.FC = () => {
             Each planet follows an elliptical path at varying distances.
           </desc>
 
-          {/* Orbital paths using OrbitPath component */}
-          {orbitData.map((planet) => {
-            const pathPoints = generateEllipticalPath(
-              getDistance(planet),
-              planet.eccentricity,
-              100
-            );
-
-            const pathData = pathPoints
-              .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
-              .join(' ') + ' Z';
-
-            const showOrbitExtremes = planet.eccentricity > 0.1;
-            const { perihelion, aphelion } = showOrbitExtremes ?
-              getExtremePositions(getDistance(planet), planet.eccentricity) :
-              { perihelion: undefined, aphelion: undefined };
-
-            const { perihelion: perihelionDist, aphelion: aphelionDist } =
-              calculateOrbitalExtremes(getDistance(planet), planet.eccentricity);
+          {/* Orbital paths using memoized calculations */}
+          {orbitPathsData.map((pathData) => {
+            const planet = orbitData.find((p) => p.name === pathData.planetName);
+            if (!planet) return null;
 
             return (
               <OrbitPath
-                key={`orbit-${planet.name}`}
+                key={`orbit-${pathData.planetName}`}
                 planet={planet}
-                pathData={pathData}
-                orbitColor={getOrbitColor(planet.name, planet.enabled)}
-                showExtremes={showOrbitExtremes}
-                perihelionPos={perihelion}
-                perihelionDist={perihelionDist}
-                aphelionPos={aphelion}
-                aphelionDist={aphelionDist}
+                pathData={pathData.pathData}
+                orbitColor={getOrbitColor(pathData.planetName, planet.enabled)}
+                showExtremes={pathData.showOrbitExtremes}
+                perihelionPos={pathData.perihelion}
+                perihelionDist={pathData.perihelionDist}
+                aphelionPos={pathData.aphelion}
+                aphelionDist={pathData.aphelionDist}
                 zoomLevel={zoomLevel}
                 distanceMode={distanceMode}
                 center={center}
                 orbitScaleFactor={orbitScaleFactor}
-                distance={getDistance(planet)}
+                distance={pathData.distance}
                 panOffset={panOffset}
               />
             );
