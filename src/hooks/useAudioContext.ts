@@ -3,13 +3,14 @@ import * as Tone from 'tone';
 
 interface UseAudioContextReturn {
   needsUserInteraction: boolean;
-  startAudio: () => Promise<boolean>;
-  audioContextReady: boolean;
 }
 
 export const useAudioContext = (): UseAudioContextReturn => {
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   const audioContextStarted = useRef(false);
+
+  // Note: startAudio is kept private as it's used internally by the hook
+  // to manage audio context state in response to user interactions
 
   useEffect(() => {
     const initializeTone = async (): Promise<void> => {
@@ -93,8 +94,6 @@ export const useAudioContext = (): UseAudioContextReturn => {
   }, [needsUserInteraction, startAudio]);
 
   return {
-    needsUserInteraction,
-    startAudio,
-    audioContextReady: !needsUserInteraction
+    needsUserInteraction
   };
 };

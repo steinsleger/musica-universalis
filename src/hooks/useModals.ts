@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 interface UseModalsParams {
   onEscapePressed?: () => void;
@@ -27,30 +27,10 @@ export const useModals = ({ onEscapePressed }: UseModalsParams = {}) => {
     };
   }, [onEscapePressed]);
 
-  const openInfoModal = useCallback(() => {
-    setIsInfoModalOpen(true);
-  }, []);
-
-  const closeInfoModal = useCallback(() => {
-    setIsInfoModalOpen(false);
-  }, []);
-
-  const openInstructionsModal = useCallback(() => {
-    setIsInstructionsModalOpen(true);
-  }, []);
-
-  const closeInstructionsModal = useCallback(() => {
-    setIsInstructionsModalOpen(false);
-  }, []);
-
   return {
     isInfoModalOpen,
     setIsInfoModalOpen,
-    openInfoModal,
-    closeInfoModal,
     isInstructionsModalOpen,
-    setIsInstructionsModalOpen,
-    openInstructionsModal,
-    closeInstructionsModal
+    setIsInstructionsModalOpen
   };
 };
