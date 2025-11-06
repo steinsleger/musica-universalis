@@ -49,7 +49,7 @@ export const usePlanetAudioManagement = ({
     }
 
     return synthObj;
-  }, [synthManagerRef, currentFrequencies, audioScalingConfig, useFletcher]); // eslint-disable-line react-hooks/exhaustive-deps -- synthsRef/gainNodesRef are refs
+  }, [synthManagerRef, currentFrequencies, audioScalingConfig, useFletcher, synthsRef, gainNodesRef]);
 
   const getAdjustedGain = useCallback((frequency: number): number => {
     if (!frequency) return 1.0;
@@ -81,7 +81,7 @@ export const usePlanetAudioManagement = ({
 
       return false;
     }
-  }, [synthManagerRef, createIsolatedSynth]); // eslint-disable-line react-hooks/exhaustive-deps -- activeSynthsRef is a ref
+  }, [synthManagerRef, createIsolatedSynth, activeSynthsRef]);
 
   const updatePlanetFrequency = useCallback((planetName: string, frequency: number): boolean => {
     try {
@@ -160,7 +160,7 @@ export const usePlanetAudioManagement = ({
       console.error(`Failed to start sound for ${planetName}:`);
       return false;
     }
-  }, [synthManagerRef, createIsolatedSynth, updatePlanetFrequency, useFletcher, audioScalingConfig]); // eslint-disable-line react-hooks/exhaustive-deps -- activeSynthsRef/gainNodesRef are refs
+  }, [synthManagerRef, createIsolatedSynth, updatePlanetFrequency, useFletcher, audioScalingConfig, activeSynthsRef, gainNodesRef]);
 
   return {
     createIsolatedSynth,

@@ -1,4 +1,4 @@
-import { useEffect, MutableRefObject } from 'react';
+import { useEffect, useRef, MutableRefObject } from 'react';
 import * as Tone from 'tone';
 import { Planet, CurrentFrequencies } from '../utils/types';
 import { SynthManager } from '../utils/synthManager';
@@ -41,6 +41,16 @@ export const useLiveModeAudio = ({
   recreateAllAudio,
   debugAudio
 }: UseLiveModeAudioProps): void => {
+  const orbitDataRef = useRef(orbitData);
+  const currentFrequenciesRef = useRef(currentFrequencies);
+  const isPausedRef = useRef(isPaused);
+
+  useEffect(() => {
+    orbitDataRef.current = orbitData;
+    currentFrequenciesRef.current = currentFrequencies;
+    isPausedRef.current = isPaused;
+  }, [orbitData, currentFrequencies, isPaused]);
+
   useEffect(() => {
     if (!liveMode) return;
 
@@ -72,14 +82,14 @@ export const useLiveModeAudio = ({
         }
 
         // Detect sound state mismatches and recover if needed
-        const enabledPlanets = orbitData.filter(p => p.enabled);
+        const enabledPlanets = orbitDataRef.current.filter(p => p.enabled);
         const enabledPlanetNames = new Set(enabledPlanets.map(p => p.name));
 
         const shouldHaveSounds = enabledPlanets.length > 0;
         const hasSounds = activeSynthsRef.current.size > 0;
 
         const shouldBePlayingButIsnt = enabledPlanets.some(p =>
-          !activeSynthsRef.current.has(p.name) && currentFrequencies[p.name]
+          !activeSynthsRef.current.has(p.name) && currentFrequenciesRef.current[p.name]
         );
 
         const shouldNotBePlayingButIs = Array.from(activeSynthsRef.current).some(name =>
@@ -94,7 +104,7 @@ export const useLiveModeAudio = ({
             await performEmergencyRecovery({
               enabledPlanetNames,
               activeSynths: activeSynthsRef.current,
-              currentFrequencies,
+              currentFrequencies: currentFrequenciesRef.current,
               debugAudio,
               onStopPlanet: stopPlanetSound,
               onStartPlanet: startPlanetSound,
@@ -107,11 +117,11 @@ export const useLiveModeAudio = ({
         }
 
         // Update frequencies for active synths if not paused
-        if (!isPaused) {
+        if (!isPausedRef.current) {
           const now = Date.now();
           if (now - lastFrequencyUpdate > 50) {
             Array.from(activeSynthsRef.current).forEach(planetName => {
-              const freq = currentFrequencies[planetName];
+              const freq = currentFrequenciesRef.current[planetName];
               if (freq && synthManagerRef.current.getSynth(planetName)) {
                 updatePlanetFrequency(planetName, freq);
               }
@@ -121,10 +131,10 @@ export const useLiveModeAudio = ({
         }
 
         // Synchronize planet sounds with enabled/disabled state
-        orbitData.forEach(planet => {
+        orbitDataRef.current.forEach(planet => {
           const isEnabled = planet.enabled;
           const isPlaying = activeSynthsRef.current.has(planet.name);
-          const freq = currentFrequencies[planet.name];
+          const freq = currentFrequenciesRef.current[planet.name];
 
           if (!freq) return;
 
@@ -155,5 +165,5 @@ export const useLiveModeAudio = ({
         stopPlanetSound(planetName);
       });
     };
-  }, [liveMode, isPaused]); // eslint-disable-line react-hooks/exhaustive-deps -- refs and callbacks are read fresh in interval
+  }, [liveMode, audioInitializedRef, gainNodeRef, activeSynthsRef, synthManagerRef, initializeAudioContext, startPlanetSound, stopPlanetSound, updatePlanetFrequency, recreateAllAudio, debugAudio]);
 };

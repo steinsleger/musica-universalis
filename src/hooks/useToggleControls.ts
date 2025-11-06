@@ -93,7 +93,7 @@ export const useToggleControls = ({
         console.error('Error toggling planet:', error);
       }
     },
-    [orbitData, liveMode, currentFrequencies, createIsolatedSynth, startPlanetSound, stopPlanetSound, debugAudio, setOrbitData] // eslint-disable-line react-hooks/exhaustive-deps -- activeSynthsRef is a ref
+    [orbitData, liveMode, currentFrequencies, createIsolatedSynth, startPlanetSound, stopPlanetSound, debugAudio, setOrbitData, activeSynthsRef]
   );
 
   const toggleAllPlanets = useCallback(
@@ -138,7 +138,7 @@ export const useToggleControls = ({
     } catch (error) {
       console.error('Error toggling live mode:', error);
     }
-  }, [liveMode, stopPlanetSound, initializeAudioContext, recreateAllAudio, forceRecalculateAllGains, debugAudio, setLiveMode]); // eslint-disable-line react-hooks/exhaustive-deps -- activeSynthsRef is a ref
+  }, [liveMode, stopPlanetSound, initializeAudioContext, recreateAllAudio, forceRecalculateAllGains, debugAudio, setLiveMode, activeSynthsRef]);
 
   return {
     togglePlanet,

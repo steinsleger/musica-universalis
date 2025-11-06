@@ -28,6 +28,7 @@ import {
   PositionMode
 } from './utils/types';
 
+
 declare global {
   interface Window {
     lastAudioUpdate?: number;
@@ -90,7 +91,7 @@ const OrbitalSonificationContent: React.FC = () => {
   } = useAudioReferences();
 
   // Debug function - declare early for use in hooks
-  const debugAudio = (message: string, obj: unknown = null): void => {
+  const debugAudio = useCallback((message: string, obj: unknown = null): void => {
     if (debug.current) {
       if (obj) {
         console.log(`[AUDIO DEBUG] ${message}`, obj);
@@ -98,7 +99,7 @@ const OrbitalSonificationContent: React.FC = () => {
         console.log(`[AUDIO DEBUG] ${message}`);
       }
     }
-  };
+  }, [debug]);
 
   // Planet audio management hook
   const {
@@ -136,6 +137,27 @@ const OrbitalSonificationContent: React.FC = () => {
     startPlanetSound
   });
 
+  // Stabilize function refs for useLiveModeAudio to prevent constant re-runs
+  const initializeAudioContextFnRef = useRef(initializeAudioContext);
+  const recreateAllAudioFnRef = useRef(recreateAllAudio);
+  const startPlanetSoundFnRef = useRef(startPlanetSound);
+  const stopPlanetSoundFnRef = useRef(stopPlanetSound);
+  const updatePlanetFrequencyFnRef = useRef(updatePlanetFrequency);
+  const debugAudioStableFnRef = useRef(debugAudio);
+  const orbitDataRef = useRef(orbitData);
+  const currentFrequenciesRef = useRef(currentFrequencies);
+
+  useEffect(() => {
+    initializeAudioContextFnRef.current = initializeAudioContext;
+    recreateAllAudioFnRef.current = recreateAllAudio;
+    startPlanetSoundFnRef.current = startPlanetSound;
+    stopPlanetSoundFnRef.current = stopPlanetSound;
+    updatePlanetFrequencyFnRef.current = updatePlanetFrequency;
+    debugAudioStableFnRef.current = debugAudio;
+    orbitDataRef.current = orbitData;
+    currentFrequenciesRef.current = currentFrequencies;
+  }, [initializeAudioContext, recreateAllAudio, startPlanetSound, stopPlanetSound, updatePlanetFrequency, debugAudio, orbitData, currentFrequencies]);
+
   const calculateBaseFrequencies = useCallback((baseFreq: number, planet: Planet, _index: number): number => {
     return calculateFrequency(baseFreq, planet, distanceMode);
   }, [distanceMode, calculateFrequency]);
@@ -165,28 +187,50 @@ const OrbitalSonificationContent: React.FC = () => {
         }
       });
     }
-  }, [currentFrequencies, liveMode, updatePlanetFrequency]); // eslint-disable-line react-hooks/exhaustive-deps -- refs don't trigger updates
+  }, [currentFrequencies, liveMode, updatePlanetFrequency, activeSynthsRef, setCurrentFrequencies, lastFrequenciesRef]);
+
+  const initAudioFnRef = useRef(initializeAudioContext);
+  const debugAudioFnRef = useRef(debugAudio);
+
+  useEffect(() => {
+    initAudioFnRef.current = initializeAudioContext;
+    debugAudioFnRef.current = debugAudio;
+  }, [initializeAudioContext, debugAudio]);
 
   useEffect(() => {
     if (!audioInitializedRef.current) {
-      initializeAudioContext().then(success => {
-        if (success) {
-          audioInitializedRef.current = true;
-          debugAudio('Audio initialized on component load');
-        } else {
-          debugAudio('Failed to initialize audio on component load');
-        }
-      });
+      initAudioFnRef.current()
+        .then(success => {
+          if (success) {
+            audioInitializedRef.current = true;
+            debugAudioFnRef.current('Audio initialized on component load');
+          } else {
+            console.warn('Failed to initialize audio on component load');
+            debugAudioFnRef.current('Failed to initialize audio on component load');
+          }
+        })
+        .catch(error => {
+          console.error('Error during audio initialization:', error);
+          debugAudioFnRef.current('Error during audio initialization');
+        });
     }
+  }, [audioInitializedRef]);
 
+  useEffect(() => {
     const synthManagerCurrent = synthManagerRef.current;
     const mainSynthCurrent = mainSynthRef.current;
     const gainNodeCurrent = gainNodeRef.current;
 
     return () => {
-      debugAudio('Component unmounting, cleaning up audio');
+      if (audioInitializedRef.current) {
+        debugAudio('Component unmounting, cleaning up audio');
+      }
 
-      synthManagerCurrent.disposeAll();
+      try {
+        synthManagerCurrent.disposeAll();
+      } catch (error) {
+        console.error('Error disposing synths:', error);
+      }
 
       if (mainSynthCurrent) {
         try {
@@ -204,14 +248,15 @@ const OrbitalSonificationContent: React.FC = () => {
         }
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount effect only, refs don't trigger updates
+  }, [audioInitializedRef, debugAudio, gainNodeRef, mainSynthRef, synthManagerRef]);
+
 
   useEffect(() => {
     if (!initFrequenciesRef.current) {
       updateAllFrequencies();
       initFrequenciesRef.current = true;
     }
-  }, [updateAllFrequencies]); // eslint-disable-line react-hooks/exhaustive-deps -- ref guard prevents multiple initializations
+  }, [updateAllFrequencies, initFrequenciesRef]);
 
   useEffect(() => {
     updateAllFrequencies();
@@ -229,7 +274,7 @@ const OrbitalSonificationContent: React.FC = () => {
     }
 
     prevPositionMode.current = positionMode;
-  }, [liveMode, isPaused, positionMode, currentFrequencies, updatePlanetFrequency]); // eslint-disable-line react-hooks/exhaustive-deps -- activeSynthsRef is a ref
+  }, [liveMode, isPaused, positionMode, currentFrequencies, updatePlanetFrequency, activeSynthsRef]);
 
   useEffect(() => {
     if (positionMode !== 'normal') {
@@ -238,6 +283,16 @@ const OrbitalSonificationContent: React.FC = () => {
   }, [positionMode, setPositionMode]);
 
   // Use live mode audio hook
+  // Create stable wrapper functions that call through refs to avoid effect re-runs
+  const stableInitializeAudioContext = useCallback(() => initializeAudioContextFnRef.current(), []);
+  const stableStartPlanetSound = useCallback((name: string, freq: number) => startPlanetSoundFnRef.current(name, freq), []);
+  const stableStopPlanetSound = useCallback((name: string) => stopPlanetSoundFnRef.current(name), []);
+  const stableUpdatePlanetFrequency = useCallback((name: string, freq: number) => updatePlanetFrequencyFnRef.current(name, freq), []);
+  const stableRecreateAllAudio = useCallback(async () => {
+    await recreateAllAudioFnRef.current();
+  }, []);
+  const stableDebugAudio = useCallback((msg: string) => debugAudioStableFnRef.current(msg), []);
+
   useLiveModeAudio({
     liveMode,
     orbitData,
@@ -247,14 +302,12 @@ const OrbitalSonificationContent: React.FC = () => {
     activeSynthsRef,
     synthManagerRef,
     isPaused,
-    initializeAudioContext,
-    startPlanetSound,
-    stopPlanetSound,
-    updatePlanetFrequency,
-    recreateAllAudio: async () => {
-      await recreateAllAudio();
-    },
-    debugAudio
+    initializeAudioContext: stableInitializeAudioContext,
+    startPlanetSound: stableStartPlanetSound,
+    stopPlanetSound: stableStopPlanetSound,
+    updatePlanetFrequency: stableUpdatePlanetFrequency,
+    recreateAllAudio: stableRecreateAllAudio,
+    debugAudio: stableDebugAudio
   });
 
   // Use toggle controls hook
@@ -287,12 +340,20 @@ const OrbitalSonificationContent: React.FC = () => {
         const started = await startAudioContext();
         if (!started) {
           console.error('Failed to start audio context on user interaction');
+          return;
+        }
+
+        if (!audioInitializedRef.current) {
+          const initialized = await initAudioFnRef.current();
+          if (!initialized) {
+            console.warn('Failed to fully initialize audio after user interaction');
+          }
         }
       } catch (error) {
         console.error('Error initializing audio on user interaction:', error);
       }
     }
-  }, [needsUserInteraction, startAudioContext]);
+  }, [needsUserInteraction, startAudioContext, audioInitializedRef]);
 
   useEffect((): void | (() => void) => {
     if (needsUserInteraction) {

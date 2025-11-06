@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import * as Tone from 'tone';
 import { CurrentFrequencies, AudioScalingConfig, Planet, SynthObject } from '../utils/types';
 import { SynthManager } from '../utils/synthManager';
@@ -45,7 +46,7 @@ export const useAudioInitialization = ({
   createIsolatedSynth,
   startPlanetSound
 }: UseAudioInitializationParams): AudioInitializationFunctions => {
-  const initializeAudioContext = async (): Promise<boolean> => {
+  const initializeAudioContext = useCallback(async (): Promise<boolean> => {
     try {
       debugAudio('Initializing audio context');
       try {
@@ -94,9 +95,9 @@ export const useAudioInitialization = ({
       console.error('Failed to initialize audio context:', error);
       return false;
     }
-  };
+  }, [gainNodeRef, reverbRef, synthManagerRef, masterVolume, debugAudio, audioContextStarted]);
 
-  const recreateAllAudio = async (): Promise<boolean> => {
+  const recreateAllAudio = useCallback(async (): Promise<boolean> => {
     debugAudio('FULL AUDIO SYSTEM RESET');
     try {
       synthManagerRef.current.disposeAll();
@@ -170,9 +171,9 @@ export const useAudioInitialization = ({
       console.error('Failed to recreate audio system:');
       return false;
     }
-  };
+  }, [synthManagerRef, synthsRef, gainNodesRef, activeSynthsRef, orbitData, liveMode, currentFrequencies, createIsolatedSynth, startPlanetSound, debugAudio, audioScalingConfig, useFletcher]);
 
-  const forceRecalculateAllGains = (): void => {
+  const forceRecalculateAllGains = useCallback((): void => {
     const enabledFrequencies: CurrentFrequencies = {};
     Object.entries(currentFrequencies).forEach(([planetName, freq]) => {
       const planet = orbitData.find(p => p.name === planetName);
@@ -190,7 +191,7 @@ export const useAudioInitialization = ({
         gainNodesRef.current[planetName] = synthObj.gain;
       }
     });
-  };
+  }, [currentFrequencies, orbitData, synthManagerRef, synthsRef, gainNodesRef, audioScalingConfig, useFletcher]);
 
   return {
     initializeAudioContext,
