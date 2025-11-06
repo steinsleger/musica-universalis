@@ -9,26 +9,6 @@ export const volumeToDb = (volume: number): string => {
 };
 
 /**
- * Get the color for a given planet
- */
-export const getPlanetColor = (name: string): string => {
-  const planetColors: Record<string, string> = {
-    'Mercury': '#A9A9A9',
-    'Venus': '#E6D3A3',
-    'Earth': '#1E90FF',
-    'Mars': '#CD5C5C',
-    'Ceres': '#8B8B83',
-    'Jupiter': '#E59866',
-    'Saturn': '#F4D03F',
-    'Uranus': '#73C6B6',
-    'Neptune': '#5DADE2',
-    'Pluto': '#C39BD3'
-  };
-
-  return planetColors[name] || '#999';
-};
-
-/**
  * Get the orbit color for a planet
  */
 export const getOrbitColor = (name: string, enabled: boolean): string => {
