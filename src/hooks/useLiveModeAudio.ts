@@ -2,7 +2,7 @@ import { useEffect, useRef, MutableRefObject } from 'react';
 import * as Tone from 'tone';
 import { Planet, CurrentFrequencies } from '../utils/types';
 import { SynthManager } from '../utils/synthManager';
-import { performEmergencyRecovery, resumeAudioContextIfNeeded, isGainNodeInvalid } from '../utils/audioUtils';
+import { resumeAudioContextIfNeeded, isGainNodeInvalid } from '../utils/audioUtils';
 
 interface UseLiveModeAudioProps {
   liveMode: boolean;
@@ -67,7 +67,6 @@ export const useLiveModeAudio = ({
 
     debugAudio('Starting live mode audio interval');
 
-    let recoveryCounter = 0;
     let lastFrequencyUpdate = Date.now();
 
     const intervalId = setInterval(async () => {
@@ -79,41 +78,6 @@ export const useLiveModeAudio = ({
         if (isGainNodeInvalid(gainNodeRef.current)) {
           debugAudio('Gain node is missing or disposed, recreating');
           await initializeAudioContext();
-        }
-
-        // Detect sound state mismatches and recover if needed
-        const enabledPlanets = orbitDataRef.current.filter(p => p.enabled);
-        const enabledPlanetNames = new Set(enabledPlanets.map(p => p.name));
-
-        const shouldHaveSounds = enabledPlanets.length > 0;
-        const hasSounds = activeSynthsRef.current.size > 0;
-
-        const shouldBePlayingButIsnt = enabledPlanets.some(p =>
-          !activeSynthsRef.current.has(p.name) && currentFrequenciesRef.current[p.name]
-        );
-
-        const shouldNotBePlayingButIs = Array.from(activeSynthsRef.current).some(name =>
-          !enabledPlanetNames.has(name)
-        );
-
-        // Trigger recovery if state mismatch detected
-        if ((shouldHaveSounds && !hasSounds) || shouldBePlayingButIsnt || shouldNotBePlayingButIs) {
-          recoveryCounter++;
-
-          if (recoveryCounter >= 3) {
-            await performEmergencyRecovery({
-              enabledPlanetNames,
-              activeSynths: activeSynthsRef.current,
-              currentFrequencies: currentFrequenciesRef.current,
-              debugAudio,
-              onStopPlanet: stopPlanetSound,
-              onStartPlanet: startPlanetSound,
-              onFullReset: recreateAllAudio
-            });
-            recoveryCounter = 0;
-          }
-        } else {
-          recoveryCounter = 0;
         }
 
         // Update frequencies for active synths if not paused
@@ -146,13 +110,7 @@ export const useLiveModeAudio = ({
         });
       } catch (error) {
         console.error('Error in audio update interval:', error);
-
-        recoveryCounter++;
-        if (recoveryCounter >= 3) {
-          debugAudio('Critical error in audio update, attempting full reset');
-          await recreateAllAudio();
-          recoveryCounter = 0;
-        }
+        debugAudio(`Audio update error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }, 100);
 

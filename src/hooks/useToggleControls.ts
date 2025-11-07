@@ -26,6 +26,9 @@ interface ToggleControls {
 /**
  * Hook for managing toggle controls for planets and live mode
  * Handles state changes and audio synchronization
+ *
+ * @deprecated Use useUIHandlers instead, which consolidates UI event handlers and toggle logic.
+ * useToggleControls will be removed in a future refactor after the container is migrated.
  */
 export const useToggleControls = ({
   orbitData,

@@ -48,6 +48,10 @@ interface ControlHandlers {
   toggleFletcherCurves: () => void;
 }
 
+/**
+ * @deprecated Use useUIHandlers instead, which consolidates all UI event handlers.
+ * useControlHandlers will be removed in a future refactor after the container is migrated.
+ */
 export const useControlHandlers = ({
   startAudioContext,
   isPaused,

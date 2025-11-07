@@ -6,6 +6,9 @@ interface UseModalsParams {
 
 /**
  * Custom hook for managing modal state and keyboard interactions
+ *
+ * @deprecated Use useUIHandlers instead, which consolidates UI state and event handling.
+ * useModals will be removed in a future refactor after the container is migrated.
  */
 export const useModals = ({ onEscapePressed }: UseModalsParams = {}) => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);

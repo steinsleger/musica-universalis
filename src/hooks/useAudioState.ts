@@ -91,6 +91,9 @@ function audioReducer(state: AudioState, action: AudioAction): AudioState {
  * - Easier debugging (can log every action)
  * - Testable pure reducer function
  * - Follows Redux pattern
+ *
+ * @deprecated Use useAudioPlayback instead, which consolidates audio playback management.
+ * useAudioState will be removed in a future refactor after the container is migrated.
  */
 export function useAudioState() {
   const [state, dispatch] = useReducer(audioReducer, initialState);

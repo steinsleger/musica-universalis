@@ -6,6 +6,10 @@ interface PositionTrackerState {
   recordCurrentMode: (mode: PositionMode) => void;
 }
 
+/**
+ * @deprecated Use useUIHandlers instead, which consolidates position tracking with other UI logic.
+ * usePositionTracker will be removed in a future refactor after the container is migrated.
+ */
 export const usePositionTracker = (currentMode: PositionMode): PositionTrackerState => {
   const prevModeRef = useRef<PositionMode>(currentMode);
 

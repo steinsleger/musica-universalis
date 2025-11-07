@@ -8,12 +8,17 @@ import OrbitalSonificationContainer from './components/OrbitalSonificationContai
  * OrbitalSonification
  *
  * Entry point component that wraps the application with base contexts:
- * - AudioConfigProvider: Base audio configuration (masterVolume, baseFrequency, sequenceBPM, etc.)
- * - OrbitStateProvider: Base orbital state (orbitData, animationSpeed, distanceMode, etc.)
+ * - AudioConfigProvider: Audio configuration (masterVolume, baseFrequency, sequenceBPM)
+ * - OrbitalStateProvider: Unified state for orbital + audio + UI (merged contexts)
  *
  * The actual orchestration and presentation logic is delegated to:
- * - OrbitalSonificationContainer: State management and context building
+ * - OrbitalSonificationContainer: Orchestrates services and state
  * - OrbitalSonificationPresenter: Pure presentation component
+ *
+ * This refactored version uses:
+ * - Service-based architecture (AudioProvider, FrequencyCalculator, AudioSafetyService)
+ * - Consolidated hooks (useAudioProvider, useAudioPlayback, useFrequency)
+ * - Merged contexts (OrbitalStateContext combines 4 previous contexts)
  */
 const OrbitalSonification: React.FC = () => (
   <AudioConfigProvider>

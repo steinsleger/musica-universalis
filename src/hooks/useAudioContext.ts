@@ -5,6 +5,10 @@ interface UseAudioContextReturn {
   needsUserInteraction: boolean;
 }
 
+/**
+ * @deprecated Use useAudioProvider instead, which provides comprehensive audio context management.
+ * useAudioContext will be removed in a future refactor after the container is migrated.
+ */
 export const useAudioContext = (): UseAudioContextReturn => {
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   const audioContextStarted = useRef(false);
