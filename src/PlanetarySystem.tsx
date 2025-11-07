@@ -14,7 +14,20 @@ interface PlanetarySystemProps {
   onFrequencyChange?: (frequencies: CurrentFrequencies) => void;
 }
 
-const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
+/**
+ * PlanetarySystem - Main orbital visualization component
+ *
+ * Memoized to prevent unnecessary re-renders when parent context updates.
+ * The component renders planet orbits and positions based on animation state.
+ *
+ * Optimization: React.memo ensures re-renders only occur when:
+ * - onFrequencyChange prop reference changes (callback is memoized in container)
+ * - Any internal state changes (planet angles, UI state)
+ *
+ * Note: Remember to memoize onFrequencyChange in the parent container
+ * using useCallback() to maximize memo efficiency.
+ */
+const PlanetarySystemComponent: React.FC<PlanetarySystemProps> = ({
   onFrequencyChange
 }) => {
   const {
@@ -352,5 +365,7 @@ const PlanetarySystem: React.FC<PlanetarySystemProps> = ({
     </div>
   );
 };
+
+const PlanetarySystem = React.memo(PlanetarySystemComponent);
 
 export default PlanetarySystem;

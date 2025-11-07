@@ -16,6 +16,8 @@
  * Specialized hooks:
  * - useOrbitalAnimation: Manages orbital animation loop
  * - useGlowEffect: Creates glow animation for playing planets
+ * - useFrequencyRef: Manages frequency updates in refs (separates audio from state)
+ * - useAudioProviderRef: Consolidates 12 individual audio refs into 1 structured ref
  */
 
 // Consolidated hooks
@@ -35,6 +37,8 @@ export { useVisualizationControls } from './useVisualizationControls';
 // Specialized hooks
 export { useOrbitalAnimation } from './useOrbitalAnimation';
 export { useGlowEffect } from './useGlowEffect';
+export { useFrequencyRef } from './useFrequencyRef';
+export { useAudioProviderRef, type AudioProviderRef } from './useAudioProviderRef';
 
 // Legacy hooks (to be deprecated)
 export { useAudioContext } from './useAudioContext';

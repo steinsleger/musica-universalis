@@ -21,8 +21,11 @@ interface OrbitalSonificationPresenterProps {
  *
  * This component is intentionally simple and focused on rendering.
  * All state management happens in OrbitalSonificationContainer.
+ *
+ * Memoized to prevent unnecessary re-renders when parent updates.
+ * Props should be memoized in the container to maximize efficiency.
  */
-const OrbitalSonificationPresenter: React.FC<OrbitalSonificationPresenterProps> = ({
+const OrbitalSonificationPresenterComponent: React.FC<OrbitalSonificationPresenterProps> = ({
   needsUserInteraction,
   handleUserInteraction,
   onFrequencyChange
@@ -99,5 +102,7 @@ const OrbitalSonificationPresenter: React.FC<OrbitalSonificationPresenterProps> 
     />
   );
 };
+
+const OrbitalSonificationPresenter = React.memo(OrbitalSonificationPresenterComponent);
 
 export default OrbitalSonificationPresenter;
