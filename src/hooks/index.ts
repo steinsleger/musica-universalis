@@ -4,16 +4,14 @@
  * This file exports the essential public hooks. Internal/deprecated hooks are
  * available in their individual files but not re-exported here.
  *
- * PUBLIC API (9 essential hooks):
+ * PUBLIC API (7 essential hooks):
  *
  * Context Consumers (2):
  *   - useAudioConfig: Audio configuration (baseFrequency, masterVolume, etc.)
  *   - useOrbitalState: Orbital state (orbitData, animationSpeed, isPaused, etc.)
  *
- * Consolidated Hooks (4):
- *   - useUIHandlers: All UI event handlers (play/pause, zoom, sidebar, etc.)
+ * Consolidated Hooks (2):
  *   - useAudioProvider: Audio lifecycle management
- *   - useAudioPlayback: Playback state and sequence operations
  *   - useFrequency: Frequency calculations and conversions
  *
  * Specialized Hooks (3):
@@ -24,7 +22,7 @@
  * DEPRECATED HOOKS (available but not recommended):
  * These are kept for backward compatibility but should not be used in new code.
  * They will be removed in a future major release.
- *   - useAudioContext, useAudioContextManager, useAudioReferences
+ *   - useAudioContext, useAudioContextManager
  *   - useAudioInitialization, useFrequencyManager, useFrequencyCalculation
  *   - useAudioState, useUIState, useModals, usePositionTracker
  *   - useControlHandlers, useToggleControls, useFrequencyEffects
@@ -34,13 +32,8 @@
 // PUBLIC API: Essential hooks
 export { useAudioConfig } from './useAudioConfig';
 export { useOrbitalState } from './useOrbitalState';
-export { useUIHandlers, type UIHandlers } from './useUIHandlers';
 export { useAudioProvider } from './useAudioProvider';
-export { useAudioPlayback } from './useAudioPlayback';
 export { useFrequency } from './useFrequency';
 export { useOrbitalAnimation } from './useOrbitalAnimation';
 export { useGlowEffect } from './useGlowEffect';
 export { useAudioProviderRef, type AudioProviderRef } from './useAudioProviderRef';
-
-// DEPRECATED: For backward compatibility only
-export { useFrequencyRef } from './useFrequencyRef';

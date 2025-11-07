@@ -1,18 +1,19 @@
 import { useEffect, useRef, MutableRefObject } from 'react';
-import * as Tone from 'tone';
 import { Planet, CurrentFrequencies } from '../types';
-import { SynthManager } from '../utils/synthManager';
+import { AudioProviderRef } from './useAudioProviderRef';
 import { resumeAudioContextIfNeeded, isGainNodeInvalid } from '../utils/audioUtils';
 
 interface UseLiveModeAudioProps {
+  // Data state
   liveMode: boolean;
   orbitData: Planet[];
   currentFrequencies: CurrentFrequencies;
-  audioInitializedRef: MutableRefObject<boolean>;
-  gainNodeRef: MutableRefObject<Tone.Gain | null>;
-  activeSynthsRef: MutableRefObject<Set<string>>;
-  synthManagerRef: MutableRefObject<SynthManager>;
   isPaused: boolean;
+
+  // Consolidated audio provider ref (replaces 4 individual refs)
+  audioProviderRef: MutableRefObject<AudioProviderRef>;
+
+  // Audio operation callbacks
   initializeAudioContext: () => Promise<boolean>;
   startPlanetSound: (planetName: string, frequency: number) => boolean;
   stopPlanetSound: (planetName: string) => boolean;
@@ -29,10 +30,7 @@ export const useLiveModeAudio = ({
   liveMode,
   orbitData,
   currentFrequencies,
-  audioInitializedRef,
-  gainNodeRef,
-  activeSynthsRef,
-  synthManagerRef,
+  audioProviderRef,
   isPaused,
   initializeAudioContext,
   startPlanetSound,
@@ -54,12 +52,12 @@ export const useLiveModeAudio = ({
   useEffect(() => {
     if (!liveMode) return;
 
-    const activeSynthsCopy = activeSynthsRef.current;
+    const activeSynthsCopy = audioProviderRef.current.activeSynths;
 
-    if (!audioInitializedRef.current) {
+    if (!audioProviderRef.current.audioInitialized) {
       initializeAudioContext().then(success => {
         if (success) {
-          audioInitializedRef.current = true;
+          audioProviderRef.current.audioInitialized = true;
         }
       });
       return;
@@ -75,7 +73,7 @@ export const useLiveModeAudio = ({
         await resumeAudioContextIfNeeded();
 
         // Check and recreate gain node if needed
-        if (isGainNodeInvalid(gainNodeRef.current)) {
+        if (isGainNodeInvalid(audioProviderRef.current.gainNode)) {
           debugAudio('Gain node is missing or disposed, recreating');
           await initializeAudioContext();
         }
@@ -84,9 +82,9 @@ export const useLiveModeAudio = ({
         if (!isPausedRef.current) {
           const now = Date.now();
           if (now - lastFrequencyUpdate > 50) {
-            Array.from(activeSynthsRef.current).forEach(planetName => {
+            Array.from(audioProviderRef.current.activeSynths).forEach(planetName => {
               const freq = currentFrequenciesRef.current[planetName];
-              if (freq && synthManagerRef.current.getSynth(planetName)) {
+              if (freq && audioProviderRef.current.synthManager.getSynth(planetName)) {
                 updatePlanetFrequency(planetName, freq);
               }
             });
@@ -97,7 +95,7 @@ export const useLiveModeAudio = ({
         // Synchronize planet sounds with enabled/disabled state
         orbitDataRef.current.forEach(planet => {
           const isEnabled = planet.enabled;
-          const isPlaying = activeSynthsRef.current.has(planet.name);
+          const isPlaying = audioProviderRef.current.activeSynths.has(planet.name);
           const freq = currentFrequenciesRef.current[planet.name];
 
           if (!freq) return;
@@ -123,5 +121,5 @@ export const useLiveModeAudio = ({
         stopPlanetSound(planetName);
       });
     };
-  }, [liveMode, audioInitializedRef, gainNodeRef, activeSynthsRef, synthManagerRef, initializeAudioContext, startPlanetSound, stopPlanetSound, updatePlanetFrequency, recreateAllAudio, debugAudio]);
+  }, [liveMode, audioProviderRef, initializeAudioContext, startPlanetSound, stopPlanetSound, updatePlanetFrequency, recreateAllAudio, debugAudio]);
 };

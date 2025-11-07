@@ -9,7 +9,7 @@ import { useAudioContext } from '../hooks/useAudioContext';
 import { useModals } from '../hooks/useModals';
 import { useAudioState } from '../hooks/useAudioState';
 import { useUIState } from '../hooks/useUIState';
-import { useAudioReferences } from '../hooks/useAudioReferences';
+import { useAudioProviderRef } from '../hooks/useAudioProviderRef';
 import { useFrequencyManager } from '../hooks/useFrequencyManager';
 import { useLiveModeAudio } from '../hooks/useLiveModeAudio';
 import { useToggleControls } from '../hooks/useToggleControls';
@@ -112,32 +112,75 @@ const OrbitalSonificationContainer: React.FC = () => {
     positionMode
   );
 
-  // Audio references hook
-  const {
-    audioContextStarted,
-    gainNode: gainNodeRef,
-    initFrequencies: initFrequenciesRef,
-    synths: synthsRef,
-    mainSynth: mainSynthRef,
-    lastFrequencies: lastFrequenciesRef,
-    debug,
-    activeSynths: activeSynthsRef,
-    audioInitialized: audioInitializedRef,
-    gainNodes: gainNodesRef,
-    reverb: reverbRef,
-    synthManager: synthManagerRef
-  } = useAudioReferences();
+  // Consolidated audio provider reference
+  const audioProviderRef = useAudioProviderRef();
+
+  // Memoize alias refs to prevent dependency issues
+  const audioContextStartedRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.audioContextStarted; },
+    set current(v) { audioProviderRef.current.audioContextStarted = v; }
+  }), [audioProviderRef]);
+
+  const gainNodeRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.gainNode; },
+    set current(v) { audioProviderRef.current.gainNode = v; }
+  }), [audioProviderRef]);
+
+  const initFrequenciesRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.initFrequencies; },
+    set current(v) { audioProviderRef.current.initFrequencies = v; }
+  }), [audioProviderRef]);
+
+  const synthsRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.synths; },
+    set current(v) { audioProviderRef.current.synths = v; }
+  }), [audioProviderRef]);
+
+  const mainSynthRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.mainSynth; },
+    set current(v) { audioProviderRef.current.mainSynth = v; }
+  }), [audioProviderRef]);
+
+  const lastFrequenciesRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.lastFrequencies; },
+    set current(v) { audioProviderRef.current.lastFrequencies = v; }
+  }), [audioProviderRef]);
+
+  const activeSynthsRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.activeSynths; },
+    set current(v) { audioProviderRef.current.activeSynths = v; }
+  }), [audioProviderRef]);
+
+  const audioInitializedRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.audioInitialized; },
+    set current(v) { audioProviderRef.current.audioInitialized = v; }
+  }), [audioProviderRef]);
+
+  const gainNodesRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.gainNodes; },
+    set current(v) { audioProviderRef.current.gainNodes = v; }
+  }), [audioProviderRef]);
+
+  const reverbRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.reverb; },
+    set current(v) { audioProviderRef.current.reverb = v; }
+  }), [audioProviderRef]);
+
+  const synthManagerRef = useMemo(() => ({
+    get current() { return audioProviderRef.current.synthManager; },
+    set current(v) { audioProviderRef.current.synthManager = v; }
+  }), [audioProviderRef]);
 
   // Debug function
   const debugAudio = useCallback((message: string, obj: unknown = null): void => {
-    if (debug.current) {
+    if (audioProviderRef.current.debug) {
       if (obj) {
         console.log(`[AUDIO DEBUG] ${message}`, obj);
       } else {
         console.log(`[AUDIO DEBUG] ${message}`);
       }
     }
-  }, [debug]);
+  }, [audioProviderRef]);
 
   // Consolidated frequency and audio management hook (replaces useFrequencyCalculation + usePlanetAudioManagement)
   const {
@@ -169,7 +212,7 @@ const OrbitalSonificationContainer: React.FC = () => {
     synthsRef,
     gainNodesRef,
     activeSynthsRef,
-    audioContextStarted,
+    audioContextStarted: audioContextStartedRef,
     masterVolume,
     liveMode,
     orbitData,
@@ -366,10 +409,7 @@ const OrbitalSonificationContainer: React.FC = () => {
     liveMode,
     orbitData,
     currentFrequencies,
-    audioInitializedRef,
-    gainNodeRef,
-    activeSynthsRef,
-    synthManagerRef,
+    audioProviderRef,
     isPaused,
     initializeAudioContext: stableInitializeAudioContext,
     startPlanetSound: stableStartPlanetSound,
@@ -387,7 +427,7 @@ const OrbitalSonificationContainer: React.FC = () => {
       liveMode,
       setLiveMode,
       currentFrequencies,
-      activeSynthsRef,
+      audioProviderRef,
       createIsolatedSynth,
       startPlanetSound,
       stopPlanetSound,
@@ -400,7 +440,7 @@ const OrbitalSonificationContainer: React.FC = () => {
 
   // Use audio context manager hook
   const { startAudioContext } = useAudioContextManager({
-    audioContextStarted,
+    audioContextStarted: audioContextStartedRef,
     gainNodeRef,
     debugAudio
   });

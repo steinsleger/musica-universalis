@@ -58,14 +58,18 @@ interface AudioProviderRef {
  * // Access: audioProvider.current.audioContextStarted, audioProvider.current.gainNode, etc.
  */
 
-export const useAudioProviderRef = (synthManager: SynthManager): React.MutableRefObject<AudioProviderRef> => {
+/**
+ * Creates a single consolidated audio provider reference
+ * Replaces 12 individual refs with 1 well-organized ref
+ */
+export const useAudioProviderRef = (): React.MutableRefObject<AudioProviderRef> => {
   return useRef<AudioProviderRef>({
     audioContextStarted: false,
     audioInitialized: false,
     gainNode: null,
     reverb: null,
     mainSynth: null,
-    synthManager,
+    synthManager: new SynthManager(null),
     synths: {},
     gainNodes: {},
     activeSynths: new Set(),

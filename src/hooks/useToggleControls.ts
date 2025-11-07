@@ -1,5 +1,6 @@
 import { useCallback, MutableRefObject } from 'react';
 import { Planet, CurrentFrequencies, SynthObject } from '../types';
+import { AudioProviderRef } from './useAudioProviderRef';
 
 interface UseToggleControlsProps {
   orbitData: Planet[];
@@ -7,7 +8,7 @@ interface UseToggleControlsProps {
   liveMode: boolean;
   setLiveMode: (mode: boolean) => void;
   currentFrequencies: CurrentFrequencies;
-  activeSynthsRef: MutableRefObject<Set<string>>;
+  audioProviderRef: MutableRefObject<AudioProviderRef>;
   createIsolatedSynth: (planetName: string) => SynthObject | null;
   startPlanetSound: (planetName: string, frequency: number) => boolean;
   stopPlanetSound: (planetName: string) => boolean;
@@ -36,7 +37,7 @@ export const useToggleControls = ({
   liveMode,
   setLiveMode,
   currentFrequencies,
-  activeSynthsRef,
+  audioProviderRef,
   createIsolatedSynth,
   startPlanetSound,
   stopPlanetSound,
@@ -90,13 +91,13 @@ export const useToggleControls = ({
             }
           }
 
-          debugAudio(`Active synths after toggle: ${Array.from(activeSynthsRef.current).join(', ')}`);
+          debugAudio(`Active synths after toggle: ${Array.from(audioProviderRef.current.activeSynths).join(', ')}`);
         }
       } catch (error) {
         console.error('Error toggling planet:', error);
       }
     },
-    [orbitData, liveMode, currentFrequencies, createIsolatedSynth, startPlanetSound, stopPlanetSound, debugAudio, setOrbitData, activeSynthsRef]
+    [orbitData, liveMode, currentFrequencies, createIsolatedSynth, startPlanetSound, stopPlanetSound, debugAudio, setOrbitData, audioProviderRef]
   );
 
   const toggleAllPlanets = useCallback(
@@ -122,7 +123,7 @@ export const useToggleControls = ({
       debugAudio(`Toggling live mode to ${newLiveMode ? 'on' : 'off'}`);
 
       if (!newLiveMode) {
-        Array.from(activeSynthsRef.current).forEach(planetName => {
+        Array.from(audioProviderRef.current.activeSynths).forEach(planetName => {
           stopPlanetSound(planetName);
         });
       } else {
@@ -141,7 +142,7 @@ export const useToggleControls = ({
     } catch (error) {
       console.error('Error toggling live mode:', error);
     }
-  }, [liveMode, stopPlanetSound, initializeAudioContext, recreateAllAudio, forceRecalculateAllGains, debugAudio, setLiveMode, activeSynthsRef]);
+  }, [liveMode, stopPlanetSound, initializeAudioContext, recreateAllAudio, forceRecalculateAllGains, debugAudio, setLiveMode, audioProviderRef]);
 
   return {
     togglePlanet,
