@@ -5,7 +5,7 @@ import SidebarContent from './SidebarContent';
 import InfoModal from './InfoModal';
 import InstructionsModal from './InstructionsModal';
 import { AudioErrorNotification } from './AudioErrorNotification';
-import { CurrentFrequencies } from '../utils/types';
+import { CurrentFrequencies } from '../types';
 
 interface OrbitalSonificationLayoutProps {
   controlsValue: unknown;

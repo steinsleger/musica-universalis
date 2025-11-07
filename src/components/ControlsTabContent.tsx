@@ -1,5 +1,5 @@
 import React from 'react';
-import { FrequencyMode } from '../utils/types';
+import { FrequencyMode } from '../types';
 
 interface ControlsTabContentProps {
   activeTab: string;

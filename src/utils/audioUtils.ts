@@ -1,5 +1,4 @@
 import * as Tone from 'tone';
-import { CurrentFrequencies } from './types';
 
 /**
  * Create a new PolySynth with standard envelope and oscillator settings

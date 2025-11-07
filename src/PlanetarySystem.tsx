@@ -8,7 +8,7 @@ import { useGlowEffect } from './hooks/useGlowEffect';
 import OrbitPath from './components/OrbitPath';
 import PlanetNode from './components/PlanetNode';
 import { getOrbitColor } from './utils/visualizationHelpers';
-import { CurrentFrequencies } from './utils/types';
+import { CurrentFrequencies } from './types';
 
 interface PlanetarySystemProps {
   onFrequencyChange?: (frequencies: CurrentFrequencies) => void;

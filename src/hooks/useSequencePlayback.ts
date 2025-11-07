@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import * as Tone from 'tone';
-import { Planet } from '../utils/types';
+import { Planet } from '../types';
 import {
   disposeSynthAndCreateNew,
   calculateSequenceTiming,

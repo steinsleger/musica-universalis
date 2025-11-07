@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import * as Tone from 'tone';
-import { Planet, FrequencyMode, AudioScalingConfig, CurrentFrequencies, SynthObject } from '../utils/types';
+import { Planet, FrequencyMode, AudioScalingConfig, CurrentFrequencies, SynthObject } from '../types';
 import { SynthManager } from '../utils/synthManager';
 
 interface UseControlHandlersParams {

@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import * as Tone from 'tone';
-import { Planet, CurrentFrequencies, FrequencyMode, AudioScalingConfig } from '../utils/types';
+import { Planet, CurrentFrequencies, FrequencyMode, AudioScalingConfig } from '../types';
 import { calculatePlanetaryFrequency } from '../utils/calculatePlanetaryFrequency';
 import { calculateFrequencyGain, calculateAdvancedFrequencyGain } from '../utils/audioScaling';
 

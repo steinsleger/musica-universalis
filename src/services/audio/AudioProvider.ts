@@ -3,6 +3,8 @@
  * This allows for different implementations (Tone.js, Web Audio API, mocks, etc.)
  */
 
+import type { AudioScalingConfig } from '../../types';
+
 export interface SynthObject {
   synth: unknown;
   gain: unknown;
@@ -19,14 +21,7 @@ export interface SequenceTimingParams {
   interval: number;
 }
 
-export interface AudioScalingConfig {
-  referenceFrequency: number;
-  baseGain: number;
-  peakFrequency: number;
-  highFrequencyCutoff: number;
-  minGain: number;
-  maxGain: number;
-}
+export { AudioScalingConfig };
 
 export interface AudioProvider {
   /**

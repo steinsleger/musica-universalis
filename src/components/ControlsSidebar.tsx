@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TabType } from '../utils/types';
+import { TabType } from '../types';
 import PlaybackControls from './PlaybackControls';
 import PlanetsList from './PlanetsList';
 import AudioSettingsPanel from './AudioSettingsPanel';

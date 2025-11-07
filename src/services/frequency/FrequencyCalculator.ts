@@ -3,7 +3,7 @@
  * Decouples frequency calculation logic from React components
  */
 
-import { Planet } from '../../utils/types';
+import { Planet } from '../../types';
 import { FrequencyStrategy, MurchFormulaStrategy, ActualDistanceStrategy } from './FrequencyStrategy';
 
 export interface FrequencyCalculatorConfig {

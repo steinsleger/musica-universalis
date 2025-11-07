@@ -4,9 +4,9 @@ import {
   FrequencyMode,
   PositionMode,
   TabType,
-  CurrentFrequencies,
-  getDefaultOrbitData
-} from '../utils/types';
+  CurrentFrequencies
+} from '../types';
+import { getDefaultOrbitData } from '../utils/constants';
 import {
   DEFAULT_ANIMATION_SPEED,
   DEFAULT_ZOOM_LEVEL
@@ -351,4 +351,3 @@ export const OrbitalStateProvider: React.FC<OrbitalStateProviderProps> = ({ chil
 };
 
 export { OrbitalStateContext };
-export type { OrbitalStateContextType, OrbitalState };

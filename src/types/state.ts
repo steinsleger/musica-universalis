@@ -4,7 +4,7 @@
  * Types that define the shape of application state
  */
 
-import type { Planet, CurrentFrequencies, FrequencyMode, PositionMode, TabType, AudioHealthStatus } from './domain';
+import type { Planet, CurrentFrequencies, FrequencyMode, PositionMode, TabType, AudioHealthStatus, AudioScalingConfig } from './domain';
 
 /**
  * Orbital/Animation state
@@ -50,21 +50,4 @@ export interface AudioConfig {
   sequenceBPM: number;
   useFletcher: boolean;
   audioScalingConfig: AudioScalingConfig;
-}
-
-/**
- * Combined orbital state (merged from multiple contexts)
- */
-export interface CombinedOrbitalState extends OrbitalState, AudioState, UIState {}
-
-/**
- * Audio scaling configuration
- */
-export interface AudioScalingConfig {
-  referenceFrequency?: number;
-  baseGain?: number;
-  peakFrequency?: number;
-  highFrequencyCutoff?: number;
-  minGain?: number;
-  maxGain?: number;
 }

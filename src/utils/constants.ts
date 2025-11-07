@@ -2,6 +2,8 @@
  * Centralized constants for the Musica Universalis application
  */
 
+import { type Planet, type AudioScalingConfig } from '../types';
+
 export const MURCH_N_VALUES: Record<string, number> = {
   Mercury: -10,
   Venus: -2,
@@ -77,3 +79,104 @@ export const ELLIPSE_POINTS = 100;
 
 // UI
 export const MIN_PAN = 0;
+
+// ============ Utility Functions ============
+
+/**
+ * Calculate distance using Murch's formula: r = 1 + 2^n × 3
+ */
+const calculateMurchDistance = (n: number): number => {
+  return 1 + Math.pow(2, n) * 3;
+};
+
+/**
+ * Initialize default orbit data with all planets
+ */
+export const getDefaultOrbitData = (): Planet[] => {
+  return [
+    {
+      name: 'Mercury',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Mercury),
+      actualDistance: 0.3870,
+      eccentricity: 0.2056,
+      enabled: true
+    },
+    {
+      name: 'Venus',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Venus),
+      actualDistance: 0.7233,
+      eccentricity: 0.0068,
+      enabled: true
+    },
+    {
+      name: 'Earth',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Earth),
+      actualDistance: 1.00,
+      eccentricity: 0.0167,
+      enabled: true
+    },
+    {
+      name: 'Mars',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Mars),
+      actualDistance: 1.5237,
+      eccentricity: 0.0934,
+      enabled: true
+    },
+    {
+      name: 'Ceres',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Ceres),
+      actualDistance: 2.77,
+      eccentricity: 0.0758,
+      enabled: true
+    },
+    {
+      name: 'Jupiter',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Jupiter),
+      actualDistance: 5.2029,
+      eccentricity: 0.0484,
+      enabled: true
+    },
+    {
+      name: 'Saturn',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Saturn),
+      actualDistance: 9.5367,
+      eccentricity: 0.0539,
+      enabled: true
+    },
+    {
+      name: 'Uranus',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Uranus),
+      actualDistance: 19.1892,
+      eccentricity: 0.0473,
+      enabled: true
+    },
+    {
+      name: 'Neptune',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Neptune),
+      actualDistance: 30.07,
+      eccentricity: 0.0086,
+      enabled: true
+    },
+    {
+      name: 'Pluto',
+      distance: calculateMurchDistance(MURCH_N_VALUES.Pluto),
+      actualDistance: 39.48,
+      eccentricity: 0.2488,
+      enabled: true
+    }
+  ];
+};
+
+/**
+ * Get default audio scaling configuration
+ */
+export const getDefaultAudioScalingConfig = (): AudioScalingConfig => {
+  return {
+    referenceFrequency: 55,
+    scalingFactor: 0.4,
+    minimumGain: 0.05,
+    maximumGain: 1.2,
+    highFrequencyCutoff: 2000,
+    highFrequencyScalingFactor: 0.6
+  };
+};

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useMemo } from 'react';
 import { AudioProvider } from '../services/audio/AudioProvider';
-import { Planet, CurrentFrequencies } from '../utils/types';
+import { Planet, CurrentFrequencies, AudioScalingConfig } from '../types';
 import { AudioSafetyService } from '../services/audio/AudioSafetyService';
 
 interface PlaybackState {
@@ -11,10 +11,10 @@ interface PlaybackState {
 }
 
 interface PlaybackHandlers {
-  togglePlayPause: (audioProvider: AudioProvider, planets: Planet[], baseFrequency: number) => Promise<void>;
+  togglePlayPause: (audioProvider: AudioProvider, _planets: Planet[], _baseFrequency: number) => Promise<void>;
   playOrbitalSequence: (audioProvider: AudioProvider, planets: Planet[], bpm: number, frequencies: CurrentFrequencies) => Promise<void>;
   stopAll: (audioProvider: AudioProvider) => void;
-  updateFrequencies: (audioProvider: AudioProvider, frequencies: CurrentFrequencies, audioScalingConfig: any, useFletcher: boolean) => void;
+  updateFrequencies: (audioProvider: AudioProvider, frequencies: CurrentFrequencies, audioScalingConfig: AudioScalingConfig, useFletcher: boolean) => void;
 }
 
 /**
@@ -76,7 +76,7 @@ export const useAudioPlayback = (
       }
 
       // Schedule each planet to play in sequence
-      enabledPlanets.forEach((planet, index) => {
+      enabledPlanets.forEach((planet, _index) => {
         const timeout = setTimeout(() => {
           const frequency = frequencies[planet.name];
           if (frequency && sequenceSynthRef.current) {
@@ -119,8 +119,8 @@ export const useAudioPlayback = (
   const togglePlayPause = useCallback(
     async (
       audioProvider: AudioProvider,
-      planets: Planet[],
-      baseFrequency: number
+      _planets: Planet[],
+      _baseFrequency: number
     ): Promise<void> => {
       if (initialState.isPlaying) {
         // Stop playback
@@ -149,7 +149,7 @@ export const useAudioPlayback = (
     (
       audioProvider: AudioProvider,
       frequencies: CurrentFrequencies,
-      audioScalingConfig: any,
+      audioScalingConfig: AudioScalingConfig,
       useFletcher: boolean
     ) => {
       // Update gains for all active synths

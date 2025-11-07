@@ -1,7 +1,7 @@
 // src/OrbitalSonification.tsx
 import React from 'react';
 import { AudioConfigProvider } from './context/AudioConfigContext';
-import { OrbitStateProvider } from './context/OrbitStateContext';
+import { OrbitalStateProvider } from './context/OrbitalStateContext';
 import OrbitalSonificationContainer from './components/OrbitalSonificationContainer';
 
 /**
@@ -22,9 +22,9 @@ import OrbitalSonificationContainer from './components/OrbitalSonificationContai
  */
 const OrbitalSonification: React.FC = () => (
   <AudioConfigProvider>
-    <OrbitStateProvider>
+    <OrbitalStateProvider>
       <OrbitalSonificationContainer />
-    </OrbitStateProvider>
+    </OrbitalStateProvider>
   </AudioConfigProvider>
 );
 

@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { SynthObject, AudioScalingConfig } from './types';
+import { SynthObject, AudioScalingConfig } from '../types';
 import { calculateFrequencyGain, calculateAdvancedFrequencyGain } from './audioScaling';
 
 /**

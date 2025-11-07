@@ -55,11 +55,11 @@ interface UseUIHandlersParams {
   updateAllFrequencies: () => CurrentFrequencies;
   calculateBaseFrequencies: (baseFreq: number, planet: Planet, index: number) => number;
   updatePlanetFrequency: (planetName: string, frequency: number) => void;
-  createIsolatedSynth: (planetName: string, frequency: number) => void;
-  startPlanetSound: (name: string, frequency: number) => void;
-  stopPlanetSound: (name: string) => void;
+  createIsolatedSynth: (planetName: string) => SynthObject | null;
+  startPlanetSound: (planetName: string, frequency: number) => boolean;
+  stopPlanetSound: (planetName: string) => boolean;
   initializeAudioContext: () => Promise<boolean>;
-  recreateAllAudio: () => Promise<void>;
+  recreateAllAudio: () => Promise<boolean>;
   forceRecalculateAllGains: () => void;
 
   // Refs
@@ -69,7 +69,7 @@ interface UseUIHandlersParams {
   gainNodesRef: React.MutableRefObject<Record<string, Tone.Gain>>;
 
   // Utilities
-  debugAudio: (message: string, obj?: unknown) => void;
+  debugAudio: (message: string) => void;
   hookFrequencyToNote: (freq: number) => string;
 }
 

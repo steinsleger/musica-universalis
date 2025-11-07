@@ -3,7 +3,7 @@ import { useUIControls } from '../hooks/useUIControls';
 import { useAudioControls } from '../hooks/useAudioControls';
 import { useVisualizationControls } from '../hooks/useVisualizationControls';
 import OrbitalSonificationLayout from './OrbitalSonificationLayout';
-import { CurrentFrequencies } from '../utils/types';
+import { CurrentFrequencies } from '../types';
 
 interface OrbitalSonificationPresenterProps {
   needsUserInteraction: boolean;

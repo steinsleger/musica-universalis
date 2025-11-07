@@ -1,5 +1,5 @@
 import React, { createContext, ReactNode } from 'react';
-import { TabType } from '../utils/types';
+import { TabType } from '../types';
 
 /**
  * UIControlsContext manages UI-only state

@@ -1,10 +1,10 @@
 import React from 'react';
-import { useOrbitState } from '../hooks/useOrbitState';
+import { useVisualizationControls } from '../hooks/useVisualizationControls';
 import { useFrequencyCalculation } from '../hooks/useFrequencyCalculation';
 import { useAudioConfig } from '../hooks/useAudioConfig';
 
 const PlanetsList: React.FC = () => {
-  const { orbitData, togglePlanet } = useOrbitState();
+  const { orbitData, togglePlanet } = useVisualizationControls();
   const { baseFrequency } = useAudioConfig();
   const { calculateFrequency, frequencyToNote } = useFrequencyCalculation();
 
@@ -15,7 +15,7 @@ const PlanetsList: React.FC = () => {
       </div>
 
       <div className="planets-container">
-        {orbitData.map((planet) => {
+        {orbitData.map((planet, index) => {
           const frequency = calculateFrequency(baseFrequency, planet, 'titiusBode');
           const note = frequencyToNote(frequency);
 
@@ -25,7 +25,7 @@ const PlanetsList: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={planet.enabled}
-                  onChange={() => togglePlanet(planet.name)}
+                  onChange={() => togglePlanet(index)}
                 />
                 <span className="planet-name">{planet.name}</span>
               </label>

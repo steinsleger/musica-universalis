@@ -1,6 +1,6 @@
 import { useEffect, useRef, MutableRefObject } from 'react';
 import * as Tone from 'tone';
-import { Planet, CurrentFrequencies } from '../utils/types';
+import { Planet, CurrentFrequencies } from '../types';
 import { SynthManager } from '../utils/synthManager';
 import { resumeAudioContextIfNeeded, isGainNodeInvalid } from '../utils/audioUtils';
 

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { calculatePlanetaryFrequency } from '../utils/calculatePlanetaryFrequency';
-import { Planet, FrequencyMode } from '../utils/types';
+import { Planet, FrequencyMode } from '../types';
 
 interface OrbitalCalculationsParams {
   svgSize: number;

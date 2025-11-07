@@ -4,7 +4,7 @@ import { UIControlsProvider } from '../context/UIControlsContext';
 import { AudioControlsProvider } from '../context/AudioControlsContext';
 import { VisualizationControlsProvider } from '../context/VisualizationControlsContext';
 import { useAudioConfig } from '../hooks/useAudioConfig';
-import { useOrbitState } from '../hooks/useOrbitState';
+import { useOrbitalState as useOrbitState } from '../hooks/useOrbitalState';
 import { useAudioContext } from '../hooks/useAudioContext';
 import { useModals } from '../hooks/useModals';
 import { useAudioState } from '../hooks/useAudioState';
@@ -20,7 +20,7 @@ import { useFrequencyEffects } from '../hooks/useFrequencyEffects';
 import { useAudioInitialization } from '../hooks/useAudioInitialization';
 import { usePositionTracker } from '../hooks/usePositionTracker';
 import OrbitalSonificationPresenter from './OrbitalSonificationPresenter';
-import { CurrentFrequencies } from '../utils/types';
+import { CurrentFrequencies } from '../types';
 
 declare global {
   interface Window {

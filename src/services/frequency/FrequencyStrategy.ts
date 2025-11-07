@@ -3,7 +3,7 @@
  * Allows different models to be swapped without modifying core logic
  */
 
-import { Planet } from '../../utils/types';
+import { Planet } from '../../types';
 
 export interface FrequencyStrategy {
   /**

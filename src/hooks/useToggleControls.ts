@@ -1,5 +1,5 @@
 import { useCallback, MutableRefObject } from 'react';
-import { Planet, CurrentFrequencies, SynthObject } from '../utils/types';
+import { Planet, CurrentFrequencies, SynthObject } from '../types';
 
 interface UseToggleControlsProps {
   orbitData: Planet[];

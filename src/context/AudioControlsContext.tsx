@@ -1,5 +1,5 @@
 import React, { createContext, ReactNode } from 'react';
-import { AudioScalingConfig } from '../utils/types';
+import { AudioScalingConfig } from '../types';
 
 /**
  * AudioControlsContext manages audio configuration and playback state

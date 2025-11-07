@@ -3,7 +3,7 @@
  * Uses centralized constants from utils/constants.ts
  */
 
-import { Planet, FrequencyMode } from './types';
+import { Planet, FrequencyMode } from '../types';
 import { MURCH_N_VALUES } from './constants';
 
 /**

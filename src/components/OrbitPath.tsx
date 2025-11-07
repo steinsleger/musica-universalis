@@ -1,5 +1,5 @@
 import React from 'react';
-import { Planet } from '../utils/types';
+import { Planet } from '../types';
 
 interface OrbitPathProps {
   planet: Planet;

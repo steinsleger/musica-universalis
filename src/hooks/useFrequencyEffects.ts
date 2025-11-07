@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import * as Tone from 'tone';
-import { CurrentFrequencies, AudioScalingConfig, Planet, SynthObject } from '../utils/types';
+import { CurrentFrequencies, AudioScalingConfig, Planet, SynthObject } from '../types';
 import { SynthManager } from '../utils/synthManager';
 
 interface UseFrequencyEffectsParams {

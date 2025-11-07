@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { Planet, FrequencyMode } from '../utils/types';
+import { Planet, FrequencyMode } from '../types';
 import { FrequencyCalculator, FrequencyCalculatorConfig } from '../services/frequency/FrequencyCalculator';
 import { AudioSafetyService, AudioSafetyConfig } from '../services/audio/AudioSafetyService';
 import { MURCH_N_VALUES } from '../utils/constants';
@@ -25,7 +25,7 @@ export const useFrequency = (baseFrequency: number, distanceMode: FrequencyMode)
     }
 
     return calc;
-  }, []);
+  }, [distanceMode]);
 
   // Update strategy when distanceMode changes
   useMemo(() => {

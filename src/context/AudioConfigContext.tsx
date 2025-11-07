@@ -1,5 +1,6 @@
 import React, { createContext, useState, useCallback, ReactNode } from 'react';
-import { AudioScalingConfig, getDefaultAudioScalingConfig } from '../utils/types';
+import { AudioScalingConfig } from '../types';
+import { getDefaultAudioScalingConfig } from '../utils/constants';
 import {
   DEFAULT_BASE_FREQUENCY,
   DEFAULT_MASTER_VOLUME,

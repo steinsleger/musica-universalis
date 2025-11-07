@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TabType } from '../utils/types';
+import { TabType } from '../types';
 
 interface UIState {
   sidebarCollapsed: boolean;

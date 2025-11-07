@@ -1,5 +1,5 @@
 import React from 'react';
-import { Planet, CurrentFrequencies, FrequencyMode } from '../utils/types';
+import { Planet, CurrentFrequencies, FrequencyMode } from '../types';
 
 interface PlanetsTabContentProps {
   activeTab: string;

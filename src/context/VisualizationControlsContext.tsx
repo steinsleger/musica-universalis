@@ -1,5 +1,5 @@
 import React, { createContext, ReactNode } from 'react';
-import { Planet, CurrentFrequencies, FrequencyMode, PositionMode } from '../utils/types';
+import { Planet, CurrentFrequencies, FrequencyMode, PositionMode } from '../types';
 
 /**
  * VisualizationControlsContext manages visualization and planet-related controls

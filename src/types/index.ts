@@ -22,6 +22,5 @@ export type {
   OrbitalState,
   AudioState,
   UIState,
-  AudioConfig,
-  CombinedOrbitalState
+  AudioConfig
 } from './state';

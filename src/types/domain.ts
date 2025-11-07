@@ -6,6 +6,8 @@
  * - Frequencies and audio concepts
  */
 
+import * as Tone from 'tone';
+
 /**
  * A celestial body in the solar system
  */
@@ -31,7 +33,7 @@ export type FrequencyMode = 'titiusBode' | 'actual';
 /**
  * Position mode for orbital visualization
  */
-export type PositionMode = 'normal' | 'average' | 'aphelion' | 'perihelion';
+export type PositionMode = 'average' | 'aphelion' | 'perihelion' | 'normal';
 
 /**
  * Tab type for sidebar navigation
@@ -42,20 +44,20 @@ export type TabType = 'controls' | 'planets' | 'audio';
  * Audio scaling configuration for hearing protection
  */
 export interface AudioScalingConfig {
-  referenceFrequency?: number;
-  baseGain?: number;
-  peakFrequency?: number;
-  highFrequencyCutoff?: number;
-  minGain?: number;
-  maxGain?: number;
+  referenceFrequency: number;
+  scalingFactor: number;
+  minimumGain: number;
+  maximumGain: number;
+  highFrequencyCutoff: number;
+  highFrequencyScalingFactor: number;
 }
 
 /**
  * Synth object containing synthesis components
  */
 export interface SynthObject {
-  synth: unknown;  // Tone.Synth or similar
-  gain: unknown;   // Tone.Gain node
+  synth: Tone.Synth;
+  gain: Tone.Gain;
 }
 
 /**

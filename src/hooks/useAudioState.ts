@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react';
-import { CurrentFrequencies } from '../utils/types';
+import { CurrentFrequencies } from '../types';
 
 /**
  * AudioState - Consolidated audio playback and frequency state

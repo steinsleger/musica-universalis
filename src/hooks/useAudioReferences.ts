@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import * as Tone from 'tone';
-import { CurrentFrequencies, SynthObject } from '../utils/types';
+import { CurrentFrequencies, SynthObject } from '../types';
 import { SynthManager } from '../utils/synthManager';
 
 interface AudioReferences {

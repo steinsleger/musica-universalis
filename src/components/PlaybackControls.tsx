@@ -1,6 +1,6 @@
 import React from 'react';
-import { useOrbitState } from '../hooks/useOrbitState';
-import { useAudioConfig } from '../hooks/useAudioConfig';
+import { useVisualizationControls } from '../hooks/useVisualizationControls';
+import { useAudioControls } from '../hooks/useAudioControls';
 
 interface PlaybackControlsProps {
   isPlaying?: boolean;
@@ -18,11 +18,10 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   liveMode = false,
   onLiveModeToggle
 }) => {
-  const { isPaused, setIsPaused, animationSpeed, setAnimationSpeed } = useOrbitState();
-  const { sequenceBPM, setSequenceBPM } = useAudioConfig();
+  const { isPaused, animationSpeed, setAnimationSpeed } = useVisualizationControls();
+  const { sequenceBPM, handleBPMChange } = useAudioControls();
 
-  const handlePlayPause = () => {
-    setIsPaused(!isPaused);
+  const handlePlayPause = async () => {
     onPlay?.();
   };
 
@@ -88,7 +87,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           min="20"
           max="300"
           value={sequenceBPM}
-          onChange={(e) => setSequenceBPM(Math.max(20, Math.min(300, parseInt(e.target.value))))}
+          onChange={handleBPMChange}
         />
       </div>
     </div>
