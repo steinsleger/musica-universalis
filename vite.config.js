@@ -1,23 +1,31 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import removeConsole from 'vite-plugin-remove-console'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import removeConsole from "vite-plugin-remove-console";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig(({ mode }) => {
-  const isProduction = mode === 'production'
+  const isProduction = mode === "production";
 
   return {
     plugins: [
       react(),
-      isProduction && removeConsole()
+      isProduction && removeConsole(),
+      mode === "analyze" &&
+        visualizer({
+          filename: "bundle-analysis.html",
+          // open: true, // opens automatically
+          gzipSize: true,
+          brotliSize: true,
+        }),
     ],
     build: {
       // Enable minification settings for production
-      minify: 'terser',
+      minify: "terser",
       terserOptions: {
         compress: {
           drop_console: true,
-          drop_debugger: true
-        }
+          drop_debugger: true,
+        },
       },
       // CSS minification is enabled by default
       cssMinify: true,
@@ -25,10 +33,10 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom']
-          }
-        }
-      }
-    }
-  }
-})
+            vendor: ["react", "react-dom"],
+          },
+        },
+      },
+    },
+  };
+});

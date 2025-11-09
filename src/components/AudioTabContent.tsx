@@ -1,5 +1,5 @@
-import React from 'react';
-import { AudioScalingConfig } from '../types';
+import React from "react";
+import { AudioScalingConfig } from "../types";
 
 interface AudioTabContentProps {
   activeTab: string;
@@ -15,7 +15,7 @@ const AudioTabContent: React.FC<AudioTabContentProps> = ({
   toggleFletcherCurves,
   audioScalingConfig,
   setAudioScalingConfig,
-  forceRecalculateAllGains
+  forceRecalculateAllGains,
 }) => {
   return (
     <div
@@ -25,7 +25,7 @@ const AudioTabContent: React.FC<AudioTabContentProps> = ({
       aria-labelledby="audio-tab"
     >
       <div className="audio-settings">
-        <h3>Advanced Audio Settings</h3>
+        <h3>Advanced Audio Settings (Experimental)</h3>
 
         <div className="fletcher-toggle">
           <label className="checkbox-label" htmlFor="fletcher-toggle">
@@ -39,13 +39,15 @@ const AudioTabContent: React.FC<AudioTabContentProps> = ({
             Use Fletcher-Munson equal-loudness curves
           </label>
           <p className="setting-description">
-            Models how human hearing perceives different frequencies for more balanced sound
+            Models how human hearing perceives different frequencies for more
+            balanced sound
           </p>
         </div>
 
         <div className="control-group">
           <label htmlFor="reference-frequency" className="label">
-            Reference Frequency: {audioScalingConfig.referenceFrequency.toFixed(1)} Hz
+            Reference Frequency:{" "}
+            {audioScalingConfig.referenceFrequency.toFixed(1)} Hz
           </label>
           <input
             id="reference-frequency"
@@ -58,13 +60,15 @@ const AudioTabContent: React.FC<AudioTabContentProps> = ({
             aria-valuemin={27.5}
             aria-valuemax={110}
             aria-valuenow={audioScalingConfig.referenceFrequency}
-            aria-valuetext={`${audioScalingConfig.referenceFrequency.toFixed(1)} hertz`}
+            aria-valuetext={`${audioScalingConfig.referenceFrequency.toFixed(
+              1
+            )} hertz`}
             onChange={(e) => {
               const newValue = parseFloat(e.target.value);
 
               setAudioScalingConfig({
                 ...audioScalingConfig,
-                referenceFrequency: newValue
+                referenceFrequency: newValue,
               });
 
               setTimeout(() => {
@@ -98,7 +102,7 @@ const AudioTabContent: React.FC<AudioTabContentProps> = ({
 
               setAudioScalingConfig({
                 ...audioScalingConfig,
-                scalingFactor: newValue
+                scalingFactor: newValue,
               });
 
               setTimeout(() => {
@@ -114,13 +118,15 @@ const AudioTabContent: React.FC<AudioTabContentProps> = ({
         <div className="audio-explanation">
           <h4>Safety Measures Explained</h4>
           <p>
-            Higher frequencies can be more damaging to hearing at the same volume level.
-            Our audio engine automatically reduces volume for higher notes to create a
-            safer and more balanced listening experience.
+            Higher frequencies can be more damaging to hearing at the same
+            volume level. Our audio engine automatically reduces volume for
+            higher notes to create a safer and more balanced listening
+            experience.
           </p>
           <p>
             The Fletcher-Munson curves model how human ears perceive loudness
-            differently at different frequencies, providing even more natural sound.
+            differently at different frequencies, providing even more natural
+            sound.
           </p>
         </div>
       </div>

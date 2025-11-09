@@ -126,11 +126,11 @@ export const getDefaultOrbitData = (): Planet[] => {
  */
 export const getDefaultAudioScalingConfig = (): AudioScalingConfig => {
   return {
-    referenceFrequency: 55,
-    scalingFactor: 0.4,
-    minimumGain: 0.05,
-    maximumGain: 1.2,
-    highFrequencyCutoff: 2000,
-    highFrequencyScalingFactor: 0.6
+    referenceFrequency: DEFAULT_REFERENCE_FREQUENCY,
+    scalingFactor: DEFAULT_SCALING_FACTOR,
+    minimumGain: DEFAULT_MINIMUM_GAIN,
+    maximumGain: DEFAULT_MAXIMUM_GAIN,
+    highFrequencyCutoff: HIGH_FREQUENCY_CUTOFF,
+    highFrequencyScalingFactor: HIGH_FREQUENCY_SCALING_FACTOR
   };
 };

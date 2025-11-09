@@ -1,11 +1,12 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, Suspense, lazy } from 'react';
 import PlanetarySystem from '../PlanetarySystem';
 import FloatingControlsBar from './FloatingControlsBar';
 import SidebarContent from './SidebarContent';
-import InfoModal from './InfoModal';
-import InstructionsModal from './InstructionsModal';
 import { AudioErrorNotification } from './AudioErrorNotification';
 import { CurrentFrequencies } from '../types';
+
+const InfoModal = lazy(() => import('./InfoModal'));
+const InstructionsModal = lazy(() => import('./InstructionsModal'));
 
 interface OrbitalSonificationLayoutProps {
   controlsValue: unknown;
@@ -46,8 +47,16 @@ const OrbitalSonificationLayout: React.FC<OrbitalSonificationLayoutProps> = ({
         <SidebarContent />
       </div>
 
-      <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
-      <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
+      {isInfoModalOpen && (
+        <Suspense fallback={null}>
+          <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
+        </Suspense>
+      )}
+      {isInstructionsModalOpen && (
+        <Suspense fallback={null}>
+          <InstructionsModal isOpen={isInstructionsModalOpen} onClose={() => setIsInstructionsModalOpen(false)} />
+        </Suspense>
+      )}
       <AudioErrorNotification />
     </div>
   );

@@ -24,6 +24,4 @@ dist-ssr
 *.sln
 *.sw?
 
-REFACTORING_*.md
-ARCHITECTURE_*.md
-*.txt
+bundle-analysis.html

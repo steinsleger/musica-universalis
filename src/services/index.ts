@@ -1,8 +1,5 @@
 /**
  * Services Index - Central export point for all service layer
- *
- * This file exports all services, strategies, and providers from the service layer.
- * Services are decoupled from React and provide pure business logic.
  */
 
 // Audio Service
