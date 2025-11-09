@@ -20,7 +20,7 @@ import { useFrequencyEffects } from '../hooks/useFrequencyEffects';
 import { useAudioInitialization } from '../hooks/useAudioInitialization';
 import { usePositionTracker } from '../hooks/usePositionTracker';
 import OrbitalSonificationPresenter from './OrbitalSonificationPresenter';
-import { CurrentFrequencies } from '../types';
+import { CurrentFrequencies, Planet } from '../types';
 
 declare global {
   interface Window {
@@ -240,7 +240,7 @@ const OrbitalSonificationContainer: React.FC = () => {
   }, [initializeAudioContext, recreateAllAudio, startPlanetSound, stopPlanetSound, updatePlanetFrequency]);
 
   const calculateBaseFrequencies = useCallback(
-    (baseFreq: number, planet: any, _index: number): number => {  // eslint-disable-line @typescript-eslint/no-explicit-any
+    (baseFreq: number, planet: Planet, _index: number): number => {
       return calculateFrequency(baseFreq, planet, distanceMode);
     },
     [distanceMode, calculateFrequency]

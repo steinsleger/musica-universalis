@@ -4,12 +4,13 @@ import FloatingControlsBar from './FloatingControlsBar';
 import SidebarContent from './SidebarContent';
 import { AudioErrorNotification } from './AudioErrorNotification';
 import { CurrentFrequencies } from '../types';
+import type { UIControlsContextType } from '../context/UIControlsContext';
 
 const InfoModal = lazy(() => import('./InfoModal'));
 const InstructionsModal = lazy(() => import('./InstructionsModal'));
 
 interface OrbitalSonificationLayoutProps {
-  controlsValue: unknown;
+  controlsValue: UIControlsContextType;
   needsUserInteraction: boolean;
   handleUserInteraction: () => Promise<void>;
   onFrequencyChange?: (frequencies: CurrentFrequencies) => void;
@@ -27,7 +28,7 @@ const OrbitalSonificationLayout: React.FC<OrbitalSonificationLayoutProps> = ({
     setIsInfoModalOpen,
     isInstructionsModalOpen,
     setIsInstructionsModalOpen
-  } = controlsValue as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  } = controlsValue;
 
   // Memoize click handler
   const handleContainerClick = useCallback(async () => {

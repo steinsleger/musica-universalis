@@ -4,17 +4,22 @@ import {
   FrequencyMode,
   PositionMode,
   TabType,
-  CurrentFrequencies
+  CurrentFrequencies,
+  AudioScalingConfig
 } from '../types';
-import { getDefaultOrbitData } from '../utils/constants';
 import {
+  getDefaultOrbitData,
+  getDefaultAudioScalingConfig,
   DEFAULT_ANIMATION_SPEED,
-  DEFAULT_ZOOM_LEVEL
+  DEFAULT_ZOOM_LEVEL,
+  DEFAULT_BASE_FREQUENCY,
+  DEFAULT_MASTER_VOLUME,
+  DEFAULT_SEQUENCE_BPM
 } from '../utils/constants';
 
 /**
  * Comprehensive state for orbital visualization, audio, and UI
- * Merged from: OrbitStateContext + AudioControlsContext + UIControlsContext + VisualizationControlsContext
+ * Merged from: OrbitStateContext + AudioControlsContext + UIControlsContext + VisualizationControlsContext + AudioConfigContext
  */
 interface OrbitalState {
   // Orbital/Visualization State
@@ -33,6 +38,13 @@ interface OrbitalState {
   currentlyPlayingPlanet: string | undefined;
   audioError: string | null;
   audioHealthStatus: 'healthy' | 'degraded' | 'failed';
+
+  // Audio Configuration (merged from AudioConfigContext)
+  baseFrequency: number;
+  masterVolume: number;
+  sequenceBPM: number;
+  useFletcher: boolean;
+  audioScalingConfig: AudioScalingConfig;
 
   // UI State
   sidebarCollapsed: boolean;
@@ -63,6 +75,13 @@ type OrbitalStateAction =
   | { type: 'SET_AUDIO_ERROR'; payload: string | null }
   | { type: 'SET_AUDIO_HEALTH_STATUS'; payload: 'healthy' | 'degraded' | 'failed' }
 
+  // Audio Configuration actions
+  | { type: 'SET_BASE_FREQUENCY'; payload: number }
+  | { type: 'SET_MASTER_VOLUME'; payload: number }
+  | { type: 'SET_SEQUENCE_BPM'; payload: number }
+  | { type: 'SET_USE_FLETCHER'; payload: boolean }
+  | { type: 'SET_AUDIO_SCALING_CONFIG'; payload: AudioScalingConfig }
+
   // UI actions
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'SET_ACTIVE_TAB'; payload: TabType }
@@ -90,6 +109,13 @@ const getInitialState = (): OrbitalState => ({
   currentlyPlayingPlanet: undefined,
   audioError: null,
   audioHealthStatus: 'healthy',
+
+  // Audio Configuration
+  baseFrequency: DEFAULT_BASE_FREQUENCY,
+  masterVolume: DEFAULT_MASTER_VOLUME,
+  sequenceBPM: DEFAULT_SEQUENCE_BPM,
+  useFletcher: true,
+  audioScalingConfig: getDefaultAudioScalingConfig(),
 
   // UI
   sidebarCollapsed: false,
@@ -163,6 +189,22 @@ const orbitalStateReducer = (state: OrbitalState, action: OrbitalStateAction): O
     case 'SET_AUDIO_HEALTH_STATUS':
       return { ...state, audioHealthStatus: action.payload };
 
+    // Audio Configuration actions
+    case 'SET_BASE_FREQUENCY':
+      return { ...state, baseFrequency: action.payload };
+
+    case 'SET_MASTER_VOLUME':
+      return { ...state, masterVolume: action.payload };
+
+    case 'SET_SEQUENCE_BPM':
+      return { ...state, sequenceBPM: action.payload };
+
+    case 'SET_USE_FLETCHER':
+      return { ...state, useFletcher: action.payload };
+
+    case 'SET_AUDIO_SCALING_CONFIG':
+      return { ...state, audioScalingConfig: action.payload };
+
     // UI actions
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
@@ -210,6 +252,13 @@ export interface OrbitalStateContextType {
   setCurrentlyPlayingPlanet: (planet: string | undefined) => void;
   setAudioError: (error: string | null) => void;
   setAudioHealthStatus: (status: 'healthy' | 'degraded' | 'failed') => void;
+
+  // Audio Configuration methods
+  setBaseFrequency: (freq: number) => void;
+  setMasterVolume: (vol: number) => void;
+  setSequenceBPM: (bpm: number) => void;
+  setUseFletcher: (use: boolean) => void;
+  setAudioScalingConfig: (config: AudioScalingConfig) => void;
 
   // UI methods
   toggleSidebar: () => void;
@@ -294,6 +343,28 @@ export const OrbitalStateProvider: React.FC<OrbitalStateProviderProps> = ({ chil
     []
   );
 
+  // Audio Configuration methods
+  const setBaseFrequency = useCallback(
+    (freq: number) => dispatch({ type: 'SET_BASE_FREQUENCY', payload: freq }),
+    []
+  );
+  const setMasterVolume = useCallback(
+    (vol: number) => dispatch({ type: 'SET_MASTER_VOLUME', payload: vol }),
+    []
+  );
+  const setSequenceBPM = useCallback(
+    (bpm: number) => dispatch({ type: 'SET_SEQUENCE_BPM', payload: bpm }),
+    []
+  );
+  const setUseFletcher = useCallback(
+    (use: boolean) => dispatch({ type: 'SET_USE_FLETCHER', payload: use }),
+    []
+  );
+  const setAudioScalingConfig = useCallback(
+    (config: AudioScalingConfig) => dispatch({ type: 'SET_AUDIO_SCALING_CONFIG', payload: config }),
+    []
+  );
+
   // UI methods
   const toggleSidebar = useCallback(
     () => dispatch({ type: 'TOGGLE_SIDEBAR' }),
@@ -336,6 +407,11 @@ export const OrbitalStateProvider: React.FC<OrbitalStateProviderProps> = ({ chil
     setCurrentlyPlayingPlanet,
     setAudioError,
     setAudioHealthStatus,
+    setBaseFrequency,
+    setMasterVolume,
+    setSequenceBPM,
+    setUseFletcher,
+    setAudioScalingConfig,
     toggleSidebar,
     setActiveTab,
     setIsInfoModalOpen,

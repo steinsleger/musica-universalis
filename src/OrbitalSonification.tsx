@@ -1,6 +1,5 @@
 // src/OrbitalSonification.tsx
 import React from 'react';
-import { AudioConfigProvider } from './context/AudioConfigContext';
 import { OrbitalStateProvider } from './context/OrbitalStateContext';
 import OrbitalSonificationContainer from './components/OrbitalSonificationContainer';
 
@@ -8,24 +7,23 @@ import OrbitalSonificationContainer from './components/OrbitalSonificationContai
  * OrbitalSonification
  *
  * Entry point component that wraps the application with base contexts:
- * - AudioConfigProvider: Audio configuration (masterVolume, baseFrequency, sequenceBPM)
- * - OrbitalStateProvider: Unified state for orbital + audio + UI (merged contexts)
+ * - OrbitalStateProvider: Unified state for orbital + audio + UI + configuration
+ *   (merged from: OrbitStateContext, AudioControlsContext, UIControlsContext,
+ *    VisualizationControlsContext, and AudioConfigContext)
  *
  * The actual orchestration and presentation logic is delegated to:
  * - OrbitalSonificationContainer: Orchestrates services and state
  * - OrbitalSonificationPresenter: Pure presentation component
  *
  * This refactored version uses:
+ * - Single source of truth: OrbitalStateContext for all state
  * - Service-based architecture (AudioProvider, FrequencyCalculator, AudioSafetyService)
  * - Consolidated hooks (useAudioProvider, useAudioPlayback, useFrequency)
- * - Merged contexts (OrbitalStateContext combines 4 previous contexts)
  */
 const OrbitalSonification: React.FC = () => (
-  <AudioConfigProvider>
-    <OrbitalStateProvider>
-      <OrbitalSonificationContainer />
-    </OrbitalStateProvider>
-  </AudioConfigProvider>
+  <OrbitalStateProvider>
+    <OrbitalSonificationContainer />
+  </OrbitalStateProvider>
 );
 
 export default OrbitalSonification;
