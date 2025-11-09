@@ -2,6 +2,7 @@ import React from 'react';
 import { useUIControls } from '../hooks/useUIControls';
 import { useAudioControls } from '../hooks/useAudioControls';
 import { useVisualizationControls } from '../hooks/useVisualizationControls';
+import { volumeToDb } from '../utils/visualizationHelpers';
 import ControlsTabContent from './ControlsTabContent';
 import PlanetsTabContent from './PlanetsTabContent';
 import AudioTabContent from './AudioTabContent';
@@ -64,7 +65,7 @@ const SidebarContent: React.FC = () => {
         animationSpeed={vizControls.animationSpeed}
         setAnimationSpeed={vizControls.setAnimationSpeed}
         isPlaying={audioControls.isPlaying}
-        volumeToDb={() => '0dB'}
+        volumeToDb={volumeToDb}
       />
 
       {activeTab === 'planets' && (
