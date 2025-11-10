@@ -2,9 +2,7 @@ import React, { createContext, ReactNode } from 'react';
 import { Planet, CurrentFrequencies, FrequencyMode, PositionMode } from '../types/domain';
 
 /**
- * VisualizationControlsContext manages visualization and planet-related controls
- * Includes distance mode, zoom, animation, and planet state
- * Separated to allow independent re-renders from audio/UI changes
+ * Manages visualization and planet-related controls
  */
 export interface VisualizationControlsContextType {
   // Visualization Controls

@@ -34,34 +34,8 @@ interface AudioProviderRef {
 }
 
 /**
- * useAudioProviderRef
- *
- * Consolidates 12 individual refs into a single structured ref:
- * OLD REFS (12 individual):
- * - audioContextStarted, audioInitializedRef
- * - gainNodeRef, reverbRef, mainSynthRef
- * - synthManagerRef, synthsRef, gainNodesRef, activeSynthsRef
- * - initFrequenciesRef, lastFrequenciesRef
- * - debug (embedded in code)
- *
- * NEW REF (1 consolidated):
- * - audioProviderRef containing all the above
- *
- * Benefits:
- * - Easier to pass around (single ref instead of 12)
- * - Clearer intent: this is THE audio provider state
- * - Single ref dependency in useCallback/useEffect
- * - Better organization and encapsulation
- * - Easier to track and manage audio lifecycle
- *
- * Usage:
- * const audioProvider = useAudioProviderRef();
- * // Access: audioProvider.current.audioContextStarted, audioProvider.current.gainNode, etc.
- */
-
-/**
- * Creates a single consolidated audio provider reference
- * Replaces 12 individual refs with 1 well-organized ref
+ * Creates single consolidated audio provider reference
+ * Combines audio context, nodes, synth manager, and frequency tracking state
  */
 export const useAudioProviderRef = (): React.RefObject<AudioProviderRef> => {
   return useRef<AudioProviderRef>({

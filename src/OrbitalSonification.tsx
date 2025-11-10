@@ -1,4 +1,3 @@
-// src/OrbitalSonification.tsx
 import React from 'react';
 import { OrbitalStateProvider } from './context/OrbitalStateContext';
 import OrbitalSonificationContainer from './components/containers/OrbitalSonificationContainer';

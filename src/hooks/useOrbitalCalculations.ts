@@ -97,7 +97,7 @@ export const useOrbitalCalculations = (params: OrbitalCalculationsParams) => {
     };
   }, [getPlanetPosition]);
 
-  // Calculate angles for special positions
+  // Calculate angles for position modes
   const getAverageDistanceAngle = useCallback((eccentricity: number): number => {
     return Math.acos(-eccentricity);
   }, []);

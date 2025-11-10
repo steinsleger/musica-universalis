@@ -7,8 +7,7 @@ import { FrequencyService } from '@/services/frequency/FrequencyService';
 import { calculateFrequencyGain, calculateAdvancedFrequencyGain } from '@/services/audio/AudioSafetyService';
 
 /**
- * Parameters for useFrequencyManager
- * Consolidates all refs and state needed for frequency operations
+ * Parameters for frequency manager initialization
  */
 interface UseFrequencyManagerParams {
   synthManagerRef: MutableRefObject<SynthManager>;
@@ -21,8 +20,7 @@ interface UseFrequencyManagerParams {
 }
 
 /**
- * Return type for useFrequencyManager
- * Single unified API for all frequency operations
+ * API for frequency operations and audio synthesis
  */
 export interface FrequencyManager {
   // Core calculation
@@ -44,24 +42,8 @@ export interface FrequencyManager {
 }
 
 /**
- * useFrequencyManager - Unified frequency calculation and audio management
- *
- * Consolidates multiple frequency-related concerns into a single, focused hook:
- * - Frequency calculations using Titius-Bode formula
- * - Gain/volume scaling with optional Fletcher-Munson curves
- * - Planet-specific synth creation and management
- * - Real-time frequency updates for active synths
- * - Musical note conversion from frequencies
- *
- * Replaces:
- * - useFrequencyCalculation (calculation, gain, conversion)
- * - usePlanetAudioManagement (synth creation, start/stop/update)
- *
- * Benefits:
- * - Single source of truth for all frequency operations
- * - Cleaner Container API (fewer hook calls)
- * - Easier to test and reason about
- * - Encapsulates complex audio state management
+ * Manages frequency calculations and audio synthesis
+ * Handles Titius-Bode formula calculations, gain scaling, and synth operations
  */
 export function useFrequencyManager({
   synthManagerRef,
@@ -177,7 +159,7 @@ export function useFrequencyManager({
         const freqDiff = Math.abs(currentFreq - frequency);
         const freqRatio = frequency / currentFreq;
 
-        // Only update if change is significant (>1Hz or >2% change)
+        // Update only if change exceeds threshold (>1Hz or >2% change)
         if (freqDiff > 1 || freqRatio < 0.98 || freqRatio > 1.02) {
           const gain = getAdjustedGain(frequency);
           synthObj.synth.frequency.value = frequency;

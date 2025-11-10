@@ -19,10 +19,7 @@ interface FlatOrbitalState {
 }
 
 /**
- * Hook to consume OrbitalStateContext
- * Provides access to merged orbital, audio, and UI state
- * Returns a flattened interface for easier consumption
- * Consolidated from: OrbitStateContext, AudioControlsContext, UIControlsContext, VisualizationControlsContext
+ * Provides access to orbital state from context
  */
 export const useOrbitalState = (): FlatOrbitalState => {
   const context = useContext(OrbitalStateContext);

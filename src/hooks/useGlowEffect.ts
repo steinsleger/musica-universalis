@@ -17,12 +17,12 @@ export const useGlowEffect = ({
       // Calculate pulse duration based on BPM
       const pulseDuration = 60 / sequenceBPM * 1000; // Convert to ms
 
-      // Clear any existing interval
+      // Clear interval if active
       if (glowAnimationRef.current) {
         clearInterval(glowAnimationRef.current);
       }
 
-      // Create pulsing effect
+      // Create pulse effect
       let increasing = false;
       let opacity = 0.5;
 
@@ -42,7 +42,7 @@ export const useGlowEffect = ({
         }
 
         setGlowOpacity(opacity);
-      }, pulseDuration / 20); // Adjust for smoother pulsing
+      }, pulseDuration / 20); // Adjust pulse frequency
 
       return () => {
         if (glowAnimationRef.current) {

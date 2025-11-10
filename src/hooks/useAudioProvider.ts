@@ -6,17 +6,7 @@ interface UseAudioProviderReturn {
 }
 
 /**
- * useAudioProvider - Comprehensive audio context management hook
- *
- * Manages:
- * - Tone.js audio context initialization
- * - User interaction requirements for audio playback
- * - Audio context lifecycle and cleanup
- *
- * Benefits:
- * - Single responsibility for audio context management
- * - Handles browser autoplay restrictions
- * - Proper cleanup on unmount
+ * Manages audio context initialization and lifecycle
  */
 export const useAudioProvider = (): UseAudioProviderReturn => {
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);

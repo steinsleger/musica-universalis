@@ -2,9 +2,7 @@ import React, { createContext, ReactNode } from 'react';
 import { TabType } from '../types/ui';
 
 /**
- * UIControlsContext manages UI-only state
- * Includes sidebar, tab, and modal visibility
- * Separated from business logic contexts to avoid unnecessary re-renders
+ * Manages UI state: sidebar, tab, and modal visibility
  */
 export interface UIControlsContextType {
   sidebarCollapsed: boolean;

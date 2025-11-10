@@ -22,7 +22,7 @@ const OrbitalSonificationLayout: React.FC<OrbitalSonificationLayoutProps> = ({
   handleUserInteraction,
   onFrequencyChange
 }) => {
-  // Extract modal state from controlsValue to avoid redundant prop drilling
+  // Extract modal state from controlsValue
   const {
     isInfoModalOpen,
     setIsInfoModalOpen,

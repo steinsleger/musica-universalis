@@ -2,9 +2,7 @@ import React, { createContext, ReactNode } from 'react';
 import { AudioScalingConfig } from '../types/audio';
 
 /**
- * AudioControlsContext manages audio configuration and playback state
- * Includes master volume, base frequency, BPM, and playback controls
- * Separated to allow independent re-renders from UI/visualization changes
+ * Manages audio configuration and playback state
  */
 export interface AudioControlsContextType {
   // Audio Configuration

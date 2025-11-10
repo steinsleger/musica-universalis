@@ -74,20 +74,8 @@ interface UIHandlers {
 }
 
 /**
- * useUIHandlers - Consolidated UI state and event handlers
- *
- * Consolidates:
- * - Modal state management (useModals)
- * - UI state (useUIState)
- * - Position tracking (usePositionTracker)
- * - Control handlers (useControlHandlers)
- * - Toggle controls (useToggleControls)
- *
- * Benefits:
- * - Single hook for all UI interactions
- * - Reduced prop drilling
- * - Simplified container logic
- * - Easier to maintain and test
+ * Manages UI state and event handlers
+ * Combines modal state, position tracking, and control handlers
  */
 export const useUIHandlers = ({
   currentMode,

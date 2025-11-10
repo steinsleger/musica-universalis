@@ -1,4 +1,3 @@
-// src/PlanetarySystem.tsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualizationControls } from './hooks/useVisualizationControls';
 import { useAudioControls } from './hooks/useAudioControls';
@@ -15,17 +14,9 @@ interface PlanetarySystemProps {
 }
 
 /**
- * PlanetarySystem - Main orbital visualization component
- *
- * Memoized to prevent unnecessary re-renders when parent context updates.
- * The component renders planet orbits and positions based on animation state.
- *
- * Optimization: React.memo ensures re-renders only occur when:
- * - onFrequencyChange prop reference changes (callback is memoized in container)
- * - Any internal state changes (planet angles, UI state)
- *
- * Note: Remember to memoize onFrequencyChange in the parent container
- * using useCallback() to maximize memo efficiency.
+ * Main orbital visualization component
+ * Renders planet orbits and positions based on animation state
+ * Memoized to re-render only when props or internal state change
  */
 const PlanetarySystemComponent: React.FC<PlanetarySystemProps> = ({
   onFrequencyChange

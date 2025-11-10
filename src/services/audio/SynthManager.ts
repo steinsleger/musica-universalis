@@ -24,7 +24,7 @@ export class SynthManager {
   }
 
   /**
-   * Create or recreate a synth for a planet with optimized envelope settings
+   * Create or recreate a synth for a planet
    */
   createSynth(
     planetName: string,
@@ -33,7 +33,7 @@ export class SynthManager {
     useFletcher: boolean
   ): SynthObject | null {
     try {
-      // Clean up old synth if it exists
+      // Remove synth if exists
       this.disposeSynth(planetName);
 
       // Calculate initial gain based on current frequency
@@ -51,7 +51,7 @@ export class SynthManager {
       // Create planet-specific gain node
       const planetGain = new Tone.Gain(initialGain);
 
-      // Create synth with optimized envelope for orbital sonification
+      // Create synth with envelope for orbital sonification
       const synth = new Tone.Synth({
         envelope: {
           attack: 0.05,

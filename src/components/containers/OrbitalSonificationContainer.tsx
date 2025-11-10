@@ -201,7 +201,7 @@ const OrbitalSonificationContainer: React.FC = () => {
     startPlanetSound
   });
 
-  // Memoized refs for stable function references
+  // Refs for function references
   const initializeAudioContextRef = useRef(initializeAudioContext);
   const recreateAllAudioRef = useRef(recreateAllAudio);
   const startPlanetSoundRef = useRef(startPlanetSound);
@@ -359,7 +359,7 @@ const OrbitalSonificationContainer: React.FC = () => {
     debugAudio
   });
 
-  // Use consolidated UI handlers hook
+  // UI handlers hook
   const {
     sidebarCollapsed,
     activeTab,

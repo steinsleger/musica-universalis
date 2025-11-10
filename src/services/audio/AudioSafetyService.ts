@@ -7,8 +7,8 @@
 import { AudioScalingConfig } from '@/types/audio';
 
 /**
- * Calculate the appropriate gain level for a given frequency using a logarithmic curve
- * that protects hearing by reducing volume for higher frequencies.
+ * Calculate gain level for a frequency using logarithmic curve
+ * reducing volume for higher frequencies
  */
 export const calculateFrequencyGain = (
   frequency: number,
@@ -42,7 +42,6 @@ export const calculateFrequencyGain = (
 
 /**
  * Human hearing sensitivity based on Fletcher-Munson equal loudness contours
- * This is a simplified approximation
  */
 const getHumanHearingSensitivity = (frequency: number): number => {
   if (frequency < 20) return 0.01;
@@ -63,7 +62,7 @@ const getHumanHearingSensitivity = (frequency: number): number => {
 };
 
 /**
- * Create sophisticated gain scaling that considers both logarithmic falloff
+ * Calculate gain scaling considering logarithmic falloff
  * and human hearing sensitivity curves
  */
 export const calculateAdvancedFrequencyGain = (

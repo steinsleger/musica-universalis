@@ -13,8 +13,8 @@ import {
 } from '../utils/constants';
 
 /**
- * Comprehensive state for orbital visualization, audio, and UI
- * Merged from: OrbitStateContext + AudioControlsContext + UIControlsContext + VisualizationControlsContext + AudioConfigContext
+ * State for orbital visualization, audio, and UI
+ * Merged from multiple contexts
  */
 interface OrbitalState {
   // Orbital/Visualization State

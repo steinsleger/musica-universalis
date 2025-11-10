@@ -12,18 +12,9 @@ interface OrbitalSonificationPresenterProps {
 }
 
 /**
- * OrbitalSonificationPresenter
- *
- * Pure presentation component that:
- * - Consumes the 3 focused contexts via hooks
- * - Adapts context values for backward compatibility with OrbitalSonificationLayout
- * - Renders the layout
- *
- * This component is intentionally simple and focused on rendering.
- * All state management happens in OrbitalSonificationContainer.
- *
- * Memoized to prevent unnecessary re-renders when parent updates.
- * Props should be memoized in the container to maximize efficiency.
+ * Presentation component that renders layout
+ * Consumes contexts via hooks and adapts values for OrbitalSonificationLayout
+ * Memoized to avoid re-renders when parent updates
  */
 const OrbitalSonificationPresenterComponent: React.FC<OrbitalSonificationPresenterProps> = ({
   needsUserInteraction,
@@ -34,7 +25,7 @@ const OrbitalSonificationPresenterComponent: React.FC<OrbitalSonificationPresent
   const audioControls = useAudioControls();
   const vizControls = useVisualizationControls();
 
-  // Build controlsValue from split contexts for backward compatibility with OrbitalSonificationLayout
+  // Adapt contexts for OrbitalSonificationLayout
   const controlsValue = useMemo(
     () => ({
       // Audio Controls

@@ -23,8 +23,7 @@ interface UseLiveModeAudioProps {
 }
 
 /**
- * Hook that manages live mode audio interval
- * Handles continuous audio updates, state synchronization, and error recovery
+ * Manages live mode audio interval updates
  */
 export const useLiveModeAudio = ({
   liveMode,
