@@ -25,15 +25,17 @@ export const useAudioContextManager = ({
   const startAudioContext = useCallback(async (): Promise<boolean> => {
     if (!audioContextStarted.current) {
       try {
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
+        const context = Tone.getContext();
+        if (context.state !== 'running') {
+          await context.resume();
         }
 
         await Tone.start();
         audioContextStarted.current = true;
 
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
+        const contextAfterStart = Tone.getContext();
+        if (contextAfterStart.state !== 'running') {
+          await contextAfterStart.resume();
         }
 
         debugAudio('Audio context started');
@@ -42,14 +44,17 @@ export const useAudioContextManager = ({
         console.error('Could not start AudioContext:', error);
         return false;
       }
-    } else if (Tone.context.state !== 'running') {
-      try {
-        await Tone.context.resume();
-        debugAudio('Audio context resumed');
-        return true;
-      } catch (error) {
-        console.error('Could not resume AudioContext:', error);
-        return false;
+    } else {
+      const context = Tone.getContext();
+      if (context.state !== 'running') {
+        try {
+          await context.resume();
+          debugAudio('Audio context resumed');
+          return true;
+        } catch (error) {
+          console.error('Could not resume AudioContext:', error);
+          return false;
+        }
       }
     }
     return true;
@@ -57,8 +62,9 @@ export const useAudioContextManager = ({
 
   const resumeAudioContextIfNeeded = useCallback(async (): Promise<boolean> => {
     try {
-      if (Tone.context.state !== 'running') {
-        await Tone.context.resume();
+      const context = Tone.getContext();
+      if (context.state !== 'running') {
+        await context.resume();
         debugAudio('Audio context resumed');
       }
       return true;

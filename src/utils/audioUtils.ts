@@ -67,9 +67,10 @@ export const calculateSequenceTiming = (bpm: number): {
  * Check if audio context needs resuming and attempt to resume it
  */
 export const resumeAudioContextIfNeeded = async (): Promise<void> => {
-  if (Tone.context.state !== 'running') {
+  const context = Tone.getContext();
+  if (context.state !== 'running') {
     try {
-      await Tone.context.resume();
+      await context.resume();
     } catch (error) {
       console.error('Failed to resume audio context:', error);
     }

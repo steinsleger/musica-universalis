@@ -527,7 +527,8 @@ const OrbitalSonificationContainer: React.FC = () => {
   useEffect(() => {
     const initializeTone = async (): Promise<void> => {
       try {
-        if (Tone.context.state !== 'running') {
+        const context = Tone.getContext();
+        if (context.state !== 'running') {
           try {
             await Tone.start();
           } catch {
@@ -543,8 +544,9 @@ const OrbitalSonificationContainer: React.FC = () => {
 
     return () => {
       try {
-        Tone.Transport.stop();
-        Tone.Transport.cancel();
+        const transport = Tone.getTransport();
+        transport.stop();
+        transport.cancel();
       } catch {
         console.error('Error cleaning up Tone.js:');
       }

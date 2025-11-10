@@ -62,7 +62,7 @@ interface AudioProviderRef {
  * Creates a single consolidated audio provider reference
  * Replaces 12 individual refs with 1 well-organized ref
  */
-export const useAudioProviderRef = (): React.MutableRefObject<AudioProviderRef> => {
+export const useAudioProviderRef = (): React.RefObject<AudioProviderRef> => {
   return useRef<AudioProviderRef>({
     audioContextStarted: false,
     audioInitialized: false,

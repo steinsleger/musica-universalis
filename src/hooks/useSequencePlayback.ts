@@ -15,8 +15,8 @@ interface UseSequencePlaybackParams {
   orbitData: Planet[];
   baseFrequency: number;
   loopSequence: boolean;
-  gainNodeRef: React.MutableRefObject<Tone.Gain | null>;
-  mainSynthRef: React.MutableRefObject<Tone.PolySynth<Tone.Synth> | null>;
+  gainNodeRef: React.RefObject<Tone.Gain | null>;
+  mainSynthRef: React.RefObject<Tone.PolySynth<Tone.Synth> | null>;
   initializeAudioContext: () => Promise<boolean>;
   calculateBaseFrequencies: (baseFreq: number, planet: Planet, index: number) => number;
   debugAudio: (message: string) => void;

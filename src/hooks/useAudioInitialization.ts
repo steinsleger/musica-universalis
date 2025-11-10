@@ -4,13 +4,13 @@ import { CurrentFrequencies, AudioScalingConfig, Planet, SynthObject } from '../
 import { SynthManager } from '../utils/synthManager';
 
 interface UseAudioInitializationParams {
-  gainNodeRef: React.MutableRefObject<Tone.Gain | null>;
-  reverbRef: React.MutableRefObject<Tone.Reverb | null>;
-  synthManagerRef: React.MutableRefObject<SynthManager>;
-  synthsRef: React.MutableRefObject<Record<string, SynthObject>>;
-  gainNodesRef: React.MutableRefObject<Record<string, Tone.Gain>>;
-  activeSynthsRef: React.MutableRefObject<Set<string>>;
-  audioContextStarted: React.MutableRefObject<boolean>;
+  gainNodeRef: React.RefObject<Tone.Gain | null>;
+  reverbRef: React.RefObject<Tone.Reverb | null>;
+  synthManagerRef: React.RefObject<SynthManager>;
+  synthsRef: React.RefObject<Record<string, SynthObject>>;
+  gainNodesRef: React.RefObject<Record<string, Tone.Gain>>;
+  activeSynthsRef: React.RefObject<Set<string>>;
+  audioContextStarted: React.RefObject<boolean>;
   masterVolume: number;
   liveMode: boolean;
   orbitData: Planet[];
@@ -54,15 +54,16 @@ export const useAudioInitialization = ({
       } catch {
         debugAudio('Error starting Tone');
       }
-      if (Tone.context.state !== 'running') {
+      const context = Tone.getContext();
+      if (context.state !== 'running') {
         try {
-          await Tone.context.resume();
+          await context.resume();
           debugAudio('Resumed Tone context');
         } catch {
           debugAudio('Error resuming Tone context');
         }
       }
-      debugAudio(`Tone context state: ${Tone.context.state}`);
+      debugAudio(`Tone context state: ${context.state}`);
       if (gainNodeRef.current) {
         try {
           gainNodeRef.current.dispose();
@@ -84,7 +85,7 @@ export const useAudioInitialization = ({
       try {
         const masterGain = new Tone.Gain(masterVolume).connect(reverb);
         gainNodeRef.current = masterGain;
-        Tone.Destination.volume.value = Tone.gainToDb(masterVolume);
+        Tone.getDestination().volume.value = Tone.gainToDb(masterVolume);
         audioContextStarted.current = true;
         return true;
       } catch {
@@ -112,8 +113,9 @@ export const useAudioInitialization = ({
         debugAudio('Error restarting Tone');
       }
       try {
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
+        const context = Tone.getContext();
+        if (context.state !== 'running') {
+          await context.resume();
           debugAudio('Tone context resumed');
         }
       } catch {

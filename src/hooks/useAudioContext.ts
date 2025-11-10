@@ -19,7 +19,8 @@ export const useAudioContext = (): UseAudioContextReturn => {
   useEffect(() => {
     const initializeTone = async (): Promise<void> => {
       try {
-        if (Tone.context.state !== 'running') {
+        const context = Tone.getContext();
+        if (context.state !== 'running') {
           try {
             await Tone.start();
           } catch {
@@ -35,8 +36,9 @@ export const useAudioContext = (): UseAudioContextReturn => {
 
     return () => {
       try {
-        Tone.Transport.stop();
-        Tone.Transport.cancel();
+        const transport = Tone.getTransport();
+        transport.stop();
+        transport.cancel();
       } catch {
         console.error('Error cleaning up Tone.js');
       }
@@ -46,15 +48,17 @@ export const useAudioContext = (): UseAudioContextReturn => {
   const startAudio = useCallback(async (): Promise<boolean> => {
     if (!audioContextStarted.current) {
       try {
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
+        const context = Tone.getContext();
+        if (context.state !== 'running') {
+          await context.resume();
         }
 
         await Tone.start();
         audioContextStarted.current = true;
 
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
+        const contextAfterStart = Tone.getContext();
+        if (contextAfterStart.state !== 'running') {
+          await contextAfterStart.resume();
         }
 
         setNeedsUserInteraction(false);
@@ -64,15 +68,18 @@ export const useAudioContext = (): UseAudioContextReturn => {
         setNeedsUserInteraction(true);
         return false;
       }
-    } else if (Tone.context.state !== 'running') {
-      try {
-        await Tone.context.resume();
-        setNeedsUserInteraction(false);
-        return true;
-      } catch (error) {
-        console.error('Could not resume AudioContext:', error);
-        setNeedsUserInteraction(true);
-        return false;
+    } else {
+      const context = Tone.getContext();
+      if (context.state !== 'running') {
+        try {
+          await context.resume();
+          setNeedsUserInteraction(false);
+          return true;
+        } catch (error) {
+          console.error('Could not resume AudioContext:', error);
+          setNeedsUserInteraction(true);
+          return false;
+        }
       }
     }
 

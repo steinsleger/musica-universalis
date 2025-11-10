@@ -18,11 +18,11 @@ interface UseControlHandlersParams {
   updateAllFrequencies: () => CurrentFrequencies;
   setZoomLevel: (zoom: number) => void;
   debugAudio: (message: string) => void;
-  synthManagerRef: React.MutableRefObject<SynthManager>;
+  synthManagerRef: React.RefObject<SynthManager>;
   setMasterVolume: (volume: number) => void;
   calculateBaseFrequencies: (baseFreq: number, planet: Planet, index: number) => number;
   orbitData: Planet[];
-  activeSynthsRef: React.MutableRefObject<Set<string>>;
+  activeSynthsRef: React.RefObject<Set<string>>;
   updatePlanetFrequency: (planetName: string, frequency: number) => void;
   setCurrentFrequencies: (frequencies: CurrentFrequencies | ((prev: CurrentFrequencies) => CurrentFrequencies)) => void;
   currentFrequencies: CurrentFrequencies;
@@ -31,8 +31,8 @@ interface UseControlHandlersParams {
   useFletcher: boolean;
   audioScalingConfig: AudioScalingConfig;
   setUseFletcher: (use: boolean) => void;
-  synthsRef: React.MutableRefObject<Record<string, SynthObject>>;
-  gainNodesRef: React.MutableRefObject<Record<string, Tone.Gain>>;
+  synthsRef: React.RefObject<Record<string, SynthObject>>;
+  gainNodesRef: React.RefObject<Record<string, Tone.Gain>>;
 }
 
 interface ControlHandlers {
@@ -120,7 +120,7 @@ export const useControlHandlers = ({
     debugAudio(`Updating master volume to ${newVolume}`);
 
     try {
-      Tone.Destination.volume.value = Tone.gainToDb(newVolume);
+      Tone.getDestination().volume.value = Tone.gainToDb(newVolume);
       synthManagerRef.current.setMasterVolume(newVolume);
       return true;
     } catch {

@@ -13,9 +13,9 @@ interface UseFrequencyEffectsParams {
   setCurrentFrequencies: (frequencies: CurrentFrequencies | ((prev: CurrentFrequencies) => CurrentFrequencies)) => void;
   useFletcher: boolean;
   audioScalingConfig: AudioScalingConfig;
-  synthManagerRef: React.MutableRefObject<SynthManager>;
-  synthsRef: React.MutableRefObject<Record<string, SynthObject>>;
-  gainNodesRef: React.MutableRefObject<Record<string, Tone.Gain>>;
+  synthManagerRef: React.RefObject<SynthManager>;
+  synthsRef: React.RefObject<Record<string, SynthObject>>;
+  gainNodesRef: React.RefObject<Record<string, Tone.Gain>>;
 }
 
 export const useFrequencyEffects = ({
