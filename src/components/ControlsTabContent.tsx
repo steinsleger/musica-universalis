@@ -97,8 +97,6 @@ const ControlsTabContent: React.FC<ControlsTabContentProps> = ({
           value={distanceMode}
           onChange={handleDistanceModeChange}
           className="select-dropdown"
-          disabled={!isPlaying}
-          aria-disabled={!isPlaying}
         >
           <option value="titiusBode">Murch's Modified Titius-Bode Law</option>
           <option value="actual">Actual Distances</option>
