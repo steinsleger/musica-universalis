@@ -5,20 +5,16 @@ import { AudioControlsProvider } from '../../context/AudioControlsContext';
 import { VisualizationControlsProvider } from '../../context/VisualizationControlsContext';
 import { useAudioConfig } from '../../hooks/useAudioConfig';
 import { useOrbitalState as useOrbitState } from '../../hooks/useOrbitalState';
-import { useAudioContext } from '../../hooks/useAudioContext';
-import { useModals } from '../../hooks/useModals';
-import { useAudioState } from '../../hooks/useAudioState';
-import { useUIState } from '../../hooks/useUIState';
+import { useAudioProvider } from '../../hooks/useAudioProvider';
+import { useAudioPlayback } from '../../hooks/useAudioPlayback';
 import { useAudioProviderRef } from '../../hooks/useAudioProviderRef';
 import { useFrequencyManager } from '../../hooks/useFrequencyManager';
 import { useLiveModeAudio } from '../../hooks/useLiveModeAudio';
-import { useToggleControls } from '../../hooks/useToggleControls';
 import { useAudioContextManager } from '../../hooks/useAudioContextManager';
 import { useSequencePlayback } from '../../hooks/useSequencePlayback';
-import { useControlHandlers } from '../../hooks/useControlHandlers';
 import { useFrequencyEffects } from '../../hooks/useFrequencyEffects';
 import { useAudioInitialization } from '../../hooks/useAudioInitialization';
-import { usePositionTracker } from '../../hooks/usePositionTracker';
+import { useUIHandlers } from '../../hooks/useUIHandlers';
 import OrbitalSonificationPresenter from '../presenters/OrbitalSonificationPresenter';
 import { CurrentFrequencies, Planet } from '../../types/domain';
 
@@ -74,11 +70,7 @@ const OrbitalSonificationContainer: React.FC = () => {
   } = useOrbitState();
 
   // Hooks
-  const { needsUserInteraction } = useAudioContext();
-
-  // Local state
-  const { sidebarCollapsed, setSidebarCollapsed, activeTab, setActiveTab } =
-    useUIState();
+  const { needsUserInteraction } = useAudioProvider();
 
   const {
     isPlaying,
@@ -91,26 +83,11 @@ const OrbitalSonificationContainer: React.FC = () => {
     setLoopSequence,
     currentlyPlayingPlanet,
     setCurrentlyPlayingPlanet
-  } = useAudioState();
+  } = useAudioPlayback();
 
   // Error state management
   const [audioError, setAudioError] = useState<string | null>(null);
   const [audioHealthStatus, setAudioHealthStatus] = useState<'healthy' | 'degraded' | 'failed'>('healthy');
-
-  // Modal state management
-  const {
-    isInfoModalOpen,
-    setIsInfoModalOpen,
-    isInstructionsModalOpen,
-    setIsInstructionsModalOpen
-  } = useModals({
-    onEscapePressed: () => setSidebarCollapsed(true)
-  });
-
-  // Position tracker hook - replaces prevPositionMode ref
-  const { hasPositionModeChanged, recordCurrentMode } = usePositionTracker(
-    positionMode
-  );
 
   // Consolidated audio provider reference
   const audioProviderRef = useAudioProviderRef();
@@ -354,6 +331,98 @@ const OrbitalSonificationContainer: React.FC = () => {
     updateAllFrequencies();
   }, [baseFrequency, updateAllFrequencies]);
 
+  // Stable function wrappers to prevent dependency churn
+  const stableInitializeAudioContext = useCallback(
+    () => initializeAudioContextRef.current(),
+    []
+  );
+  const stableStartPlanetSound = useCallback(
+    (name: string, freq: number) => startPlanetSoundRef.current(name, freq),
+    []
+  );
+  const stableStopPlanetSound = useCallback(
+    (name: string) => stopPlanetSoundRef.current(name),
+    []
+  );
+  const stableUpdatePlanetFrequency = useCallback(
+    (name: string, freq: number) => updatePlanetFrequencyRef.current(name, freq),
+    []
+  );
+  const stableRecreateAllAudio = useCallback(async () => {
+    await recreateAllAudioRef.current();
+  }, []);
+
+  // Use audio context manager hook
+  const { startAudioContext } = useAudioContextManager({
+    audioContextStarted: audioContextStartedRef,
+    gainNodeRef,
+    debugAudio
+  });
+
+  // Use consolidated UI handlers hook
+  const {
+    sidebarCollapsed,
+    activeTab,
+    setActiveTab,
+    isInfoModalOpen,
+    setIsInfoModalOpen,
+    isInstructionsModalOpen,
+    setIsInstructionsModalOpen,
+    hasPositionModeChanged,
+    recordCurrentMode,
+    togglePlayPause,
+    handleBPMChange,
+    toggleLoopSequence,
+    toggleSidebar,
+    handleDistanceModeChange,
+    handleZoomChange,
+    handleVolumeChange,
+    handleBaseFrequencyChange,
+    frequencyToNote,
+    toggleFletcherCurves,
+    togglePlanet,
+    toggleAllPlanets,
+    toggleLiveMode
+  } = useUIHandlers({
+    currentMode: positionMode,
+    startAudioContext,
+    isPaused,
+    setPositionMode,
+    setIsPaused,
+    setSequenceBPM,
+    loopSequence,
+    setLoopSequence,
+    setDistanceMode,
+    liveMode,
+    updateAllFrequencies,
+    setZoomLevel,
+    debugAudio,
+    synthManagerRef,
+    setMasterVolume,
+    calculateBaseFrequencies,
+    orbitData,
+    activeSynthsRef,
+    updatePlanetFrequency,
+    setCurrentFrequencies,
+    currentFrequencies,
+    setBaseFrequency,
+    hookFrequencyToNote,
+    useFletcher,
+    audioScalingConfig,
+    setUseFletcher,
+    synthsRef,
+    gainNodesRef,
+    setOrbitData,
+    setLiveMode,
+    audioProviderRef,
+    createIsolatedSynth,
+    startPlanetSound,
+    stopPlanetSound,
+    initializeAudioContext,
+    recreateAllAudio,
+    forceRecalculateAllGains
+  });
+
   // Handle position mode changes for live mode
   useEffect(() => {
     if (liveMode && (!isPaused || hasPositionModeChanged())) {
@@ -383,27 +452,6 @@ const OrbitalSonificationContainer: React.FC = () => {
     }
   }, [positionMode, setPositionMode]);
 
-  // Stable function wrappers to prevent dependency churn
-  const stableInitializeAudioContext = useCallback(
-    () => initializeAudioContextRef.current(),
-    []
-  );
-  const stableStartPlanetSound = useCallback(
-    (name: string, freq: number) => startPlanetSoundRef.current(name, freq),
-    []
-  );
-  const stableStopPlanetSound = useCallback(
-    (name: string) => stopPlanetSoundRef.current(name),
-    []
-  );
-  const stableUpdatePlanetFrequency = useCallback(
-    (name: string, freq: number) => updatePlanetFrequencyRef.current(name, freq),
-    []
-  );
-  const stableRecreateAllAudio = useCallback(async () => {
-    await recreateAllAudioRef.current();
-  }, []);
-
   // Use live mode audio hook
   useLiveModeAudio({
     liveMode,
@@ -416,32 +464,6 @@ const OrbitalSonificationContainer: React.FC = () => {
     stopPlanetSound: stableStopPlanetSound,
     updatePlanetFrequency: stableUpdatePlanetFrequency,
     recreateAllAudio: stableRecreateAllAudio,
-    debugAudio
-  });
-
-  // Use toggle controls hook
-  const { togglePlanet, toggleAllPlanets, toggleLiveMode } = useToggleControls(
-    {
-      orbitData,
-      setOrbitData,
-      liveMode,
-      setLiveMode,
-      currentFrequencies,
-      audioProviderRef,
-      createIsolatedSynth,
-      startPlanetSound,
-      stopPlanetSound,
-      initializeAudioContext,
-      recreateAllAudio,
-      forceRecalculateAllGains,
-      debugAudio
-    }
-  );
-
-  // Use audio context manager hook
-  const { startAudioContext } = useAudioContextManager({
-    audioContextStarted: audioContextStartedRef,
-    gainNodeRef,
     debugAudio
   });
 
@@ -552,49 +574,6 @@ const OrbitalSonificationContainer: React.FC = () => {
       }
     };
   }, []);
-
-  const {
-    togglePlayPause,
-    handleBPMChange,
-    toggleLoopSequence,
-    toggleSidebar,
-    handleDistanceModeChange,
-    handleZoomChange,
-    handleVolumeChange,
-    handleBaseFrequencyChange,
-    frequencyToNote,
-    toggleFletcherCurves
-  } = useControlHandlers({
-    startAudioContext,
-    isPaused,
-    setPositionMode,
-    setIsPaused,
-    setSequenceBPM,
-    loopSequence,
-    setLoopSequence,
-    sidebarCollapsed,
-    setSidebarCollapsed,
-    setDistanceMode,
-    liveMode,
-    updateAllFrequencies,
-    setZoomLevel,
-    debugAudio,
-    synthManagerRef,
-    setMasterVolume,
-    calculateBaseFrequencies,
-    orbitData,
-    activeSynthsRef,
-    updatePlanetFrequency,
-    setCurrentFrequencies,
-    currentFrequencies,
-    setBaseFrequency,
-    hookFrequencyToNote,
-    useFletcher,
-    audioScalingConfig,
-    setUseFletcher,
-    synthsRef,
-    gainNodesRef
-  });
 
   // Build context values with useMemo
   const uiControlsValue = useMemo(

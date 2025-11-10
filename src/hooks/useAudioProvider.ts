@@ -1,20 +1,26 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as Tone from 'tone';
 
-interface UseAudioContextReturn {
+interface UseAudioProviderReturn {
   needsUserInteraction: boolean;
 }
 
 /**
- * @deprecated Use useAudioProvider instead, which provides comprehensive audio context management.
- * useAudioContext will be removed in a future refactor after the container is migrated.
+ * useAudioProvider - Comprehensive audio context management hook
+ *
+ * Manages:
+ * - Tone.js audio context initialization
+ * - User interaction requirements for audio playback
+ * - Audio context lifecycle and cleanup
+ *
+ * Benefits:
+ * - Single responsibility for audio context management
+ * - Handles browser autoplay restrictions
+ * - Proper cleanup on unmount
  */
-export const useAudioContext = (): UseAudioContextReturn => {
+export const useAudioProvider = (): UseAudioProviderReturn => {
   const [needsUserInteraction, setNeedsUserInteraction] = useState(true);
   const audioContextStarted = useRef(false);
-
-  // Note: startAudio is kept private as it's used internally by the hook
-  // to manage audio context state in response to user interactions
 
   useEffect(() => {
     const initializeTone = async (): Promise<void> => {

@@ -2,10 +2,9 @@ import { useReducer, useCallback } from 'react';
 import { CurrentFrequencies } from '../types/domain';
 
 /**
- * AudioState - Consolidated audio playback and frequency state
- * Previously scattered across usePlaybackState and useSequencePlayback hooks
+ * AudioPlaybackState - Consolidated audio playback and frequency state
  */
-export interface AudioState {
+export interface AudioPlaybackState {
   isPlaying: boolean;
   liveMode: boolean;
   currentFrequencies: CurrentFrequencies;
@@ -14,10 +13,9 @@ export interface AudioState {
 }
 
 /**
- * AudioAction - Discriminated union of all possible audio state mutations
- * Using explicit action types prevents invalid state transitions
+ * AudioPlaybackAction - Discriminated union of all possible audio state mutations
  */
-export type AudioAction =
+export type AudioPlaybackAction =
   | { type: 'START_PLAYBACK' }
   | { type: 'STOP_PLAYBACK' }
   | { type: 'SET_LIVE_MODE'; payload: boolean }
@@ -28,7 +26,7 @@ export type AudioAction =
   | { type: 'SET_PLAYING_PLANET'; payload: string | undefined }
   | { type: 'RESET' };
 
-const initialState: AudioState = {
+const initialState: AudioPlaybackState = {
   isPlaying: false,
   liveMode: false,
   currentFrequencies: {},
@@ -37,10 +35,9 @@ const initialState: AudioState = {
 };
 
 /**
- * Pure reducer function for audio state transitions
- * Predictable, testable, and easy to reason about
+ * Pure reducer function for audio playback state transitions
  */
-function audioReducer(state: AudioState, action: AudioAction): AudioState {
+function audioPlaybackReducer(state: AudioPlaybackState, action: AudioPlaybackAction): AudioPlaybackState {
   switch (action.type) {
     case 'START_PLAYBACK':
       return { ...state, isPlaying: true };
@@ -73,7 +70,7 @@ function audioReducer(state: AudioState, action: AudioAction): AudioState {
 }
 
 /**
- * useAudioState - Consolidated audio state management hook
+ * useAudioPlayback - Consolidated audio playback state management hook
  *
  * Consolidates:
  * - isPlaying (playback status)
@@ -82,24 +79,16 @@ function audioReducer(state: AudioState, action: AudioAction): AudioState {
  * - loopSequence (whether to loop sequence playback)
  * - currentlyPlayingPlanet (for sequence playback tracking)
  *
- * Replaces scattered useState calls with single useReducer
- * Provides both raw dispatch and convenience setter functions
- *
  * Benefits:
- * - Single source of truth for audio state
+ * - Single source of truth for audio playback state
  * - Clear action types prevent invalid state transitions
  * - Easier debugging (can log every action)
  * - Testable pure reducer function
  * - Follows Redux pattern
- *
- * @deprecated Use useAudioPlayback instead, which consolidates audio playback management.
- * useAudioState will be removed in a future refactor after the container is migrated.
  */
-export function useAudioState() {
-  const [state, dispatch] = useReducer(audioReducer, initialState);
+export function useAudioPlayback() {
+  const [state, dispatch] = useReducer(audioPlaybackReducer, initialState);
 
-  // Convenience functions for cleaner API
-  // Stabilized with useCallback and NO state dependencies to prevent infinite loops
   const setIsPlaying = useCallback(
     (playing: boolean) => {
       dispatch(playing ? { type: 'START_PLAYBACK' } : { type: 'STOP_PLAYBACK' });
@@ -148,11 +137,8 @@ export function useAudioState() {
   }, []);
 
   return {
-    // Raw state and dispatch for flexibility
     state,
     dispatch,
-
-    // Convenience setters for backward compatibility with useState-based code
     setIsPlaying,
     setLiveMode,
     toggleLiveMode,
@@ -161,8 +147,6 @@ export function useAudioState() {
     toggleLoopSequence,
     setCurrentlyPlayingPlanet,
     reset,
-
-    // Direct state accessors for cleaner usage
     isPlaying: state.isPlaying,
     liveMode: state.liveMode,
     currentFrequencies: state.currentFrequencies,
