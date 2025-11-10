@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { useUIControls } from '../hooks/useUIControls';
-import { useAudioControls } from '../hooks/useAudioControls';
-import { useVisualizationControls } from '../hooks/useVisualizationControls';
-import OrbitalSonificationLayout from './OrbitalSonificationLayout';
-import { CurrentFrequencies } from '../types';
+import { useUIControls } from '../../hooks/useUIControls';
+import { useAudioControls } from '../../hooks/useAudioControls';
+import { useVisualizationControls } from '../../hooks/useVisualizationControls';
+import OrbitalSonificationLayout from '../layouts/OrbitalSonificationLayout';
+import { CurrentFrequencies } from '../../types/domain';
 
 interface OrbitalSonificationPresenterProps {
   needsUserInteraction: boolean;

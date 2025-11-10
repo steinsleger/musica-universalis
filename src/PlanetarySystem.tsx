@@ -5,10 +5,10 @@ import { useAudioControls } from './hooks/useAudioControls';
 import { useOrbitalCalculations } from './hooks/useOrbitalCalculations';
 import { useOrbitalAnimation } from './hooks/useOrbitalAnimation';
 import { useGlowEffect } from './hooks/useGlowEffect';
-import OrbitPath from './components/OrbitPath';
-import PlanetNode from './components/PlanetNode';
+import OrbitPath from './components/visualization/OrbitPath';
+import PlanetNode from './components/visualization/PlanetNode';
 import { getOrbitColor } from './utils/visualizationHelpers';
-import { CurrentFrequencies } from './types';
+import { CurrentFrequencies } from './types/domain';
 
 interface PlanetarySystemProps {
   onFrequencyChange?: (frequencies: CurrentFrequencies) => void;

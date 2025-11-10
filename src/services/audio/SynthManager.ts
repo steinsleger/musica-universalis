@@ -1,10 +1,10 @@
 import * as Tone from 'tone';
-import { SynthObject, AudioScalingConfig } from '../types';
-import { calculateFrequencyGain, calculateAdvancedFrequencyGain } from './audioScaling';
+import { SynthObject, AudioScalingConfig } from '@/types/audio';
+import { calculateFrequencyGain, calculateAdvancedFrequencyGain } from './AudioSafetyService';
 
 /**
- * Synth management utility for creating, updating, and disposing planet synths
- * Handles per-planet gain calculation and reverb routing
+ * Synth Management Service
+ * Handles creation, updates, and disposal of planet synths with gain control
  */
 export class SynthManager {
   private synths: Record<string, SynthObject> = {};
@@ -129,8 +129,6 @@ export class SynthManager {
 
       // Create synth if it doesn't exist or is disposed
       if (!synthObj || !synthObj.synth || synthObj.synth.disposed) {
-        // Note: caller should provide current audio config
-        // This is a fallback for safety
         return false;
       }
 

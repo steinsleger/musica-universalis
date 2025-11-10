@@ -1,7 +1,7 @@
 import React from 'react';
-import { useAudioControls } from '../hooks/useAudioControls';
-import { useUIControls } from '../hooks/useUIControls';
-import { useVisualizationControls } from '../hooks/useVisualizationControls';
+import { useAudioControls } from '../../hooks/useAudioControls';
+import { useUIControls } from '../../hooks/useUIControls';
+import { useVisualizationControls } from '../../hooks/useVisualizationControls';
 
 const FloatingControlsBar: React.FC = () => {
   const {

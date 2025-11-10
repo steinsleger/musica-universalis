@@ -1,5 +1,5 @@
 import React from "react";
-import { AudioScalingConfig } from "../types";
+import { AudioScalingConfig } from "../../types/audio";
 
 interface AudioTabContentProps {
   activeTab: string;

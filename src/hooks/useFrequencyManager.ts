@@ -1,13 +1,10 @@
 import { useCallback, MutableRefObject } from 'react';
 import * as Tone from 'tone';
-import { Planet, CurrentFrequencies, FrequencyMode, AudioScalingConfig, SynthObject } from '../types';
-import { SynthManager } from '../utils/synthManager';
-import { calculatePlanetaryFrequency } from '../utils/calculatePlanetaryFrequency';
-import {
-  calculateFrequencyGain,
-  calculateAdvancedFrequencyGain,
-  safelyTriggerNote
-} from '../utils/audioScaling';
+import { Planet, CurrentFrequencies, FrequencyMode } from '../types/domain';
+import { AudioScalingConfig, SynthObject } from '../types/audio';
+import { SynthManager } from '@/services/audio/SynthManager';
+import { FrequencyService } from '@/services/frequency/FrequencyService';
+import { calculateFrequencyGain, calculateAdvancedFrequencyGain } from '@/services/audio/AudioSafetyService';
 
 /**
  * Parameters for useFrequencyManager
@@ -79,7 +76,8 @@ export function useFrequencyManager({
 
   const calculateFrequency = useCallback(
     (baseFreq: number, planet: Planet, mode: FrequencyMode): number => {
-      return calculatePlanetaryFrequency(baseFreq, planet, mode);
+      const frequencyService = new FrequencyService();
+      return frequencyService.calculate(baseFreq, planet, mode);
     },
     []
   );
@@ -218,14 +216,8 @@ export function useFrequencyManager({
           gainNodesRef.current[planetName] = synthObj.gain;
         }
 
-        safelyTriggerNote(
-          synthObj.synth,
-          frequency,
-          0.7,
-          null,
-          synthObj.gain,
-          audioScalingConfig
-        );
+        synthObj.synth.frequency.value = frequency;
+        synthObj.synth.triggerAttack(Tone.now());
 
         activeSynthsRef.current.add(planetName);
         return true;
@@ -240,8 +232,7 @@ export function useFrequencyManager({
       createIsolatedSynth,
       getAdjustedGain,
       synthManagerRef,
-      gainNodesRef,
-      audioScalingConfig
+      gainNodesRef
     ]
   );
 

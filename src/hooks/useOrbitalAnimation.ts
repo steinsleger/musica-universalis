@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Planet, CurrentFrequencies } from '../types';
+import { Planet, CurrentFrequencies } from '../types/domain';
 
 interface UseOrbitalAnimationParams {
   orbitData: Planet[];

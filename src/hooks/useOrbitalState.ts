@@ -1,6 +1,6 @@
 import { useContext, useCallback } from 'react';
 import { OrbitalStateContext } from '../context/OrbitalStateContext';
-import { Planet, FrequencyMode, PositionMode } from '../types';
+import { Planet, FrequencyMode, PositionMode } from '../types/domain';
 
 interface FlatOrbitalState {
   // Orbital State

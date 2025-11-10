@@ -2,11 +2,20 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import removeConsole from "vite-plugin-remove-console";
 import { visualizer } from "rollup-plugin-visualizer";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === "production";
 
   return {
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src")
+      }
+    },
     plugins: [
       react(),
       isProduction && removeConsole(),

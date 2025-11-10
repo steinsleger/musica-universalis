@@ -1,5 +1,6 @@
 import { useCallback, MutableRefObject } from 'react';
-import { Planet, CurrentFrequencies, SynthObject } from '../types';
+import { Planet, CurrentFrequencies } from '../types/domain';
+import { SynthObject } from '../types/audio';
 import { AudioProviderRef } from './useAudioProviderRef';
 
 interface UseToggleControlsProps {

@@ -1,8 +1,8 @@
 import React from 'react';
-import { useUIControls } from '../hooks/useUIControls';
-import { useAudioControls } from '../hooks/useAudioControls';
-import { useVisualizationControls } from '../hooks/useVisualizationControls';
-import { volumeToDb } from '../utils/visualizationHelpers';
+import { useUIControls } from '../../hooks/useUIControls';
+import { useAudioControls } from '../../hooks/useAudioControls';
+import { useVisualizationControls } from '../../hooks/useVisualizationControls';
+import { volumeToDb } from '../../utils/visualizationHelpers';
 import ControlsTabContent from './ControlsTabContent';
 import PlanetsTabContent from './PlanetsTabContent';
 import AudioTabContent from './AudioTabContent';

@@ -3,10 +3,8 @@
  *
  * Types that represent the domain model:
  * - Planets and orbital mechanics
- * - Frequencies and audio concepts
+ * - Frequencies and orbital concepts
  */
-
-import * as Tone from 'tone';
 
 /**
  * Planet order in solar system
@@ -50,33 +48,3 @@ export type FrequencyMode = 'titiusBode' | 'actual';
  * Position mode for orbital visualization
  */
 export type PositionMode = 'average' | 'aphelion' | 'perihelion' | 'normal';
-
-/**
- * Tab type for sidebar navigation
- */
-export type TabType = 'controls' | 'planets' | 'audio';
-
-/**
- * Audio scaling configuration for hearing protection
- */
-export interface AudioScalingConfig {
-  referenceFrequency: number;
-  scalingFactor: number;
-  minimumGain: number;
-  maximumGain: number;
-  highFrequencyCutoff: number;
-  highFrequencyScalingFactor: number;
-}
-
-/**
- * Synth object containing synthesis components
- */
-export interface SynthObject {
-  synth: Tone.Synth;
-  gain: Tone.Gain;
-}
-
-/**
- * Audio health status
- */
-export type AudioHealthStatus = 'healthy' | 'degraded' | 'failed';

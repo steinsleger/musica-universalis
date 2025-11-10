@@ -1,13 +1,13 @@
 import React, { useCallback, Suspense, lazy } from 'react';
-import PlanetarySystem from '../PlanetarySystem';
-import FloatingControlsBar from './FloatingControlsBar';
-import SidebarContent from './SidebarContent';
-import { AudioErrorNotification } from './AudioErrorNotification';
-import { CurrentFrequencies } from '../types';
-import type { UIControlsContextType } from '../context/UIControlsContext';
+import PlanetarySystem from '../../PlanetarySystem';
+import FloatingControlsBar from '../ui/FloatingControlsBar';
+import SidebarContent from '../tabs/SidebarContent';
+import { AudioErrorNotification } from '../ui/AudioErrorNotification';
+import { CurrentFrequencies } from '../../types/domain';
+import type { UIControlsContextType } from '../../context/UIControlsContext';
 
-const InfoModal = lazy(() => import('./InfoModal'));
-const InstructionsModal = lazy(() => import('./InstructionsModal'));
+const InfoModal = lazy(() => import('../modals/InfoModal'));
+const InstructionsModal = lazy(() => import('../modals/InstructionsModal'));
 
 interface OrbitalSonificationLayoutProps {
   controlsValue: UIControlsContextType;

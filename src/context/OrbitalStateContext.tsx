@@ -1,12 +1,7 @@
 import React, { createContext, useReducer, useCallback, ReactNode } from 'react';
-import {
-  Planet,
-  FrequencyMode,
-  PositionMode,
-  TabType,
-  CurrentFrequencies,
-  AudioScalingConfig
-} from '../types';
+import { Planet, FrequencyMode, PositionMode, CurrentFrequencies } from '../types/domain';
+import { TabType } from '../types/ui';
+import { AudioScalingConfig } from '../types/audio';
 import {
   getDefaultOrbitData,
   getDefaultAudioScalingConfig,

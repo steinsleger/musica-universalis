@@ -2,7 +2,8 @@
  * Centralized constants for the Musica Universalis application
  */
 
-import { type Planet, type AudioScalingConfig } from '../types';
+import { type Planet } from '../types/domain';
+import { type AudioScalingConfig } from '../types/audio';
 
 export const MURCH_N_VALUES: Record<string, number> = {
   Mercury: -10,

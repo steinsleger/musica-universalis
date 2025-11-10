@@ -1,6 +1,6 @@
 import { useContext, useMemo } from 'react';
 import { OrbitalStateContext } from '../context/OrbitalStateContext';
-import type { AudioScalingConfig } from '../types';
+import type { AudioScalingConfig } from '../types/audio';
 
 /**
  * Audio configuration context type - extracted from OrbitalStateContext

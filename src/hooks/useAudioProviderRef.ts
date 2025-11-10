@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import * as Tone from 'tone';
-import { CurrentFrequencies, SynthObject } from '../types/domain';
-import { SynthManager } from '../utils/synthManager';
+import { CurrentFrequencies } from '../types/domain';
+import { SynthObject } from '../types/audio';
+import { SynthManager } from '@/services/audio/SynthManager';
 
 /**
  * Consolidated audio provider reference structure

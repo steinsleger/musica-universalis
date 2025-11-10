@@ -1,5 +1,5 @@
 import { useEffect, useRef, MutableRefObject } from 'react';
-import { Planet, CurrentFrequencies } from '../types';
+import { Planet, CurrentFrequencies } from '../types/domain';
 import { AudioProviderRef } from './useAudioProviderRef';
 import { resumeAudioContextIfNeeded, isGainNodeInvalid } from '../utils/audioUtils';
 

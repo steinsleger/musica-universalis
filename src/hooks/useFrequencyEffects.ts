@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import * as Tone from 'tone';
-import { CurrentFrequencies, AudioScalingConfig, Planet, SynthObject } from '../types';
-import { SynthManager } from '../utils/synthManager';
+import { Planet, CurrentFrequencies } from '../types/domain';
+import { AudioScalingConfig, SynthObject } from '../types/audio';
+import { SynthManager } from '@/services/audio/SynthManager';
 
 interface UseFrequencyEffectsParams {
   liveMode: boolean;

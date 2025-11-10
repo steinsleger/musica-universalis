@@ -4,7 +4,9 @@
  * Types that define the shape of application state
  */
 
-import type { Planet, CurrentFrequencies, FrequencyMode, PositionMode, TabType, AudioHealthStatus, AudioScalingConfig } from './domain';
+import type { Planet, CurrentFrequencies, FrequencyMode, PositionMode } from './domain';
+import type { TabType } from './ui';
+import type { AudioHealthStatus, AudioScalingConfig } from './audio';
 
 /**
  * Orbital/Animation state

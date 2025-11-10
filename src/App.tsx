@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import OrbitalSonification from './OrbitalSonification';
-import Preloader from './components/Preloader';
-import ScreenAlert from './components/ScreenAlert';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import Preloader from './components/ui/Preloader';
+import ScreenAlert from './components/ui/ScreenAlert';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);

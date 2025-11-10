@@ -1,26 +1,26 @@
 import React, { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import * as Tone from 'tone';
-import { UIControlsProvider } from '../context/UIControlsContext';
-import { AudioControlsProvider } from '../context/AudioControlsContext';
-import { VisualizationControlsProvider } from '../context/VisualizationControlsContext';
-import { useAudioConfig } from '../hooks/useAudioConfig';
-import { useOrbitalState as useOrbitState } from '../hooks/useOrbitalState';
-import { useAudioContext } from '../hooks/useAudioContext';
-import { useModals } from '../hooks/useModals';
-import { useAudioState } from '../hooks/useAudioState';
-import { useUIState } from '../hooks/useUIState';
-import { useAudioProviderRef } from '../hooks/useAudioProviderRef';
-import { useFrequencyManager } from '../hooks/useFrequencyManager';
-import { useLiveModeAudio } from '../hooks/useLiveModeAudio';
-import { useToggleControls } from '../hooks/useToggleControls';
-import { useAudioContextManager } from '../hooks/useAudioContextManager';
-import { useSequencePlayback } from '../hooks/useSequencePlayback';
-import { useControlHandlers } from '../hooks/useControlHandlers';
-import { useFrequencyEffects } from '../hooks/useFrequencyEffects';
-import { useAudioInitialization } from '../hooks/useAudioInitialization';
-import { usePositionTracker } from '../hooks/usePositionTracker';
-import OrbitalSonificationPresenter from './OrbitalSonificationPresenter';
-import { CurrentFrequencies, Planet } from '../types';
+import { UIControlsProvider } from '../../context/UIControlsContext';
+import { AudioControlsProvider } from '../../context/AudioControlsContext';
+import { VisualizationControlsProvider } from '../../context/VisualizationControlsContext';
+import { useAudioConfig } from '../../hooks/useAudioConfig';
+import { useOrbitalState as useOrbitState } from '../../hooks/useOrbitalState';
+import { useAudioContext } from '../../hooks/useAudioContext';
+import { useModals } from '../../hooks/useModals';
+import { useAudioState } from '../../hooks/useAudioState';
+import { useUIState } from '../../hooks/useUIState';
+import { useAudioProviderRef } from '../../hooks/useAudioProviderRef';
+import { useFrequencyManager } from '../../hooks/useFrequencyManager';
+import { useLiveModeAudio } from '../../hooks/useLiveModeAudio';
+import { useToggleControls } from '../../hooks/useToggleControls';
+import { useAudioContextManager } from '../../hooks/useAudioContextManager';
+import { useSequencePlayback } from '../../hooks/useSequencePlayback';
+import { useControlHandlers } from '../../hooks/useControlHandlers';
+import { useFrequencyEffects } from '../../hooks/useFrequencyEffects';
+import { useAudioInitialization } from '../../hooks/useAudioInitialization';
+import { usePositionTracker } from '../../hooks/usePositionTracker';
+import OrbitalSonificationPresenter from '../presenters/OrbitalSonificationPresenter';
+import { CurrentFrequencies, Planet } from '../../types/domain';
 
 declare global {
   interface Window {

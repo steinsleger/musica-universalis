@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import * as Tone from 'tone';
-import { Planet, FrequencyMode, AudioScalingConfig, CurrentFrequencies, SynthObject } from '../types';
-import { SynthManager } from '../utils/synthManager';
+import { Planet, FrequencyMode, CurrentFrequencies } from '../types/domain';
+import { AudioScalingConfig, SynthObject } from '../types/audio';
+import { SynthManager } from '@/services/audio/SynthManager';
 
 interface UseControlHandlersParams {
   startAudioContext: () => Promise<boolean>;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Planet } from '../types';
+import { Planet } from '../../types/domain';
 
 interface PlanetNodeProps {
   planet: Planet;

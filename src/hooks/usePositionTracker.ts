@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { PositionMode } from '../types';
+import { PositionMode } from '../types/domain';
 
 interface PositionTrackerState {
   hasPositionModeChanged: () => boolean;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAudioControls } from '../hooks/useAudioControls';
+import { useAudioControls } from '../../hooks/useAudioControls';
 
 const AudioErrorNotificationComponent: React.FC = () => {
   const { audioError, setAudioError, audioHealthStatus } = useAudioControls();

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { calculatePlanetaryFrequency } from '../utils/calculatePlanetaryFrequency';
-import { Planet, FrequencyMode } from '../types';
+import { FrequencyService } from '@/services/frequency/FrequencyService';
+import { Planet, FrequencyMode } from '../types/domain';
 
 interface OrbitalCalculationsParams {
   svgSize: number;
@@ -144,7 +144,8 @@ export const useOrbitalCalculations = (params: OrbitalCalculationsParams) => {
 
   // Calculate frequencies
   const calculateFrequencies = useCallback((baseFreq: number, planet: Planet, _index: number): number => {
-    return calculatePlanetaryFrequency(baseFreq, planet, distanceMode);
+    const frequencyService = new FrequencyService();
+    return frequencyService.calculate(baseFreq, planet, distanceMode);
   }, [distanceMode]);
 
   return {
