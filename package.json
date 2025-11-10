@@ -1,30 +1,26 @@
 {
   "name": "musica-universalis",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "license": "CC-BY-NC-SA-4.0",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/update-version.js && vite build",
+    "build": "eslint . --max-warnings 0 && tsc --noEmit && node --import=tsx scripts/update-version.ts && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "release": "standard-version",
     "commit": "cz"
   },
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "sass": "^1.86.2",
-    "tone": "^15.0.4",
-    "workbox-window": "^7.0.0",
-    "workbox-precaching": "^7.0.0",
-    "workbox-routing": "^7.0.0",
-    "workbox-strategies": "^7.0.0",
-    "workbox-cacheable-response": "^7.0.0"
+    "tone": "^15.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@types/node": "^24.9.1",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
@@ -34,10 +30,13 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "rollup-plugin-visualizer": "^6.0.5",
     "standard-version": "^9.5.0",
     "terser": "^5.39.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
     "vite": "^6.2.0",
-    "vite-plugin-pwa": "^0.19.0",
     "vite-plugin-remove-console": "^2.2.0"
   },
   "config": {

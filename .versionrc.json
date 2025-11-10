@@ -15,6 +15,6 @@
   "userUrlFormat": "{{host}}/{{user}}",
   "releaseCommitMessageFormat": "chore(release): {{currentTag}} [skip ci]",
   "scripts": {
-    "postbump": "node scripts/update-version.js && git add src/version.js"
+    "postbump": "node --import=tsx scripts/update-version.ts && git add src/version.ts"
   }
 } 

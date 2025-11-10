@@ -1,0 +1,31 @@
+import React, { createContext, ReactNode } from 'react';
+import { TabType } from '../types/ui';
+
+/**
+ * Manages UI state: sidebar, tab, and modal visibility
+ */
+export interface UIControlsContextType {
+  sidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
+  isInfoModalOpen: boolean;
+  setIsInfoModalOpen: (open: boolean) => void;
+  isInstructionsModalOpen: boolean;
+  setIsInstructionsModalOpen: (open: boolean) => void;
+}
+
+const UIControlsContext = createContext<UIControlsContextType | undefined>(undefined);
+
+interface UIControlsProviderProps {
+  children: ReactNode;
+  value: UIControlsContextType;
+}
+
+export const UIControlsProvider: React.FC<UIControlsProviderProps> = ({ children, value }) => (
+  <UIControlsContext.Provider value={value}>
+    {children}
+  </UIControlsContext.Provider>
+);
+
+export { UIControlsContext };
