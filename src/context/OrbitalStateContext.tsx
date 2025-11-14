@@ -1,7 +1,7 @@
 import React, { createContext, useReducer, useCallback, ReactNode } from 'react';
 import { Planet, FrequencyMode, PositionMode, CurrentFrequencies } from '../types/domain';
 import { TabType } from '../types/ui';
-import { AudioScalingConfig } from '../types/audio';
+import { AudioScalingConfig, AudioHealthStatus } from '../types/audio';
 import {
   getDefaultOrbitData,
   getDefaultAudioScalingConfig,
@@ -32,7 +32,7 @@ interface OrbitalState {
   loopSequence: boolean;
   currentlyPlayingPlanet: string | undefined;
   audioError: string | null;
-  audioHealthStatus: 'healthy' | 'degraded' | 'failed';
+  audioHealthStatus: AudioHealthStatus;
 
   // Audio Configuration (merged from AudioConfigContext)
   baseFrequency: number;
@@ -68,7 +68,7 @@ type OrbitalStateAction =
   | { type: 'TOGGLE_LOOP_SEQUENCE' }
   | { type: 'SET_CURRENTLY_PLAYING_PLANET'; payload: string | undefined }
   | { type: 'SET_AUDIO_ERROR'; payload: string | null }
-  | { type: 'SET_AUDIO_HEALTH_STATUS'; payload: 'healthy' | 'degraded' | 'failed' }
+  | { type: 'SET_AUDIO_HEALTH_STATUS'; payload: AudioHealthStatus }
 
   // Audio Configuration actions
   | { type: 'SET_BASE_FREQUENCY'; payload: number }
@@ -224,7 +224,7 @@ const orbitalStateReducer = (state: OrbitalState, action: OrbitalStateAction): O
 /**
  * Context type definition with both state and dispatch
  */
-export interface OrbitalStateContextType {
+interface OrbitalStateContextType {
   state: OrbitalState;
   dispatch: React.Dispatch<OrbitalStateAction>;
 
@@ -246,7 +246,7 @@ export interface OrbitalStateContextType {
   toggleLoopSequence: () => void;
   setCurrentlyPlayingPlanet: (planet: string | undefined) => void;
   setAudioError: (error: string | null) => void;
-  setAudioHealthStatus: (status: 'healthy' | 'degraded' | 'failed') => void;
+  setAudioHealthStatus: (status: AudioHealthStatus) => void;
 
   // Audio Configuration methods
   setBaseFrequency: (freq: number) => void;
@@ -334,7 +334,7 @@ export const OrbitalStateProvider: React.FC<OrbitalStateProviderProps> = ({ chil
     []
   );
   const setAudioHealthStatus = useCallback(
-    (status: 'healthy' | 'degraded' | 'failed') => dispatch({ type: 'SET_AUDIO_HEALTH_STATUS', payload: status }),
+    (status: AudioHealthStatus) => dispatch({ type: 'SET_AUDIO_HEALTH_STATUS', payload: status }),
     []
   );
 

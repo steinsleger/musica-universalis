@@ -5,7 +5,7 @@ import type { AudioScalingConfig } from '../types/audio';
 /**
  * Audio configuration context type - extracted from OrbitalStateContext
  */
-export interface AudioConfigContextType {
+interface AudioConfigContextType {
   baseFrequency: number;
   setBaseFrequency: (freq: number) => void;
   masterVolume: number;
