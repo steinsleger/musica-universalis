@@ -26,13 +26,13 @@ export const DEFAULT_ANIMATION_SPEED = 1;
 export const DEFAULT_ZOOM_LEVEL = 20;
 
 
-// Audio safety
-export const DEFAULT_REFERENCE_FREQUENCY = 55;
-export const DEFAULT_SCALING_FACTOR = 0.4;
-export const DEFAULT_MINIMUM_GAIN = 0.05;
-export const DEFAULT_MAXIMUM_GAIN = 1.2;
-export const HIGH_FREQUENCY_CUTOFF = 2000;
-export const HIGH_FREQUENCY_SCALING_FACTOR = 0.6;
+// Audio safety (private constants used in getDefaultAudioScalingConfig)
+const DEFAULT_REFERENCE_FREQUENCY = 55;
+const DEFAULT_SCALING_FACTOR = 0.4;
+const DEFAULT_MINIMUM_GAIN = 0.05;
+const DEFAULT_MAXIMUM_GAIN = 1.2;
+const HIGH_FREQUENCY_CUTOFF = 2000;
+const HIGH_FREQUENCY_SCALING_FACTOR = 0.6;
 
 
 // ============ Utility Functions ============

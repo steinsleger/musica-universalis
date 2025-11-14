@@ -4,7 +4,7 @@ import { CurrentFrequencies } from '../types/domain';
 /**
  * AudioPlaybackState - Consolidated audio playback and frequency state
  */
-export interface AudioPlaybackState {
+interface AudioPlaybackState {
   isPlaying: boolean;
   liveMode: boolean;
   currentFrequencies: CurrentFrequencies;
@@ -15,7 +15,7 @@ export interface AudioPlaybackState {
 /**
  * AudioPlaybackAction - Discriminated union of all possible audio state mutations
  */
-export type AudioPlaybackAction =
+type AudioPlaybackAction =
   | { type: 'START_PLAYBACK' }
   | { type: 'STOP_PLAYBACK' }
   | { type: 'SET_LIVE_MODE'; payload: boolean }

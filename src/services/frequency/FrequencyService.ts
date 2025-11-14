@@ -9,7 +9,7 @@ import { MURCH_N_VALUES } from '@/utils/constants';
 /**
  * Strategy interface for frequency calculation
  */
-export interface FrequencyStrategy {
+interface FrequencyStrategy {
   calculate(baseFrequency: number, planet: Planet): number;
 }
 
@@ -17,7 +17,7 @@ export interface FrequencyStrategy {
  * Murch Formula Strategy
  * Implements the modified Titius-Bode law: f(n) = (1 + 2^n) × 3 × baseFrequency
  */
-export class MurchFormulaStrategy implements FrequencyStrategy {
+class MurchFormulaStrategy implements FrequencyStrategy {
   calculate(baseFrequency: number, planet: Planet): number {
     const n = MURCH_N_VALUES[planet.name];
     return baseFrequency * (1 + Math.pow(2, n) * 3);
@@ -28,7 +28,7 @@ export class MurchFormulaStrategy implements FrequencyStrategy {
  * Actual Distance Strategy
  * Uses real astronomical distances: f = baseFrequency × (5 × actualDistance + 1)
  */
-export class ActualDistanceStrategy implements FrequencyStrategy {
+class ActualDistanceStrategy implements FrequencyStrategy {
   calculate(baseFrequency: number, planet: Planet): number {
     return baseFrequency * (5 * planet.actualDistance + 1);
   }

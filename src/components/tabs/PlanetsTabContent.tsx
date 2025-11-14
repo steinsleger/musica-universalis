@@ -1,5 +1,5 @@
 import React from 'react';
-import { Planet, CurrentFrequencies, FrequencyMode } from '../../types/domain';
+import { Planet, CurrentFrequencies, FrequencyMode, PlanetName } from '../../types/domain';
 
 interface PlanetsTabContentProps {
   activeTab: string;
@@ -15,7 +15,7 @@ interface PlanetsTabContentProps {
   togglePlanet: (index: number) => void;
   currentFrequencies: CurrentFrequencies;
   distanceModeForDisplay: FrequencyMode;
-  getPlanetColor: (name: string) => string;
+  getPlanetColor: (name: PlanetName) => string;
   frequencyToNote: (freq: number) => string;
 }
 

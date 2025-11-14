@@ -22,7 +22,7 @@ interface UseFrequencyManagerParams {
 /**
  * API for frequency operations and audio synthesis
  */
-export interface FrequencyManager {
+interface FrequencyManager {
   // Core calculation
   calculateFrequency: (baseFreq: number, planet: Planet, mode: FrequencyMode) => number;
   calculateAllFrequencies: (baseFreq: number, planets: Planet[], mode: FrequencyMode) => CurrentFrequencies;
