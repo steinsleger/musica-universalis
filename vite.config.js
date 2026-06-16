@@ -41,8 +41,13 @@ export default defineConfig(({ mode }) => {
       // HTML minification settings
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ["react", "react-dom"],
+          manualChunks(id) {
+            if (
+              id.includes("node_modules/react-dom") ||
+              id.includes("node_modules/react/")
+            ) {
+              return "vendor";
+            }
           },
         },
       },
